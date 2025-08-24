@@ -1,0 +1,24 @@
+{
+  "name": "irl",
+  "version": "1.0.0",
+  "description": "A community directory for exchanging contact information",
+  "private": true,
+  "workspaces": [
+    "client",
+    "service",
+    "shared"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
