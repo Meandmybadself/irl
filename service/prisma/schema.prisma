@@ -23,13 +23,6 @@ enum PrivacyLevel {
   PUBLIC
 }
 
-enum PersonGroupRelation {
-  PARENT
-  TEACHER
-  COACH
-  MEMBER
-  ADMIN
-}
 
 // Core Models
 
@@ -186,7 +179,7 @@ model PersonGroup {
   id       Int                 @id @default(autoincrement())
   personId Int
   groupId  Int
-  relation PersonGroupRelation
+  relation String
   isAdmin  Boolean             @default(false)
 
   // Relations

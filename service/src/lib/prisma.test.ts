@@ -115,7 +115,7 @@ describe('Prisma Models and Helpers', () => {
     // Test that enums are properly typed
     const contactTypes: Array<'EMAIL' | 'PHONE' | 'ADDRESS' | 'URL'> = ['EMAIL', 'PHONE', 'ADDRESS', 'URL'];
     const privacyLevels: Array<'PRIVATE' | 'PUBLIC'> = ['PRIVATE', 'PUBLIC'];
-    const relations: Array<'PARENT' | 'TEACHER' | 'COACH' | 'MEMBER' | 'ADMIN'> = ['PARENT', 'TEACHER', 'COACH', 'MEMBER', 'ADMIN'];
+    const relations: string[] = ['PARENT', 'TEACHER', 'COACH', 'MEMBER', 'ADMIN', 'VOLUNTEER', 'STUDENT'];
 
     expect(contactTypes).toContain('EMAIL');
     expect(privacyLevels).toContain('PUBLIC');

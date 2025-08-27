@@ -218,7 +218,7 @@ export const createGroupWithParent = async (data: {
 export const addPersonToGroup = async (
   personId: number,
   groupId: number,
-  relation: 'PARENT' | 'TEACHER' | 'COACH' | 'MEMBER' | 'ADMIN',
+  relation: string,
   isAdmin = false
 ) => {
   return prisma.personGroup.create({
