@@ -8,12 +8,14 @@ import passport from 'passport';
 import { Pool } from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { prisma } from './lib/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const server: Application = express();
 
+// Keep pg pool for session store
 const db = new Pool({
   connectionString: process.env.DATABASE_URL
 });
@@ -62,4 +64,4 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-export { server, db };
+export { server, db, prisma };

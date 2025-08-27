@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum ContactType {
+  EMAIL
+  PHONE
+  ADDRESS
+  URL
+}
+
+enum PrivacyLevel {
+  PRIVATE
+  PUBLIC
+}
+
+enum PersonGroupRelation {
+  PARENT
+  TEACHER
+  COACH
+  MEMBER
+  ADMIN
+}
+
+// Core Models
+
+model ContactInformation {
+  id        Int           @id @default(autoincrement())
+  type      ContactType
+  label     String
+  value     String
+  privacy   PrivacyLevel
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  deleted   Boolean       @default(false)
+
+  // Relations through mapping tables
+  systemContacts SystemContactInformation[]
+  personContacts PersonContactInformation[]
+  groupContacts  GroupContactInformation[]
+
+  @@map("contact_information")
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  password          String
+  verificationToken String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deleted           Boolean  @default(false)
+
+  // Relations
+  people       Person[]
+  adminSystems SystemAdminUser[]
+
+  @@map("users")
+}
+
+model Person {
+  id        Int     @id @default(autoincrement())
+  firstName String
+  lastName  String
+  displayId String  @unique
+  pronouns  String?
+  imageURL  String?
+  userId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deleted   Boolean  @default(false)
+
+  // Relations
+  user               User?                        @relation(fields: [userId], references: [id])
+  contactInformation PersonContactInformation[]
+  groupMemberships   PersonGroup[]
+  claims             Claim[]
+
+  @@map("people")
+}
+
+model System {
+  id               Int     @id @default(autoincrement())
+  name             String
+  registrationOpen Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deleted          Boolean  @default(false)
+
+  // Relations
+  contactInformation SystemContactInformation[]
+  adminUsers         SystemAdminUser[]
+
+  @@map("systems")
+}
+
+model Group {
+  id                            Int     @id @default(autoincrement())
+  displayId                     String  @unique
+  name                          String
+  description                   String?
+  parentGroupId                 Int?
+  allowsAnyUserToCreateSubgroup Boolean @default(false)
+  publiclyVisible               Boolean @default(true)
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  deleted                       Boolean  @default(false)
+
+  // Relations
+  parentGroup        Group?                     @relation("GroupHierarchy", fields: [parentGroupId], references: [id])
+  childGroups        Group[]                    @relation("GroupHierarchy")
+  people             PersonGroup[]
+  contactInformation GroupContactInformation[]
+
+  @@map("groups")
+}
+
+model Claim {
+  id        Int       @id @default(autoincrement())
+  personId  Int
+  claimCode String    @unique
+  claimed   Boolean   @default(false)
+  claimedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deleted   Boolean   @default(false)
+
+  // Relations
+  person Person @relation(fields: [personId], references: [id])
+
+  @@map("claims")
+}
+
+// Mapping/Junction Tables
+
+model SystemContactInformation {
+  id                   Int @id @default(autoincrement())
+  systemId             Int
+  contactInformationId Int
+
+  // Relations
+  system             System             @relation(fields: [systemId], references: [id])
+  contactInformation ContactInformation @relation(fields: [contactInformationId], references: [id])
+
+  @@unique([systemId, contactInformationId])
+  @@map("system_contact_information")
+}
+
+model PersonContactInformation {
+  id                   Int @id @default(autoincrement())
+  personId             Int
+  contactInformationId Int
+
+  // Relations
+  person             Person             @relation(fields: [personId], references: [id])
+  contactInformation ContactInformation @relation(fields: [contactInformationId], references: [id])
+
+  @@unique([personId, contactInformationId])
+  @@map("person_contact_information")
+}
+
+model GroupContactInformation {
+  id                   Int @id @default(autoincrement())
+  groupId              Int
+  contactInformationId Int
+
+  // Relations
+  group              Group              @relation(fields: [groupId], references: [id])
+  contactInformation ContactInformation @relation(fields: [contactInformationId], references: [id])
+
+  @@unique([groupId, contactInformationId])
+  @@map("group_contact_information")
+}
+
+model PersonGroup {
+  id       Int                 @id @default(autoincrement())
+  personId Int
+  groupId  Int
+  relation PersonGroupRelation
+  isAdmin  Boolean             @default(false)
+
+  // Relations
+  person Person @relation(fields: [personId], references: [id])
+  group  Group  @relation(fields: [groupId], references: [id])
+
+  @@unique([personId, groupId])
+  @@map("person_groups")
+}
+
+model SystemAdminUser {
+  id       Int @id @default(autoincrement())
+  systemId Int
+  userId   Int
+
+  // Relations
+  system System @relation(fields: [systemId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([systemId, userId])
+  @@map("system_admin_users")
+}
