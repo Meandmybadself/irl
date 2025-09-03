@@ -49,13 +49,13 @@ model User {
   email             String   @unique
   password          String
   verificationToken String?
+  isSystemAdmin     Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   deleted           Boolean  @default(false)
 
   // Relations
-  people       Person[]
-  adminSystems SystemAdminUser[]
+  people Person[]
 
   @@map("users")
 }
@@ -67,13 +67,13 @@ model Person {
   displayId String  @unique
   pronouns  String?
   imageURL  String?
-  userId    Int?
+  userId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deleted   Boolean  @default(false)
 
   // Relations
-  user               User?                        @relation(fields: [userId], references: [id])
+  user               User                         @relation(fields: [userId], references: [id])
   contactInformation PersonContactInformation[]
   groupMemberships   PersonGroup[]
   claims             Claim[]
@@ -82,7 +82,7 @@ model Person {
 }
 
 model System {
-  id               Int     @id @default(autoincrement())
+  id               Int     @id @default(1)
   name             String
   registrationOpen Boolean @default(true)
   createdAt        DateTime @default(now())
@@ -91,7 +91,6 @@ model System {
 
   // Relations
   contactInformation SystemContactInformation[]
-  adminUsers         SystemAdminUser[]
 
   @@map("systems")
 }
@@ -190,15 +189,3 @@ model PersonGroup {
   @@map("person_groups")
 }
 
-model SystemAdminUser {
-  id       Int @id @default(autoincrement())
-  systemId Int
-  userId   Int
-
-  // Relations
-  system System @relation(fields: [systemId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
-
-  @@unique([systemId, userId])
-  @@map("system_admin_users")
-}
