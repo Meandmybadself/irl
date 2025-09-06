@@ -113,6 +113,7 @@ model Group {
   childGroups        Group[]                    @relation("GroupHierarchy")
   people             PersonGroup[]
   contactInformation GroupContactInformation[]
+  invites            GroupInvite[]
 
   @@map("groups")
 }
@@ -134,6 +135,22 @@ model Claim {
   user   User   @relation(fields: [requestingUser], references: [id])
 
   @@map("claims")
+}
+
+model GroupInvite {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  email     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deleted   Boolean  @default(false)
+  accepted  Boolean  @default(false)
+  acceptedAt DateTime?
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id])
+
+  @@map("group_invites")
 }
 
 // Mapping/Junction Tables
