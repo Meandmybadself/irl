@@ -56,6 +56,7 @@ model User {
 
   // Relations
   people Person[]
+  claims Claim[]
 
   @@map("users")
 }
@@ -117,18 +118,20 @@ model Group {
 }
 
 model Claim {
-  id        Int       @id @default(autoincrement())
-  personId  Int
-  claimCode String    @unique
-  claimed   Boolean   @default(false)
-  claimedAt DateTime?
-  expiresAt DateTime
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deleted   Boolean   @default(false)
+  id             Int       @id @default(autoincrement())
+  personId       Int
+  requestingUser Int
+  claimCode      String    @unique
+  claimed        Boolean   @default(false)
+  claimedAt      DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deleted        Boolean   @default(false)
 
   // Relations
   person Person @relation(fields: [personId], references: [id])
+  user   User   @relation(fields: [requestingUser], references: [id])
 
   @@map("claims")
 }
