@@ -10,6 +10,20 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from './lib/prisma.js';
 
+// Import routes
+import contactInformationRoutes from './routes/contact-information.js';
+import userRoutes from './routes/users.js';
+import personRoutes from './routes/persons.js';
+import systemRoutes from './routes/systems.js';
+import groupRoutes from './routes/groups.js';
+import claimRoutes from './routes/claims.js';
+import groupInviteRoutes from './routes/group-invites.js';
+import personGroupRoutes from './routes/person-groups.js';
+import contactMappingRoutes from './routes/contact-mappings.js';
+
+// Import middleware
+import { errorHandler } from './middleware/error-handler.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -52,9 +66,23 @@ server.use(session({
 server.use(passport.initialize());
 server.use(passport.session());
 
+// API Routes
+server.use('/api/contact-information', contactInformationRoutes);
+server.use('/api/users', userRoutes);
+server.use('/api/persons', personRoutes);
+server.use('/api/systems', systemRoutes);
+server.use('/api/groups', groupRoutes);
+server.use('/api/claims', claimRoutes);
+server.use('/api/group-invites', groupInviteRoutes);
+server.use('/api/person-groups', personGroupRoutes);
+server.use('/api/contact-mappings', contactMappingRoutes);
+
 server.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Hello World from IRL Service!' });
 });
+
+// Global error handler (must be last)
+server.use(errorHandler);
 
 const PORT = process.env.SERVICE_PORT || 3001;
 

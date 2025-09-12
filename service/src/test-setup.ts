@@ -25,12 +25,12 @@ beforeEach(async () => {
   // Clean up the database before each test
   // Delete in reverse order to avoid foreign key constraints
   try {
-    await prisma.systemAdminUser.deleteMany({})
     await prisma.personGroup.deleteMany({})
     await prisma.systemContactInformation.deleteMany({})
     await prisma.personContactInformation.deleteMany({})
     await prisma.groupContactInformation.deleteMany({})
     await prisma.contactInformation.deleteMany({})
+    await prisma.groupInvite.deleteMany({})
     await prisma.claim.deleteMany({})
     await prisma.person.deleteMany({})
     await prisma.user.deleteMany({})
