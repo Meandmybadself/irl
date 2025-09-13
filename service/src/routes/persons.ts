@@ -2,19 +2,23 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, personSchema, updatePersonSchema } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
 
 const router = Router();
 
 // Helper to format person response
-const formatPerson = (person: any): Person => ({
-  ...person,
-  createdAt: person.createdAt.toISOString(),
-  updatedAt: person.updatedAt.toISOString()
-});
+const formatPerson = (person: any): Person => {
+  const { deleted, ...personWithoutDeleted } = person;
+  return {
+    ...personWithoutDeleted,
+    createdAt: person.createdAt.toISOString(),
+    updatedAt: person.updatedAt.toISOString()
+  };
+};
 
-// GET /api/persons - List all persons
-router.get('/', asyncHandler(async (req, res) => {
+// GET /api/persons - List all persons (auth required)
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -43,8 +47,8 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// GET /api/persons/:id - Get specific person
-router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
+// GET /api/persons/:id - Get specific person (auth required)
+router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   
   const item = await prisma.person.findFirst({
@@ -63,8 +67,8 @@ router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// POST /api/persons - Create new person
-router.post('/', validateBody(personSchema), asyncHandler(async (req, res) => {
+// POST /api/persons - Create new person (auth required)
+router.post('/', requireAuth, validateBody(personSchema), asyncHandler(async (req, res) => {
   // Check if user exists
   const userExists = await prisma.user.findFirst({
     where: { id: req.body.userId, deleted: false }
@@ -87,8 +91,8 @@ router.post('/', validateBody(personSchema), asyncHandler(async (req, res) => {
   res.status(201).json(response);
 }));
 
-// PUT /api/persons/:id - Update entire person
-router.put('/:id', validateIdParam, validateBody(personSchema), asyncHandler(async (req, res) => {
+// PUT /api/persons/:id - Update entire person (auth required)
+router.put('/:id', requireAuth, validateIdParam, validateBody(personSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if user exists
@@ -114,8 +118,8 @@ router.put('/:id', validateIdParam, validateBody(personSchema), asyncHandler(asy
   res.json(response);
 }));
 
-// PATCH /api/persons/:id - Partial update person
-router.patch('/:id', validateIdParam, validateBody(updatePersonSchema), asyncHandler(async (req, res) => {
+// PATCH /api/persons/:id - Partial update person (auth required)
+router.patch('/:id', requireAuth, validateIdParam, validateBody(updatePersonSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if user exists (if userId is being updated)
@@ -143,8 +147,8 @@ router.patch('/:id', validateIdParam, validateBody(updatePersonSchema), asyncHan
   res.json(response);
 }));
 
-// DELETE /api/persons/:id - Soft delete person
-router.delete('/:id', validateIdParam, asyncHandler(async (req, res) => {
+// DELETE /api/persons/:id - Soft delete person (auth required)
+router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.person.update({

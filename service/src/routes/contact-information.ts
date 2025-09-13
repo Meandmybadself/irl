@@ -2,12 +2,23 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, contactInformationSchema, updateContactInformationSchema } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, ContactInformation } from '@irl/shared';
 
 const router = Router();
 
+// Helper to format contact information response
+const formatContactInformation = (contactInfo: any): ContactInformation => {
+  const { deleted, ...contactInfoWithoutDeleted } = contactInfo;
+  return {
+    ...contactInfoWithoutDeleted,
+    createdAt: contactInfo.createdAt.toISOString(),
+    updatedAt: contactInfo.updatedAt.toISOString()
+  };
+};
+
 // GET /api/contact-information - List all contact information
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -41,7 +52,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // GET /api/contact-information/:id - Get specific contact information
-router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   
   const item = await prisma.contactInformation.findFirst({
@@ -65,7 +76,7 @@ router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/contact-information - Create new contact information
-router.post('/', validateBody(contactInformationSchema), asyncHandler(async (req, res) => {
+router.post('/', requireAuth, validateBody(contactInformationSchema), asyncHandler(async (req, res) => {
   const item = await prisma.contactInformation.create({
     data: req.body
   });
@@ -84,7 +95,7 @@ router.post('/', validateBody(contactInformationSchema), asyncHandler(async (req
 }));
 
 // PUT /api/contact-information/:id - Update entire contact information
-router.put('/:id', validateIdParam, validateBody(contactInformationSchema), asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, validateIdParam, validateBody(contactInformationSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   const item = await prisma.contactInformation.update({
@@ -106,7 +117,7 @@ router.put('/:id', validateIdParam, validateBody(contactInformationSchema), asyn
 }));
 
 // PATCH /api/contact-information/:id - Partial update contact information
-router.patch('/:id', validateIdParam, validateBody(updateContactInformationSchema), asyncHandler(async (req, res) => {
+router.patch('/:id', requireAuth, validateIdParam, validateBody(updateContactInformationSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   const item = await prisma.contactInformation.update({
@@ -128,7 +139,7 @@ router.patch('/:id', validateIdParam, validateBody(updateContactInformationSchem
 }));
 
 // DELETE /api/contact-information/:id - Soft delete contact information
-router.delete('/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.contactInformation.update({

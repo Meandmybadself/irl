@@ -1,24 +1,26 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, userSchema, updateUserSchema } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, User } from '@irl/shared';
 
 const router = Router();
 
-// Helper to exclude password from user responses
-const excludePassword = (user: any): User => {
-  const { password, ...userWithoutPassword } = user;
+// Helper to exclude sensitive and internal fields from user responses
+const excludeSensitiveFields = (user: any): User => {
+  const { password, verificationToken, deleted, ...userWithoutSensitive } = user;
   return {
-    ...userWithoutPassword,
+    ...userWithoutSensitive,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString()
   };
 };
 
-// GET /api/users - List all users
-router.get('/', asyncHandler(async (req, res) => {
+// GET /api/users - List all users (auth required)
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -35,7 +37,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const response: PaginatedResponse<User> = {
     success: true,
-    data: items.map(excludePassword),
+    data: items.map(excludeSensitiveFields),
     pagination: {
       total,
       page,
@@ -47,8 +49,8 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// GET /api/users/:id - Get specific user
-router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
+// GET /api/users/:id - Get specific user (auth required)
+router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   
   const item = await prisma.user.findFirst({
@@ -61,7 +63,7 @@ router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
 
   const response: ApiResponse<User> = {
     success: true,
-    data: excludePassword(item)
+    data: excludeSensitiveFields(item)
   };
 
   res.json(response);
@@ -74,25 +76,29 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   // Hash password
   const saltRounds = 12;
   const hashedPassword = await bcrypt.hash(password, saltRounds);
+  
+  // Generate verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
 
   const item = await prisma.user.create({
     data: {
       ...userData,
-      password: hashedPassword
+      password: hashedPassword,
+      verificationToken
     }
   });
 
   const response: ApiResponse<User> = {
     success: true,
-    data: excludePassword(item),
+    data: excludeSensitiveFields(item),
     message: 'User created successfully'
   };
 
   res.status(201).json(response);
 }));
 
-// PUT /api/users/:id - Update entire user
-router.put('/:id', validateIdParam, validateBody(userSchema), asyncHandler(async (req, res) => {
+// PUT /api/users/:id - Update entire user (auth required)
+router.put('/:id', requireAuth, validateIdParam, validateBody(userSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   const { password, ...userData } = req.body;
 
@@ -109,15 +115,15 @@ router.put('/:id', validateIdParam, validateBody(userSchema), asyncHandler(async
 
   const response: ApiResponse<User> = {
     success: true,
-    data: excludePassword(item),
+    data: excludeSensitiveFields(item),
     message: 'User updated successfully'
   };
 
   res.json(response);
 }));
 
-// PATCH /api/users/:id - Partial update user
-router.patch('/:id', validateIdParam, validateBody(updateUserSchema), asyncHandler(async (req, res) => {
+// PATCH /api/users/:id - Partial update user (auth required)
+router.patch('/:id', requireAuth, validateIdParam, validateBody(updateUserSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   const { password, ...userData } = req.body;
 
@@ -134,15 +140,15 @@ router.patch('/:id', validateIdParam, validateBody(updateUserSchema), asyncHandl
 
   const response: ApiResponse<User> = {
     success: true,
-    data: excludePassword(item),
+    data: excludeSensitiveFields(item),
     message: 'User updated successfully'
   };
 
   res.json(response);
 }));
 
-// DELETE /api/users/:id - Soft delete user
-router.delete('/:id', validateIdParam, asyncHandler(async (req, res) => {
+// DELETE /api/users/:id - Soft delete user (auth required)
+router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.user.update({

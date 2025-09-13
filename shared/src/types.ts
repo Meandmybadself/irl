@@ -40,18 +40,14 @@ export interface ContactInformation {
   privacy: PrivacyLevel;
   createdAt: string;
   updatedAt: string;
-  deleted: boolean;
 }
 
 export interface User {
   id: number;
   email: string;
-  password: string;
-  verificationToken: string | null;
   isSystemAdmin: boolean;
   createdAt: string;
   updatedAt: string;
-  deleted: boolean;
 }
 
 export interface Person {
@@ -64,7 +60,6 @@ export interface Person {
   userId: number;
   createdAt: string;
   updatedAt: string;
-  deleted: boolean;
 }
 
 export interface System {
@@ -73,7 +68,6 @@ export interface System {
   registrationOpen: boolean;
   createdAt: string;
   updatedAt: string;
-  deleted: boolean;
 }
 
 export interface Group {
@@ -86,7 +80,6 @@ export interface Group {
   publiclyVisible: boolean;
   createdAt: string;
   updatedAt: string;
-  deleted: boolean;
 }
 
 export interface Claim {
@@ -99,7 +92,6 @@ export interface Claim {
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
-  deleted: boolean;
 }
 
 export interface GroupInvite {
@@ -108,7 +100,6 @@ export interface GroupInvite {
   email: string;
   createdAt: string;
   updatedAt: string;
-  deleted: boolean;
   accepted: boolean;
   acceptedAt: string | null;
 }
@@ -198,7 +189,6 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   email?: string;
   password?: string;
-  verificationToken?: string | null;
   isSystemAdmin?: boolean;
 }
 

@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, systemContactInformationSchema, personContactInformationSchema, groupContactInformationSchema } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
 
 const router = Router();
 
 // System Contact Information Routes
 // GET /api/contact-mappings/system - List all system contact information mappings
-router.get('/system', asyncHandler(async (req, res) => {
+router.get('/system', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -37,7 +38,7 @@ router.get('/system', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/contact-mappings/system - Create new system contact information mapping
-router.post('/system', validateBody(systemContactInformationSchema), asyncHandler(async (req, res) => {
+router.post('/system', requireAuth, validateBody(systemContactInformationSchema), asyncHandler(async (req, res) => {
   // Check if system exists
   const systemExists = await prisma.system.findFirst({
     where: { id: req.body.systemId, deleted: false }
@@ -70,7 +71,7 @@ router.post('/system', validateBody(systemContactInformationSchema), asyncHandle
 }));
 
 // DELETE /api/contact-mappings/system/:id - Delete system contact information mapping
-router.delete('/system/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.delete('/system/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.systemContactInformation.delete({
@@ -87,7 +88,7 @@ router.delete('/system/:id', validateIdParam, asyncHandler(async (req, res) => {
 
 // Person Contact Information Routes
 // GET /api/contact-mappings/person - List all person contact information mappings
-router.get('/person', asyncHandler(async (req, res) => {
+router.get('/person', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -116,7 +117,7 @@ router.get('/person', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/contact-mappings/person - Create new person contact information mapping
-router.post('/person', validateBody(personContactInformationSchema), asyncHandler(async (req, res) => {
+router.post('/person', requireAuth, validateBody(personContactInformationSchema), asyncHandler(async (req, res) => {
   // Check if person exists
   const personExists = await prisma.person.findFirst({
     where: { id: req.body.personId, deleted: false }
@@ -149,7 +150,7 @@ router.post('/person', validateBody(personContactInformationSchema), asyncHandle
 }));
 
 // DELETE /api/contact-mappings/person/:id - Delete person contact information mapping
-router.delete('/person/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.delete('/person/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.personContactInformation.delete({
@@ -166,7 +167,7 @@ router.delete('/person/:id', validateIdParam, asyncHandler(async (req, res) => {
 
 // Group Contact Information Routes
 // GET /api/contact-mappings/group - List all group contact information mappings
-router.get('/group', asyncHandler(async (req, res) => {
+router.get('/group', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -195,7 +196,7 @@ router.get('/group', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/contact-mappings/group - Create new group contact information mapping
-router.post('/group', validateBody(groupContactInformationSchema), asyncHandler(async (req, res) => {
+router.post('/group', requireAuth, validateBody(groupContactInformationSchema), asyncHandler(async (req, res) => {
   // Check if group exists
   const groupExists = await prisma.group.findFirst({
     where: { id: req.body.groupId, deleted: false }
@@ -228,7 +229,7 @@ router.post('/group', validateBody(groupContactInformationSchema), asyncHandler(
 }));
 
 // DELETE /api/contact-mappings/group/:id - Delete group contact information mapping
-router.delete('/group/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.delete('/group/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.groupContactInformation.delete({

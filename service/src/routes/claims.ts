@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, claimSchema, updateClaimSchema } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, Claim } from '@irl/shared';
 
 const router = Router();
@@ -16,7 +17,7 @@ const formatClaim = (claim: any): Claim => ({
 });
 
 // GET /api/claims - List all claims
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -46,7 +47,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // GET /api/claims/:id - Get specific claim
-router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   
   const item = await prisma.claim.findFirst({
@@ -66,7 +67,7 @@ router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/claims - Create new claim
-router.post('/', validateBody(claimSchema), asyncHandler(async (req, res) => {
+router.post('/', requireAuth, validateBody(claimSchema), asyncHandler(async (req, res) => {
   // Check if person exists
   const personExists = await prisma.person.findFirst({
     where: { id: req.body.personId, deleted: false }
@@ -102,7 +103,7 @@ router.post('/', validateBody(claimSchema), asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/claims/:id - Update entire claim
-router.put('/:id', validateIdParam, validateBody(claimSchema), asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, validateIdParam, validateBody(claimSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if person exists
@@ -141,7 +142,7 @@ router.put('/:id', validateIdParam, validateBody(claimSchema), asyncHandler(asyn
 }));
 
 // PATCH /api/claims/:id - Partial update claim
-router.patch('/:id', validateIdParam, validateBody(updateClaimSchema), asyncHandler(async (req, res) => {
+router.patch('/:id', requireAuth, validateIdParam, validateBody(updateClaimSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if person exists (if being updated)
@@ -189,7 +190,7 @@ router.patch('/:id', validateIdParam, validateBody(updateClaimSchema), asyncHand
 }));
 
 // DELETE /api/claims/:id - Soft delete claim
-router.delete('/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.claim.update({

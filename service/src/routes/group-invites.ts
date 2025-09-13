@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, groupInviteSchema, updateGroupInviteSchema } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, GroupInvite } from '@irl/shared';
 
 const router = Router();
@@ -15,7 +16,7 @@ const formatGroupInvite = (groupInvite: any): GroupInvite => ({
 });
 
 // GET /api/group-invites - List all group invites
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
@@ -45,7 +46,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // GET /api/group-invites/:id - Get specific group invite
-router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   
   const item = await prisma.groupInvite.findFirst({
@@ -65,7 +66,7 @@ router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
 }));
 
 // POST /api/group-invites - Create new group invite
-router.post('/', validateBody(groupInviteSchema), asyncHandler(async (req, res) => {
+router.post('/', requireAuth, validateBody(groupInviteSchema), asyncHandler(async (req, res) => {
   // Check if group exists
   const groupExists = await prisma.group.findFirst({
     where: { id: req.body.groupId, deleted: false }
@@ -89,7 +90,7 @@ router.post('/', validateBody(groupInviteSchema), asyncHandler(async (req, res) 
 }));
 
 // PUT /api/group-invites/:id - Update entire group invite
-router.put('/:id', validateIdParam, validateBody(groupInviteSchema), asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, validateIdParam, validateBody(groupInviteSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if group exists
@@ -116,7 +117,7 @@ router.put('/:id', validateIdParam, validateBody(groupInviteSchema), asyncHandle
 }));
 
 // PATCH /api/group-invites/:id - Partial update group invite
-router.patch('/:id', validateIdParam, validateBody(updateGroupInviteSchema), asyncHandler(async (req, res) => {
+router.patch('/:id', requireAuth, validateIdParam, validateBody(updateGroupInviteSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if group exists (if being updated)
@@ -150,7 +151,7 @@ router.patch('/:id', validateIdParam, validateBody(updateGroupInviteSchema), asy
 }));
 
 // DELETE /api/group-invites/:id - Soft delete group invite
-router.delete('/:id', validateIdParam, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.groupInvite.update({

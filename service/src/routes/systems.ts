@@ -2,18 +2,22 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, systemSchema, updateSystemSchema } from '../middleware/validation.js';
+import { requireSystemAdmin } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, System } from '@irl/shared';
 
 const router = Router();
 
 // Helper to format system response
-const formatSystem = (system: any): System => ({
-  ...system,
-  createdAt: system.createdAt.toISOString(),
-  updatedAt: system.updatedAt.toISOString()
-});
+const formatSystem = (system: any): System => {
+  const { deleted, ...systemWithoutDeleted } = system;
+  return {
+    ...systemWithoutDeleted,
+    createdAt: system.createdAt.toISOString(),
+    updatedAt: system.updatedAt.toISOString()
+  };
+};
 
-// GET /api/systems - List all systems
+// GET /api/systems - List all systems (admin only)
 router.get('/', asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
@@ -43,8 +47,8 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// GET /api/systems/:id - Get specific system
-router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
+// GET /api/systems/:id - Get specific system (admin only)
+router.get('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   
   const item = await prisma.system.findFirst({
@@ -63,8 +67,8 @@ router.get('/:id', validateIdParam, asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// POST /api/systems - Create new system
-router.post('/', validateBody(systemSchema), asyncHandler(async (req, res) => {
+// POST /api/systems - Create new system (admin only)
+router.post('/', requireSystemAdmin, validateBody(systemSchema), asyncHandler(async (req, res) => {
   const item = await prisma.system.create({
     data: req.body
   });
@@ -78,8 +82,8 @@ router.post('/', validateBody(systemSchema), asyncHandler(async (req, res) => {
   res.status(201).json(response);
 }));
 
-// PUT /api/systems/:id - Update entire system
-router.put('/:id', validateIdParam, validateBody(systemSchema), asyncHandler(async (req, res) => {
+// PUT /api/systems/:id - Update entire system (admin only)
+router.put('/:id', requireSystemAdmin, validateIdParam, validateBody(systemSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   const item = await prisma.system.update({
@@ -96,8 +100,8 @@ router.put('/:id', validateIdParam, validateBody(systemSchema), asyncHandler(asy
   res.json(response);
 }));
 
-// PATCH /api/systems/:id - Partial update system
-router.patch('/:id', validateIdParam, validateBody(updateSystemSchema), asyncHandler(async (req, res) => {
+// PATCH /api/systems/:id - Partial update system (admin only)
+router.patch('/:id', requireSystemAdmin, validateIdParam, validateBody(updateSystemSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   const item = await prisma.system.update({
@@ -114,8 +118,8 @@ router.patch('/:id', validateIdParam, validateBody(updateSystemSchema), asyncHan
   res.json(response);
 }));
 
-// DELETE /api/systems/:id - Soft delete system
-router.delete('/:id', validateIdParam, asyncHandler(async (req, res) => {
+// DELETE /api/systems/:id - Soft delete system (admin only)
+router.delete('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   await prisma.system.update({

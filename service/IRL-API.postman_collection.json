@@ -1,0 +1,1235 @@
+{
+	"info": {
+		"_postman_id": "irl-api-collection",
+		"name": "IRL API",
+		"description": "API collection for the IRL service - a community directory for exchanging contact information",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "irl-api"
+	},
+	"item": [
+		{
+			"name": "Root",
+			"item": [
+				{
+					"name": "Hello World",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": ["{{baseUrl}}"],
+							"path": [""]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contact Information",
+			"item": [
+				{
+					"name": "List Contact Information",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contact-information?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "contact-information"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Contact Information by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contact-information/{{contactInfoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "contact-information", "{{contactInfoId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Contact Information",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"email\",\n  \"label\": \"Work Email\",\n  \"privacy\": \"public\",\n  \"value\": \"john.doe@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contact-information",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "contact-information"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Contact Information (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"email\",\n  \"label\": \"Personal Email\",\n  \"privacy\": \"private\",\n  \"value\": \"john.doe@personal.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contact-information/{{contactInfoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "contact-information", "{{contactInfoId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Contact Information (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"privacy\": \"private\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/contact-information/{{contactInfoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "contact-information", "{{contactInfoId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Contact Information",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contact-information/{{contactInfoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "contact-information", "{{contactInfoId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securePassword123\",\n  \"verificationToken\": \"token123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"updated@example.com\",\n  \"password\": \"newPassword123\",\n  \"verificationToken\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newemail@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "{{userId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Persons",
+			"item": [
+				{
+					"name": "List Persons",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/persons?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "persons"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Person by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/persons/{{personId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "persons", "{{personId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Person",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": 1,\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"displayId\": \"john-doe\",\n  \"pronouns\": \"he/him\",\n  \"imageURL\": \"https://example.com/avatar.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/persons",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "persons"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Person (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": 1,\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"displayId\": \"jane-smith\",\n  \"pronouns\": \"she/her\",\n  \"imageURL\": \"https://example.com/new-avatar.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/persons/{{personId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "persons", "{{personId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Person (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pronouns\": \"they/them\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/persons/{{personId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "persons", "{{personId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Person",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/persons/{{personId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "persons", "{{personId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Systems",
+			"item": [
+				{
+					"name": "List Systems",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/systems?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "systems"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get System by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "systems", "{{systemId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create System",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Example Organization\",\n  \"registrationOpen\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/systems",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "systems"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update System (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Organization\",\n  \"registrationOpen\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "systems", "{{systemId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update System (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"registrationOpen\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "systems", "{{systemId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete System",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "systems", "{{systemId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Groups",
+			"item": [
+				{
+					"name": "List Groups",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/groups?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "groups"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "groups", "{{groupId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"displayId\": \"example-group\",\n  \"name\": \"Example Group\",\n  \"description\": \"A sample group for testing\",\n  \"parentGroupId\": null,\n  \"allowsAnyUserToCreateSubgroup\": false,\n  \"publiclyVisible\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "groups"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"displayId\": \"updated-group\",\n  \"name\": \"Updated Group\",\n  \"description\": \"Updated description\",\n  \"parentGroupId\": null,\n  \"allowsAnyUserToCreateSubgroup\": true,\n  \"publiclyVisible\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "groups", "{{groupId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"publiclyVisible\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "groups", "{{groupId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "groups", "{{groupId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Claims",
+			"item": [
+				{
+					"name": "List Claims",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/claims?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "claims"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Claim by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/claims/{{claimId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "claims", "{{claimId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Claim",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"personId\": 1,\n  \"requestingUser\": 2,\n  \"expiresAt\": \"2024-12-31T23:59:59.000Z\",\n  \"claimedAt\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/claims",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "claims"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Claim (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"personId\": 1,\n  \"requestingUser\": 2,\n  \"expiresAt\": \"2024-12-31T23:59:59.000Z\",\n  \"claimedAt\": \"2024-01-15T10:30:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/claims/{{claimId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "claims", "{{claimId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Claim (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"claimedAt\": \"2024-01-15T10:30:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/claims/{{claimId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "claims", "{{claimId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Claim",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/claims/{{claimId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "claims", "{{claimId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Group Invites",
+			"item": [
+				{
+					"name": "List Group Invites",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/group-invites?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "group-invites"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Invite by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/group-invites/{{inviteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "group-invites", "{{inviteId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Group Invite",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupId\": 1,\n  \"email\": \"invitee@example.com\",\n  \"acceptedAt\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group-invites",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "group-invites"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group Invite (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupId\": 1,\n  \"email\": \"newemail@example.com\",\n  \"acceptedAt\": \"2024-01-15T10:30:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group-invites/{{inviteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "group-invites", "{{inviteId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Group Invite (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"acceptedAt\": \"2024-01-15T10:30:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/group-invites/{{inviteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "group-invites", "{{inviteId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group Invite",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/group-invites/{{inviteId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "group-invites", "{{inviteId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Person Groups",
+			"item": [
+				{
+					"name": "List Person-Group Relationships",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/person-groups?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "person-groups"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Person-Group Relationship by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/person-groups/{{relationshipId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "person-groups", "{{relationshipId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Person-Group Relationship",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"personId\": 1,\n  \"groupId\": 1,\n  \"relation\": \"member\",\n  \"isAdmin\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/person-groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "person-groups"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Person-Group Relationship (Full)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"personId\": 1,\n  \"groupId\": 1,\n  \"relation\": \"admin\",\n  \"isAdmin\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/person-groups/{{relationshipId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "person-groups", "{{relationshipId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Person-Group Relationship (Partial)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isAdmin\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/person-groups/{{relationshipId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "person-groups", "{{relationshipId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Person-Group Relationship",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/person-groups/{{relationshipId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "person-groups", "{{relationshipId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contact Mappings",
+			"item": [
+				{
+					"name": "System Contact Information",
+					"item": [
+						{
+							"name": "List System Contact Information Mappings",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/system?page=1&limit=10",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "system"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create System Contact Information Mapping",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"systemId\": 1,\n  \"contactInformationId\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/system",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "system"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete System Contact Information Mapping",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/system/{{mappingId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "system", "{{mappingId}}"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Person Contact Information",
+					"item": [
+						{
+							"name": "List Person Contact Information Mappings",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/person?page=1&limit=10",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "person"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Person Contact Information Mapping",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"personId\": 1,\n  \"contactInformationId\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/person",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "person"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Person Contact Information Mapping",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/person/{{mappingId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "person", "{{mappingId}}"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Group Contact Information",
+					"item": [
+						{
+							"name": "List Group Contact Information Mappings",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/group?page=1&limit=10",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "group"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Group Contact Information Mapping",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"groupId\": 1,\n  \"contactInformationId\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/group",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "group"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Group Contact Information Mapping",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/contact-mappings/group/{{mappingId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "contact-mappings", "group", "{{mappingId}}"]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3001",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "personId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "systemId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "claimId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "inviteId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "relationshipId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "contactInfoId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "mappingId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}
