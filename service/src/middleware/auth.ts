@@ -15,6 +15,15 @@ declare global {
 
 // Middleware to ensure user is authenticated
 export const requireAuth = (req: Request, _res: Response, next: NextFunction) => {
+  // For testing, allow bypassing auth with test header
+  if (process.env.NODE_ENV === 'test' && req.headers['x-test-user']) {
+    try {
+      req.user = JSON.parse(req.headers['x-test-user'] as string);
+    } catch {
+      // If parsing fails, continue with normal auth
+    }
+  }
+  
   if (!req.user) {
     throw createError(401, 'Authentication required');
   }
@@ -29,6 +38,15 @@ export const requireAuth = (req: Request, _res: Response, next: NextFunction) =>
 
 // Middleware to ensure user is a system admin
 export const requireSystemAdmin = (req: Request, _res: Response, next: NextFunction) => {
+  // For testing, allow bypassing auth with test header
+  if (process.env.NODE_ENV === 'test' && req.headers['x-test-user']) {
+    try {
+      req.user = JSON.parse(req.headers['x-test-user'] as string);
+    } catch {
+      // If parsing fails, continue with normal auth
+    }
+  }
+  
   if (!req.user) {
     throw createError(401, 'Authentication required');
   }

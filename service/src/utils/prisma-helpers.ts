@@ -111,29 +111,15 @@ export const findUserWithPeople = async (userId: number) => {
             }
           }
         }
-      },
-      adminSystems: {
-        include: {
-          system: true
-        }
       }
     }
   });
 };
 
 export const findSystemWithAdmins = async (systemId: number) => {
-  return prisma.system.findUnique({
+  const system = await prisma.system.findUnique({
     where: { id: systemId },
     include: {
-      adminUsers: {
-        include: {
-          user: {
-            include: {
-              people: true
-            }
-          }
-        }
-      },
       contactInformation: {
         include: {
           contactInformation: true
@@ -141,6 +127,25 @@ export const findSystemWithAdmins = async (systemId: number) => {
       }
     }
   });
+
+  if (!system) return null;
+
+  // Get all system admin users (global admins)
+  const adminUsers = await prisma.user.findMany({
+    where: { 
+      isSystemAdmin: true,
+      deleted: false 
+    },
+    include: {
+      people: true
+    }
+  });
+
+  // Return system with admins in the expected format
+  return {
+    ...system,
+    adminUsers: adminUsers.map(user => ({ user }))
+  };
 };
 
 export const createPersonWithContact = async (data: {
@@ -149,7 +154,7 @@ export const createPersonWithContact = async (data: {
   displayId: string;
   pronouns?: string;
   imageURL?: string;
-  userId?: number;
+  userId: number; // Made required since Person model requires it
   contactInfo?: {
     type: 'EMAIL' | 'PHONE' | 'ADDRESS' | 'URL';
     label: string;
@@ -161,9 +166,9 @@ export const createPersonWithContact = async (data: {
     firstName: data.firstName,
     lastName: data.lastName,
     displayId: data.displayId,
+    userId: data.userId, // Always required now
     ...(data.pronouns && { pronouns: data.pronouns }),
     ...(data.imageURL && { imageURL: data.imageURL }),
-    ...(data.userId && { userId: data.userId }),
     ...(data.contactInfo && {
       contactInformation: {
         create: {
@@ -235,7 +240,7 @@ export const addPersonToGroup = async (
   });
 };
 
-export const createClaim = async (personId: number, expirationDays = 30) => {
+export const createClaim = async (personId: number, requestingUserId: number, expirationDays = 30) => {
   const claimCode = Math.random().toString(36).substring(2, 15);
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + expirationDays);
@@ -243,6 +248,7 @@ export const createClaim = async (personId: number, expirationDays = 30) => {
   return prisma.claim.create({
     data: {
       personId,
+      requestingUser: requestingUserId,
       claimCode,
       expiresAt
     },

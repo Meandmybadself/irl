@@ -24,7 +24,11 @@ describe('Person Management Tests', () => {
         return
       }
 
-      const personData = generateTestData.person()
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const personData = generateTestData.person(user.id)
 
       const person = await prisma.person.create({
         data: personData
@@ -77,14 +81,21 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       // Create person
       const person = await prisma.person.create({
-        data: generateTestData.person()
+        data: generateTestData.person(user.id)
       })
 
       const newName = createRandomName()
       const newPronouns = 'they/them'
       const imageURL = 'https://example.com/avatar.jpg'
+
+      // Small delay to ensure updatedAt timestamp will be different
+      await new Promise(resolve => setTimeout(resolve, 10))
 
       // Modify person
       const updatedPerson = await prisma.person.update({
@@ -111,12 +122,16 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const displayId = 'unique-person-' + Math.random().toString(36).substring(2, 8)
-      
+
       // Create first person
       await prisma.person.create({
         data: {
-          ...generateTestData.person(),
+          ...generateTestData.person(user.id),
           displayId
         }
       })
@@ -125,7 +140,7 @@ describe('Person Management Tests', () => {
       await expect(
         prisma.person.create({
           data: {
-            ...generateTestData.person(),
+            ...generateTestData.person(user.id),
             displayId
           }
         })
@@ -139,8 +154,12 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const person = await prisma.person.create({
-        data: generateTestData.person()
+        data: generateTestData.person(user.id)
       })
 
       // Soft delete
@@ -155,13 +174,13 @@ describe('Person Management Tests', () => {
 
       expect(deletedPerson).toBeNull()
 
-      // But should find it when explicitly looking for deleted records
-      const personWithDeleted = await prisma.person.findFirst({
-        where: { id: person.id, deleted: true }
-      })
+      // But should find it when explicitly looking for deleted records using raw query to bypass middleware
+      const personWithDeleted = await prisma.$queryRaw`
+        SELECT * FROM people WHERE id = ${person.id} AND deleted = true
+      `
 
       expect(personWithDeleted).toBeDefined()
-      expect(personWithDeleted?.deleted).toBe(true)
+      expect((personWithDeleted as any)[0]?.deleted).toBe(true)
     })
   })
 
@@ -173,8 +192,12 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const personData = {
-        ...generateTestData.person(),
+        ...generateTestData.person(user.id),
         contactInfo: {
           type: 'EMAIL' as const,
           label: 'Personal',
@@ -200,8 +223,12 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const person = await prisma.person.create({
-        data: generateTestData.person()
+        data: generateTestData.person(user.id)
       })
 
       // Create multiple contact information entries
@@ -262,8 +289,12 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const personData = {
-        ...generateTestData.person(),
+        ...generateTestData.person(user.id),
         contactInfo: {
           type: 'URL' as const,
           label: 'Portfolio',
@@ -301,7 +332,7 @@ describe('Person Management Tests', () => {
       })
 
       // Create claim for person transfer
-      const claim = await createClaim(person.id)
+      const claim = await createClaim(person.id, originalUser.id)
 
       expect(claim.personId).toBe(person.id)
       expect(claim.claimCode).toBeDefined()
@@ -346,7 +377,8 @@ describe('Person Management Tests', () => {
       const expiredClaim = await prisma.claim.create({
         data: {
           personId: person.id,
-          claimCode: 'expired-claim-code',
+          requestingUser: user.id,
+          claimCode: 'expired-claim-code-' + Math.random().toString(36).substring(2, 8),
           expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
         }
       })
@@ -376,7 +408,7 @@ describe('Person Management Tests', () => {
         data: generateTestData.person(user.id)
       })
 
-      const claim = await createClaim(person.id)
+      const claim = await createClaim(person.id, user.id)
 
       const newUser1 = await prisma.user.create({
         data: generateTestData.user()
@@ -404,8 +436,12 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const person = await prisma.person.create({
-        data: generateTestData.person()
+        data: generateTestData.person(user.id)
       })
 
       const group = await prisma.group.create({
@@ -434,8 +470,12 @@ describe('Person Management Tests', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const person = await prisma.person.create({
-        data: generateTestData.person()
+        data: generateTestData.person(user.id)
       })
 
       const group1 = await prisma.group.create({

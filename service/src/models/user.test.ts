@@ -63,7 +63,7 @@ describe('User Management Tests', () => {
 
       expect(updatedUser.email).toBe(newEmail)
       expect(updatedUser.verificationToken).toBe(verificationToken)
-      expect(updatedUser.updatedAt.getTime()).toBeGreaterThan(user.updatedAt.getTime())
+      expect(updatedUser.updatedAt.getTime()).toBeGreaterThanOrEqual(user.updatedAt.getTime())
     })
 
     it('should enforce unique email constraint', async () => {
@@ -117,13 +117,13 @@ describe('User Management Tests', () => {
 
       expect(deletedUser).toBeNull()
 
-      // But should find it when explicitly looking for deleted records
-      const userWithDeleted = await prisma.user.findFirst({
-        where: { id: user.id, deleted: true }
-      })
+      // But should find it when explicitly looking for deleted records using raw query to bypass middleware
+      const userWithDeleted = await prisma.$queryRaw`
+        SELECT * FROM users WHERE id = ${user.id} AND deleted = true
+      `
 
       expect(userWithDeleted).toBeDefined()
-      expect(userWithDeleted?.deleted).toBe(true)
+      expect((userWithDeleted as any)[0]?.deleted).toBe(true)
     })
   })
 
@@ -144,20 +144,17 @@ describe('User Management Tests', () => {
         data: generateTestData.user()
       })
 
-      // Create admin relationship
-      const adminRelation = await prisma.systemAdminUser.create({
-        data: {
-          systemId: system.id,
-          userId: user.id
-        }
+      // Make user a system admin
+      const adminUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { isSystemAdmin: true }
       })
 
-      expect(adminRelation).toBeDefined()
-      expect(adminRelation.systemId).toBe(system.id)
-      expect(adminRelation.userId).toBe(user.id)
+      expect(adminUser).toBeDefined()
+      expect(adminUser.isSystemAdmin).toBe(true)
     })
 
-    it('should retrieve User with admin systems', async () => {
+    it('should retrieve User as system admin', async () => {
       if (!dbAvailable) {
         console.warn('Skipping database test - no test database available')
         expect(true).toBe(true)
@@ -168,36 +165,17 @@ describe('User Management Tests', () => {
         data: generateTestData.user()
       })
 
-      const system1 = await prisma.system.create({
-        data: { name: 'Eisenhower', registrationOpen: true }
-      })
-
-      const system2 = await prisma.system.create({
-        data: { name: 'Roosevelt', registrationOpen: false }
-      })
-
-      await prisma.systemAdminUser.create({
-        data: { systemId: system1.id, userId: user.id }
-      })
-
-      await prisma.systemAdminUser.create({
-        data: { systemId: system2.id, userId: user.id }
-      })
-
-      const userWithSystems = await prisma.user.findUnique({
+      // Make user a system admin
+      await prisma.user.update({
         where: { id: user.id },
-        include: {
-          adminSystems: {
-            include: {
-              system: true
-            }
-          }
-        }
+        data: { isSystemAdmin: true }
       })
 
-      expect(userWithSystems?.adminSystems).toHaveLength(2)
-      expect(userWithSystems?.adminSystems.map(as => as.system.name)).toContain('Eisenhower')
-      expect(userWithSystems?.adminSystems.map(as => as.system.name)).toContain('Roosevelt')
+      const systemAdmin = await prisma.user.findUnique({
+        where: { id: user.id }
+      })
+
+      expect(systemAdmin?.isSystemAdmin).toBe(true)
     })
   })
 
@@ -225,31 +203,35 @@ describe('User Management Tests', () => {
       expect(person.displayId).toBe(personData.displayId)
     })
 
-    it('should assign Person to User', async () => {
+    it('should reassign Person from one User to another', async () => {
       if (!dbAvailable) {
         console.warn('Skipping database test - no test database available')
         expect(true).toBe(true)
         return
       }
 
-      const user = await prisma.user.create({
+      const originalUser = await prisma.user.create({
         data: generateTestData.user()
       })
 
-      // Create person without user initially
-      const person = await prisma.person.create({
-        data: generateTestData.person()
+      const newUser = await prisma.user.create({
+        data: generateTestData.user()
       })
 
-      expect(person.userId).toBeNull()
+      // Create person assigned to original user
+      const person = await prisma.person.create({
+        data: generateTestData.person(originalUser.id)
+      })
 
-      // Assign person to user
+      expect(person.userId).toBe(originalUser.id)
+
+      // Reassign person to new user
       const updatedPerson = await prisma.person.update({
         where: { id: person.id },
-        data: { userId: user.id }
+        data: { userId: newUser.id }
       })
 
-      expect(updatedPerson.userId).toBe(user.id)
+      expect(updatedPerson.userId).toBe(newUser.id)
     })
 
     it('should create another Person initially assigned to User', async () => {

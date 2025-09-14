@@ -138,7 +138,6 @@ describe('Prisma Models and Helpers', () => {
   it('should have junction table models available', () => {
     // Verify junction table models exist
     expect(prisma.personGroup).toBeDefined();
-    expect(prisma.systemAdminUser).toBeDefined();
     expect(prisma.personContactInformation).toBeDefined();
     expect(prisma.groupContactInformation).toBeDefined();
     expect(prisma.systemContactInformation).toBeDefined();

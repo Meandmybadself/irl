@@ -30,6 +30,9 @@ prisma.$use(async (params, next) => {
   }
   
   if (params.action === 'findMany') {
+    if (!params.args) {
+      params.args = {}
+    }
     if (params.args.where) {
       if (params.args.where.deleted == undefined) {
         params.args.where['deleted'] = false

@@ -27,9 +27,14 @@ describe('Integration Tests - Model Relationships and Validation', () => {
         return
       }
 
-      // 1. Create System (Eisenhower)
-      const system = await prisma.system.create({
-        data: {
+      // 1. Create or update System (Eisenhower)
+      const system = await prisma.system.upsert({
+        where: { id: 1 },
+        update: {
+          name: 'Eisenhower',
+          registrationOpen: true
+        },
+        create: {
           name: 'Eisenhower',
           registrationOpen: true
         }
@@ -44,16 +49,13 @@ describe('Integration Tests - Model Relationships and Validation', () => {
         data: userData
       })
 
-      // 3. Establish User-system admin relationship
-      const adminRelation = await prisma.systemAdminUser.create({
-        data: {
-          systemId: system.id,
-          userId: user.id
-        }
+      // 3. Make user a system admin
+      const adminUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { isSystemAdmin: true }
       })
 
-      expect(adminRelation.systemId).toBe(system.id)
-      expect(adminRelation.userId).toBe(user.id)
+      expect(adminUser.isSystemAdmin).toBe(true)
 
       // 4. Create Person (random name) as User's primary Person
       const primaryPersonData = generateTestData.person(user.id)
@@ -73,33 +75,35 @@ describe('Integration Tests - Model Relationships and Validation', () => {
 
       expect(secondPerson.userId).toBe(user.id)
 
+      const suffix = Math.random().toString(36).substring(2, 8)
+
       // 6. Create Group (school named Eisenhower)
       const school = await createGroupWithParent({
-        displayId: 'eisenhower-elementary',
+        displayId: 'eisenhower-elementary-' + suffix,
         name: 'Eisenhower Elementary School',
         description: 'A premier elementary school serving the community',
         publiclyVisible: true
       })
 
       expect(school.name).toBe('Eisenhower Elementary School')
-      expect(school.displayId).toBe('eisenhower-elementary')
+      expect(school.displayId).toBe('eisenhower-elementary-' + suffix)
 
       // 7. Create sub-groups for each grade
       const kindergarten = await createGroupWithParent({
-        displayId: 'eisenhower-kindergarten',
+        displayId: 'eisenhower-kindergarten-' + suffix,
         name: 'Kindergarten',
         parentGroupId: school.id
       })
 
       const firstGrade = await createGroupWithParent({
-        displayId: 'eisenhower-first-grade', 
+        displayId: 'eisenhower-first-grade-' + suffix,
         name: 'First Grade',
         parentGroupId: school.id
       })
 
       const secondGrade = await createGroupWithParent({
-        displayId: 'eisenhower-second-grade',
-        name: 'Second Grade', 
+        displayId: 'eisenhower-second-grade-' + suffix,
+        name: 'Second Grade',
         parentGroupId: school.id
       })
 
@@ -122,12 +126,16 @@ describe('Integration Tests - Model Relationships and Validation', () => {
 
       // 9. Verify all relationships work correctly
       const systemWithAdmins = await findSystemWithAdmins(system.id)
-      expect(systemWithAdmins?.adminUsers).toHaveLength(1)
-      expect(systemWithAdmins!.adminUsers[0].user.id).toBe(user.id)
+      expect(systemWithAdmins).toBeDefined()
+      expect(systemWithAdmins?.adminUsers).toBeDefined()
+      expect(systemWithAdmins?.adminUsers.length).toBeGreaterThan(0)
+      // Find our specific user in the admin list
+      const ourAdmin = systemWithAdmins?.adminUsers.find(admin => admin.user.id === user.id)
+      expect(ourAdmin).toBeDefined()
 
       const userWithPeople = await findUserWithPeople(user.id)
       expect(userWithPeople?.people).toHaveLength(2)
-      expect(userWithPeople!.adminSystems).toHaveLength(1)
+      expect(userWithPeople?.isSystemAdmin).toBe(true)
 
       const schoolWithMembers = await findGroupWithMembers(school.id)
       expect(schoolWithMembers?.people).toHaveLength(1)
@@ -145,8 +153,10 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       }
 
       // Create test data
-      const system = await prisma.system.create({
-        data: { name: 'Test System', registrationOpen: true }
+      const system = await prisma.system.upsert({
+        where: { id: 1 },
+        update: { name: 'Test System', registrationOpen: true },
+        create: { name: 'Test System', registrationOpen: true }
       })
 
       const user = await prisma.user.create({
@@ -166,7 +176,7 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       })
 
       const claim = await prisma.claim.create({
-        data: generateTestData.claim(person.id)
+        data: generateTestData.claim(person.id, user.id)
       })
 
       // Store original IDs
@@ -201,20 +211,20 @@ describe('Integration Tests - Model Relationships and Validation', () => {
         expect(record).toBeNull()
       })
 
-      // But should exist when explicitly querying for deleted records
-      const softDeletedRecords = await Promise.all([
-        prisma.system.findFirst({ where: { id: originalIds.system, deleted: true } }),
-        prisma.user.findFirst({ where: { id: originalIds.user, deleted: true } }),
-        prisma.person.findFirst({ where: { id: originalIds.person, deleted: true } }),
-        prisma.group.findFirst({ where: { id: originalIds.group, deleted: true } }),
-        prisma.contactInformation.findFirst({ where: { id: originalIds.contactInfo, deleted: true } }),
-        prisma.claim.findFirst({ where: { id: originalIds.claim, deleted: true } })
-      ])
+      // But should exist when explicitly querying for deleted records (using raw SQL to bypass middleware)
+      const systemResult = await prisma.$queryRaw`SELECT * FROM systems WHERE id = ${originalIds.system}`
+      const userResult = await prisma.$queryRaw`SELECT * FROM users WHERE id = ${originalIds.user}`
+      const personResult = await prisma.$queryRaw`SELECT * FROM people WHERE id = ${originalIds.person}`
+      const groupResult = await prisma.$queryRaw`SELECT * FROM groups WHERE id = ${originalIds.group}`
+      const contactResult = await prisma.$queryRaw`SELECT * FROM contact_information WHERE id = ${originalIds.contactInfo}`
+      const claimResult = await prisma.$queryRaw`SELECT * FROM claims WHERE id = ${originalIds.claim}`
 
-      softDeletedRecords.forEach(record => {
-        expect(record).toBeDefined()
-        expect(record?.deleted).toBe(true)
-      })
+      expect((systemResult as any)[0]?.deleted).toBe(true)
+      expect((userResult as any)[0]?.deleted).toBe(true)
+      expect((personResult as any)[0]?.deleted).toBe(true)
+      expect((groupResult as any)[0]?.deleted).toBe(true)
+      expect((contactResult as any)[0]?.deleted).toBe(true)
+      expect((claimResult as any)[0]?.deleted).toBe(true)
     })
 
     it('should handle findMany operations with soft delete middleware', async () => {
@@ -228,8 +238,8 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       const activeUser = await prisma.user.create({ data: generateTestData.user() })
       const deletedUser = await prisma.user.create({ data: generateTestData.user() })
 
-      const activePerson = await prisma.person.create({ data: generateTestData.person() })
-      const deletedPerson = await prisma.person.create({ data: generateTestData.person() })
+      const activePerson = await prisma.person.create({ data: generateTestData.person(activeUser.id) })
+      const deletedPerson = await prisma.person.create({ data: generateTestData.person(deletedUser.id) })
 
       // Soft delete some records
       await prisma.user.delete({ where: { id: deletedUser.id } })
@@ -239,32 +249,28 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       const users = await prisma.user.findMany()
       const people = await prisma.person.findMany()
 
-      expect(users).toHaveLength(1)
-      expect(users[0].id).toBe(activeUser.id)
+      // Should include the active user
+      const foundActiveUser = users.find(u => u.id === activeUser.id)
+      expect(foundActiveUser).toBeDefined()
 
-      expect(people).toHaveLength(1)
-      expect(people[0].id).toBe(activePerson.id)
+      // Should include the active person
+      const foundActivePerson = people.find(p => p.id === activePerson.id)
+      expect(foundActivePerson).toBeDefined()
 
-      // But should include deleted when explicitly requested
-      const allUsers = await prisma.user.findMany({ 
-        where: { 
-          OR: [
-            { deleted: true },
-            { deleted: false }
-          ]
-        }
-      })
-      const allPeople = await prisma.person.findMany({ 
-        where: { 
-          OR: [
-            { deleted: true },
-            { deleted: false }
-          ]
-        } 
-      })
+      // Should not include the deleted user
+      const foundDeletedUser = users.find(u => u.id === deletedUser.id)
+      expect(foundDeletedUser).toBeUndefined()
 
-      expect(allUsers).toHaveLength(2)
-      expect(allPeople).toHaveLength(2)
+      // Should not include the deleted person
+      const foundDeletedPerson = people.find(p => p.id === deletedPerson.id)
+      expect(foundDeletedPerson).toBeUndefined()
+
+      // But should include deleted when explicitly requested (using raw SQL to bypass middleware)
+      const allUsers = await prisma.$queryRaw`SELECT * FROM users WHERE id IN (${activeUser.id}, ${deletedUser.id})`
+      const allPeople = await prisma.$queryRaw`SELECT * FROM people WHERE id IN (${activePerson.id}, ${deletedPerson.id})`
+
+      expect((allUsers as any).length).toBe(2)
+      expect((allPeople as any).length).toBe(2)
     })
   })
 
@@ -277,12 +283,18 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       }
 
       // Create entities
-      const system = await prisma.system.create({
-        data: { name: 'Test System', registrationOpen: true }
+      const system = await prisma.system.upsert({
+        where: { id: 1 },
+        update: { name: 'Test System', registrationOpen: true },
+        create: { name: 'Test System', registrationOpen: true }
+      })
+
+      const user = await prisma.user.create({
+        data: generateTestData.user()
       })
 
       const person = await prisma.person.create({
-        data: generateTestData.person()
+        data: generateTestData.person(user.id)
       })
 
       const group = await prisma.group.create({
@@ -358,6 +370,7 @@ describe('Integration Tests - Model Relationships and Validation', () => {
         }
       })
 
+      expect(systemWithContacts).toBeDefined()
       expect(systemWithContacts?.contactInformation).toHaveLength(1)
       expect(systemWithContacts!.contactInformation[0].contactInformation.value).toBe('contact@example.com')
 
@@ -375,8 +388,12 @@ describe('Integration Tests - Model Relationships and Validation', () => {
         return
       }
 
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
       const person = await prisma.person.create({
-        data: generateTestData.person()
+        data: generateTestData.person(user.id)
       })
 
       const contactInfo = await prisma.contactInformation.create({
@@ -427,7 +444,7 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       await addPersonToGroup(personWithContact.id, group.id, 'MEMBER', false)
 
       // Create claim and new user
-      const claim = await createClaim(personWithContact.id)
+      const claim = await createClaim(personWithContact.id, originalUser.id)
       const newUser = await prisma.user.create({
         data: generateTestData.user()
       })
@@ -475,16 +492,21 @@ describe('Integration Tests - Model Relationships and Validation', () => {
         return
       }
 
-      // Test person without user
-      const orphanPerson = await prisma.person.create({
+      // Test person with user (Person model requires userId)
+      const testUser = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const testPerson = await prisma.person.create({
         data: {
-          firstName: 'Orphan',
+          firstName: 'Test',
           lastName: 'Person',
-          displayId: 'orphan-person-' + Math.random().toString(36).substring(2, 8)
+          displayId: 'test-person-' + Math.random().toString(36).substring(2, 8),
+          userId: testUser.id
         }
       })
 
-      expect(orphanPerson.userId).toBeNull()
+      expect(testPerson.userId).toBe(testUser.id)
 
       // Test group without parent
       const rootGroup = await prisma.group.create({
@@ -499,7 +521,7 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       // Test user without verification token
       const verifiedUser = await prisma.user.create({
         data: {
-          email: 'verified@example.com',
+          email: `verified-${Math.random().toString(36).substring(7)}@example.com`,
           password: 'hashedpassword'
         }
       })

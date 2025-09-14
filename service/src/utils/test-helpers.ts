@@ -51,8 +51,9 @@ export const generateTestData = {
     privacy: faker.helpers.arrayElement(['PRIVATE', 'PUBLIC'] as const)
   }),
 
-  claim: (personId: number) => ({
+  claim: (personId: number, requestingUserId: number) => ({
     personId,
+    requestingUser: requestingUserId,
     claimCode: Math.random().toString(36).substring(2, 15),
     expiresAt: faker.date.future()
   }),
