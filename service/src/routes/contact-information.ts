@@ -7,16 +7,6 @@ import type { ApiResponse, PaginatedResponse, ContactInformation } from '@irl/sh
 
 const router = Router();
 
-// Helper to format contact information response
-const formatContactInformation = (contactInfo: any): ContactInformation => {
-  const { deleted, ...contactInfoWithoutDeleted } = contactInfo;
-  return {
-    ...contactInfoWithoutDeleted,
-    createdAt: contactInfo.createdAt.toISOString(),
-    updatedAt: contactInfo.updatedAt.toISOString()
-  };
-};
-
 // GET /api/contact-information - List all contact information
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;

@@ -23,15 +23,16 @@ export const requireAuth = (req: Request, _res: Response, next: NextFunction) =>
       // If parsing fails, continue with normal auth
     }
   }
+
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
   
   if (!req.user) {
     throw createError(401, 'Authentication required');
   }
   
-  // Check if user account is deleted
-  if (req.user.deleted) {
-    throw createError(401, 'Account no longer active');
-  }
   
   next();
 };
