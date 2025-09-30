@@ -5,7 +5,7 @@ import { validateBody, validateIdParam, personSchema, updatePersonSchema } from 
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Helper to format person response
 const formatPerson = (person: any): Person => {

@@ -5,7 +5,7 @@ import { validateBody, validateIdParam, systemSchema, updateSystemSchema } from 
 import { requireSystemAdmin } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, System } from '@irl/shared';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Helper to format system response
 const formatSystem = (system: any): System => {

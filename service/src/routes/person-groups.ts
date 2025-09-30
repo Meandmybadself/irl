@@ -5,7 +5,7 @@ import { validateBody, validateIdParam, personGroupSchema, updatePersonGroupSche
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, PersonGroup } from '@irl/shared';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // GET /api/person-groups - List all person-group relationships
 router.get('/', requireAuth, asyncHandler(async (req, res) => {

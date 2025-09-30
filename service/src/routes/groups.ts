@@ -5,7 +5,7 @@ import { validateBody, validateIdParam, groupSchema, updateGroupSchema } from '.
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, Group } from '@irl/shared';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Helper to format group response
 const formatGroup = (group: any): Group => {

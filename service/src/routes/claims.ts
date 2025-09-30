@@ -5,7 +5,7 @@ import { validateBody, validateIdParam, claimSchema, updateClaimSchema } from '.
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, Claim } from '@irl/shared';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Helper to format claim response
 const formatClaim = (claim: any): Claim => ({

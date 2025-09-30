@@ -123,9 +123,9 @@ describe('Prisma Models and Helpers', () => {
   });
 
   it('should validate soft delete middleware structure', async () => {
-    // Test that the middleware is set up (without actual DB operations)
-    expect(prisma.$use).toBeDefined();
-    
+    // Test that the extension system is available (without actual DB operations)
+    expect(typeof prisma.$extends).toBe('function');
+
     // Verify prisma client is properly exported
     expect(prisma.person).toBeDefined();
     expect(prisma.user).toBeDefined();

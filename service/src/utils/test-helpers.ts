@@ -1,14 +1,9 @@
 import { faker } from '@faker-js/faker'
 
 // Helper function to filter out undefined values
-const filterUndefined = <T>(obj: T): T => {
-  const result = {} as T
-  for (const key in obj) {
-    if (obj[key] !== undefined) {
-      result[key] = obj[key]
-    }
-  }
-  return result
+const filterUndefined = <T extends Record<string, unknown>>(obj: T): T => {
+  const entries = Object.entries(obj).filter(([, value]) => value !== undefined)
+  return Object.fromEntries(entries) as T
 }
 
 export const generateTestData = {
@@ -17,12 +12,12 @@ export const generateTestData = {
     password: '$2b$10$testhashedpasswordforunitests' // Pre-hashed 'password' for testing
   }),
 
-  person: (userId?: number) => filterUndefined({
+  person: (userId: number) => ({
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
     displayId: faker.internet.username().toLowerCase() + '-' + Math.random().toString(36).substring(2, 8),
     pronouns: faker.helpers.arrayElement(['he/him', 'she/her', 'they/them', 'xe/xem']),
-    userId: userId
+    userId
   }),
 
   system: () => ({

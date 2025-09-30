@@ -16,4 +16,4 @@ Write Vitest specs beside implementation files with a `.test.ts` suffix. Use `su
 Commits follow an imperative, present-tense summary (`Add API auth middleware`). Limit each commit to one concern. Pull requests should include a concise description, linked issue or ticket, and notes on verification steps (commands run, Postman calls). Attach screenshots when API responses or schemas change. Run `npm run lint`, `npm run typecheck`, and `npm run test` before requesting review.
 
 ## Environment & Security Tips
-Set `DATABASE_URL`, `SESSION_SECRET`, and `CLIENT_URL` in `.env` before running the app. Never commit secrets. Use `npx prisma migrate dev --name <change>` after editing `schema.prisma`, and check in the generated migration and updated client.
+Set `DATABASE_URL`, `SESSION_SECRET`, `CLIENT_URL`, `SERVICE_PUBLIC_URL`, `MAILERSEND_API_TOKEN`, and `MAILERSEND_FROM_EMAIL` in `.env` before running the app. Never commit secrets. Use `npx prisma migrate dev --name <change>` after editing `schema.prisma`, and check in the generated migration and updated client.

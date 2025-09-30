@@ -128,7 +128,7 @@ describe('System Model Tests', () => {
       }
 
       // Create system and user
-      const system = await prisma.system.upsert({
+      await prisma.system.upsert({
         where: { id: 1 },
         update: { ...systemData, deleted: false },
         create: systemData
@@ -194,7 +194,7 @@ describe('System Model Tests', () => {
         return
       }
 
-      const system = await prisma.system.upsert({
+      await prisma.system.upsert({
         where: { id: 1 },
         update: { name: 'Eisenhower', registrationOpen: true, deleted: false },
         create: { name: 'Eisenhower', registrationOpen: true }

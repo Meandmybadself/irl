@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { server } from '../index.js';
 import { prisma } from '../lib/prisma.js';
 import { createTestUser } from '../utils/test-auth.js';
 import '../test-setup.js';
+
+vi.mock('../lib/email.js', () => ({
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined)
+}));
+
+import { sendVerificationEmail } from '../lib/email.js';
+const mockedSendVerificationEmail = vi.mocked(sendVerificationEmail);
 
 describe('Users CRUD API', () => {
   const getValidUser = () => ({
@@ -14,6 +21,10 @@ describe('Users CRUD API', () => {
 
   const testUser = createTestUser();
   const authHeader = JSON.stringify(testUser);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('POST /api/users', () => {
     it('should create new user successfully', async () => {
@@ -29,6 +40,7 @@ describe('Users CRUD API', () => {
       expect(response.body.data.isSystemAdmin).toBe(false);
       expect(response.body.data.password).toBeUndefined(); // Password should be excluded
       expect(response.body.message).toBe('User created successfully');
+      expect(mockedSendVerificationEmail).toHaveBeenCalledWith(validUser.email, expect.any(String));
     });
 
     it('should fail with invalid email', async () => {
@@ -77,6 +89,48 @@ describe('Users CRUD API', () => {
       expect(response.status).toBe(409);
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBe('Resource already exists with this unique field');
+    });
+  });
+
+  describe('GET /api/users/verify', () => {
+    it('should verify user with valid token', async () => {
+      const verificationToken = 'verify-token-123';
+      const validUser = getValidUser();
+      const user = await prisma.user.create({
+        data: {
+          ...validUser,
+          password: 'hashedpassword',
+          verificationToken
+        }
+      });
+
+      const response = await request(server)
+        .get(`/api/users/verify?token=${verificationToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe('Email verified successfully');
+      expect(response.body.data.id).toBe(user.id);
+      expect(response.body.data.password).toBeUndefined();
+
+      const refreshedUser = await prisma.user.findUnique({ where: { id: user.id } });
+      expect(refreshedUser?.verificationToken).toBeNull();
+    });
+
+    it('should return 400 when token is missing', async () => {
+      const response = await request(server)
+        .get('/api/users/verify');
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should return 404 when token is invalid', async () => {
+      const response = await request(server)
+        .get('/api/users/verify?token=invalid-token');
+
+      expect(response.status).toBe(404);
+      expect(response.body.success).toBe(false);
     });
   });
 
@@ -173,6 +227,11 @@ describe('Users CRUD API', () => {
       expect(response.body.data.email).toBe(updateData.email);
       expect(response.body.data.isSystemAdmin).toBe(true);
       expect(response.body.data.password).toBeUndefined(); // Password should be excluded
+      expect(mockedSendVerificationEmail).toHaveBeenCalledTimes(1);
+      expect(mockedSendVerificationEmail).toHaveBeenCalledWith(updateData.email, expect.any(String));
+
+      const refreshedUser = await prisma.user.findUnique({ where: { id: userId } });
+      expect(refreshedUser?.verificationToken).toEqual(expect.any(String));
     });
   });
 
@@ -201,6 +260,54 @@ describe('Users CRUD API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.isSystemAdmin).toBe(true);
       expect(response.body.data.email).toBe(testUserData.email); // Should remain unchanged
+      expect(mockedSendVerificationEmail).not.toHaveBeenCalled();
+    });
+
+    it('should send verification email when email changes', async () => {
+      const newEmail = `patched-${Math.random().toString(36).substring(2, 8)}@example.com`;
+
+      const response = await request(server)
+        .patch(`/api/users/${userId}`)
+        .set('X-Test-User', authHeader)
+        .send({ email: newEmail });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe(newEmail);
+      expect(mockedSendVerificationEmail).toHaveBeenCalledTimes(1);
+      expect(mockedSendVerificationEmail).toHaveBeenCalledWith(newEmail, expect.any(String));
+
+      const refreshedUser = await prisma.user.findUnique({ where: { id: userId } });
+      expect(refreshedUser?.verificationToken).toEqual(expect.any(String));
+    });
+
+    it('should complete verification flow after email change', async () => {
+      const newEmail = `flow-${Math.random().toString(36).substring(2, 8)}@example.com`;
+
+      const updateResponse = await request(server)
+        .patch(`/api/users/${userId}`)
+        .set('X-Test-User', authHeader)
+        .send({ email: newEmail });
+
+      expect(updateResponse.status).toBe(200);
+      expect(updateResponse.body.success).toBe(true);
+      expect(updateResponse.body.data.email).toBe(newEmail);
+      expect(mockedSendVerificationEmail).toHaveBeenCalledTimes(1);
+      expect(mockedSendVerificationEmail).toHaveBeenCalledWith(newEmail, expect.any(String));
+
+      const userAfterUpdate = await prisma.user.findUnique({ where: { id: userId } });
+      expect(userAfterUpdate?.verificationToken).toEqual(expect.any(String));
+
+      const verificationToken = userAfterUpdate?.verificationToken as string;
+      const verifyResponse = await request(server)
+        .get(`/api/users/verify?token=${verificationToken}`);
+
+      expect(verifyResponse.status).toBe(200);
+      expect(verifyResponse.body.success).toBe(true);
+      expect(verifyResponse.body.message).toBe('Email verified successfully');
+
+      const userAfterVerification = await prisma.user.findUnique({ where: { id: userId } });
+      expect(userAfterVerification?.verificationToken).toBeNull();
     });
   });
 

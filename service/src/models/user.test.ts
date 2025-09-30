@@ -136,7 +136,7 @@ describe('User Management Tests', () => {
       }
 
       // Create system and user
-      const system = await prisma.system.create({
+      await prisma.system.create({
         data: { name: 'Eisenhower', registrationOpen: true }
       })
 

@@ -10,9 +10,6 @@ export async function setupTestDatabase() {
     const dbName = testUrl.pathname.slice(1); // Remove leading slash
     const username = testUrl.username;
     const password = testUrl.password;
-    const host = testUrl.hostname;
-    const port = testUrl.port || '5432';
-    
     // Extract admin connection details
     const adminUrl = new URL(adminDbUrl);
     const adminUser = adminUrl.username || 'postgres';

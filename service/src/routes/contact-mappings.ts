@@ -5,7 +5,7 @@ import { validateBody, validateIdParam, systemContactInformationSchema, personCo
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // System Contact Information Routes
 // GET /api/contact-mappings/system - List all system contact information mappings

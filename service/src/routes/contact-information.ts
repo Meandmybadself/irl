@@ -5,7 +5,7 @@ import { validateBody, validateIdParam, contactInformationSchema, updateContactI
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, ContactInformation } from '@irl/shared';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // GET /api/contact-information - List all contact information
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
