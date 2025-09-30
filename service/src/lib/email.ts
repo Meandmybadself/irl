@@ -7,12 +7,12 @@ const getMailerSendClient = () => {
     return mailerSendClient
   }
 
-  const apiToken = process.env.MAILERSEND_API_TOKEN
-  if (!apiToken) {
+  const apiKey = process.env.MAILERSEND_API_TOKEN
+  if (!apiKey) {
     return null
   }
 
-  mailerSendClient = new MailerSend({ apiKey: apiToken })
+  mailerSendClient = new MailerSend({ apiKey })
   return mailerSendClient
 }
 
@@ -72,5 +72,6 @@ export const sendVerificationEmail = async (email: string, token: string) => {
       <p>If you did not request this account, you can ignore this message.</p>
     `)
 
-  await client.email.send(params)
+  const response = await client.email.send(params)
+  return response
 }

@@ -84,7 +84,7 @@ server.get('/', (_req: Request, res: Response) => {
 // Global error handler (must be last)
 server.use(errorHandler);
 
-const PORT = process.env.SERVICE_PORT || 3001;
+const PORT = process.env.SERVICE_PORT || 3000;
 
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
