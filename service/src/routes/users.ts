@@ -144,7 +144,7 @@ router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) =
 
 // POST /api/users - Create new user
 router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
-  const { password, ...userData } = req.body;
+  const { password, isSystemAdmin: requestedAdmin, ...userData } = req.body;
   
   // Hash password
   const saltRounds = 12;
@@ -153,11 +153,16 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   // Generate verification token
   const verificationToken = crypto.randomBytes(32).toString('hex');
 
+  // Promote the first user account to system admin automatically
+  const userCount = await prisma.user.count({ where: { deleted: false } });
+  const isSystemAdmin = userCount === 0 ? true : Boolean(requestedAdmin);
+
   const item = await prisma.user.create({
     data: {
       ...userData,
       password: hashedPassword,
-      verificationToken
+      verificationToken,
+      isSystemAdmin
     }
   });
 

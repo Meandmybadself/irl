@@ -37,7 +37,7 @@ describe('Users CRUD API', () => {
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data.email).toBe(validUser.email);
-      expect(response.body.data.isSystemAdmin).toBe(false);
+      expect(response.body.data.isSystemAdmin).toBe(true);
       expect(response.body.data.password).toBeUndefined(); // Password should be excluded
       expect(response.body.message).toBe('User created successfully');
       expect(mockedSendVerificationEmail).toHaveBeenCalledWith(validUser.email, expect.any(String));
@@ -89,6 +89,27 @@ describe('Users CRUD API', () => {
       expect(response.status).toBe(409);
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBe('Resource already exists with this unique field');
+    });
+
+    it('should not promote subsequent users to system admin automatically', async () => {
+      const firstUser = getValidUser();
+      const secondUser = getValidUser();
+
+      const firstResponse = await request(server)
+        .post('/api/users')
+        .set('X-Test-User', authHeader)
+        .send(firstUser);
+
+      expect(firstResponse.status).toBe(201);
+      expect(firstResponse.body.data.isSystemAdmin).toBe(true);
+
+      const secondResponse = await request(server)
+        .post('/api/users')
+        .set('X-Test-User', authHeader)
+        .send(secondUser);
+
+      expect(secondResponse.status).toBe(201);
+      expect(secondResponse.body.data.isSystemAdmin).toBe(false);
     });
   });
 
