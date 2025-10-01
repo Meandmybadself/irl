@@ -10,6 +10,7 @@ const router: ReturnType<typeof Router> = Router();
 // Helper to format person response
 const formatPerson = (person: any): Person => {
   const { deleted, ...personWithoutDeleted } = person;
+  void deleted;
   return {
     ...personWithoutDeleted,
     createdAt: person.createdAt.toISOString(),

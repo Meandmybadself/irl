@@ -386,40 +386,17 @@
 			]
 		},
 		{
-			"name": "Systems",
+			"name": "System",
 			"item": [
 				{
-					"name": "List Systems",
+					"name": "Get System",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/systems?page=1&limit=10",
+							"raw": "{{baseUrl}}/api/system",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "systems"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "limit",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get System by ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "systems", "{{systemId}}"]
+							"path": ["api", "system"]
 						}
 					},
 					"response": []
@@ -439,9 +416,9 @@
 							"raw": "{\n  \"name\": \"Example Organization\",\n  \"registrationOpen\": true\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/systems",
+							"raw": "{{baseUrl}}/api/system",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "systems"]
+							"path": ["api", "system"]
 						}
 					},
 					"response": []
@@ -461,9 +438,9 @@
 							"raw": "{\n  \"name\": \"Updated Organization\",\n  \"registrationOpen\": false\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
+							"raw": "{{baseUrl}}/api/system",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "systems", "{{systemId}}"]
+							"path": ["api", "system"]
 						}
 					},
 					"response": []
@@ -483,9 +460,9 @@
 							"raw": "{\n  \"registrationOpen\": true\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
+							"raw": "{{baseUrl}}/api/system",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "systems", "{{systemId}}"]
+							"path": ["api", "system"]
 						}
 					},
 					"response": []
@@ -496,9 +473,9 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/systems/{{systemId}}",
+							"raw": "{{baseUrl}}/api/system",
 							"host": ["{{baseUrl}}"],
-							"path": ["api", "systems", "{{systemId}}"]
+							"path": ["api", "system"]
 						}
 					},
 					"response": []

@@ -116,9 +116,14 @@ export const findUserWithPeople = async (userId: number) => {
   });
 };
 
-export const findSystemWithAdmins = async (systemId: number) => {
-  const system = await prisma.system.findUnique({
-    where: { id: systemId },
+const SINGLE_SYSTEM_ID = 1;
+
+export const findSystemWithAdmins = async () => {
+  const system = await prisma.system.findFirst({
+    where: {
+      id: SINGLE_SYSTEM_ID,
+      deleted: false
+    },
     include: {
       contactInformation: {
         include: {
@@ -132,9 +137,9 @@ export const findSystemWithAdmins = async (systemId: number) => {
 
   // Get all system admin users (global admins)
   const adminUsers = await prisma.user.findMany({
-    where: { 
+    where: {
       isSystemAdmin: true,
-      deleted: false 
+      deleted: false
     },
     include: {
       people: true

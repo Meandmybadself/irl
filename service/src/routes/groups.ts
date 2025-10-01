@@ -10,6 +10,7 @@ const router: ReturnType<typeof Router> = Router();
 // Helper to format group response
 const formatGroup = (group: any): Group => {
   const { deleted, ...groupWithoutDeleted } = group;
+  void deleted;
   return {
     ...groupWithoutDeleted,
     createdAt: group.createdAt.toISOString(),

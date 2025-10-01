@@ -125,7 +125,7 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       expect(principalMembership.isAdmin).toBe(true)
 
       // 9. Verify all relationships work correctly
-      const systemWithAdmins = await findSystemWithAdmins(system.id)
+      const systemWithAdmins = await findSystemWithAdmins()
       expect(systemWithAdmins).toBeDefined()
       expect(systemWithAdmins?.adminUsers).toBeDefined()
       expect(systemWithAdmins?.adminUsers.length).toBeGreaterThan(0)

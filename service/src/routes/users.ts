@@ -13,6 +13,9 @@ const router: ReturnType<typeof Router> = Router();
 // Helper to exclude sensitive and internal fields from user responses
 const excludeSensitiveFields = (user: any): User => {
   const { password, verificationToken, deleted, ...userWithoutSensitive } = user;
+  void password;
+  void verificationToken;
+  void deleted;
   return {
     ...userWithoutSensitive,
     createdAt: user.createdAt.toISOString(),

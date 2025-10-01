@@ -154,7 +154,7 @@ describe('System Model Tests', () => {
       }
 
       // Create system, users, and admin relationships
-      const system = await prisma.system.upsert({
+      await prisma.system.upsert({
         where: { id: 1 },
         update: { name: 'Eisenhower', registrationOpen: true, deleted: false },
         create: { name: 'Eisenhower', registrationOpen: true }
@@ -179,7 +179,7 @@ describe('System Model Tests', () => {
       })
 
       // Test helper function
-      const systemWithAdmins = await findSystemWithAdmins(system.id)
+      const systemWithAdmins = await findSystemWithAdmins()
 
       expect(systemWithAdmins).toBeDefined()
       expect(systemWithAdmins?.adminUsers).toHaveLength(2)
