@@ -146,6 +146,31 @@ export class ApiClient {
     });
   }
 
+  // Authentication endpoints
+  async login(email: string, password: string): Promise<ApiResponse<{ user: User; person: Person }>> {
+    return this.request<ApiResponse<{ user: User; person: Person }>>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+  }
+
+  async logout(): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/auth/logout', {
+      method: 'POST'
+    });
+  }
+
+  async getCurrentSession(): Promise<ApiResponse<{ user: User; person: Person }>> {
+    return this.request<ApiResponse<{ user: User; person: Person }>>('/auth/session');
+  }
+
+  async resendVerification(email: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  }
+
   // Person endpoints
   async getPersons(params?: PaginationParams): Promise<PaginatedResponse<Person>> {
     const query = new URLSearchParams();
