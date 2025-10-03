@@ -1,5 +1,5 @@
 import { createStore, combineReducers, applyMiddleware, type AnyAction, type Store } from 'redux';
-import { thunk as thunkMiddleware, type ThunkAction, type ThunkDispatch } from 'redux-thunk';
+import thunk, { type ThunkAction, type ThunkDispatch } from 'redux-thunk';
 import type { ApiClient } from '../services/api-client.js';
 import { entitiesReducer } from './slices/entities.js';
 import { authReducer } from './slices/auth.js';
@@ -36,9 +36,9 @@ export interface AppStore extends Store<RootState, AnyAction> {
 
 // Store factory
 export const createAppStore = (apiClient: ApiClient): AppStore => {
-  const thunk = (thunkMiddleware as any).withExtraArgument({ apiClient });
+  const thunkWithExtra = thunk.withExtraArgument({ apiClient });
   return createStore(
     rootReducer,
-    applyMiddleware(thunk)
+    applyMiddleware(thunkWithExtra)
   ) as AppStore;
 };
