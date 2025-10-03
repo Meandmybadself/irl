@@ -15,57 +15,41 @@ export interface RouteConfig {
 }
 
 export const createRoutes = (store: AppStore): RouteConfig[] => {
-  // Route guard: checks if user is authenticated
-  const requireAuth = (path: string): boolean => {
-    const state = store.getState();
-    const isAuthenticated = selectIsAuthenticated(state);
-
-    if (!isAuthenticated) {
-      // Store attempted path for redirect after login
-      store.dispatch(setAttemptedPath(path));
-      // Redirect to login
-      window.location.href = '/login';
-      return false;
-    }
-
-    return true;
-  };
-
-  // Route guard: redirects authenticated users away from auth pages
-  const redirectIfAuthenticated = (): boolean => {
-    const state = store.getState();
-    const isAuthenticated = selectIsAuthenticated(state);
-
-    if (isAuthenticated) {
-      window.location.href = '/home';
-      return false;
-    }
-
-    return true;
-  };
-
   return [
     {
       path: '/',
       render: () => {
-        // Redirect root to home if authenticated, otherwise to login
+        // Render login or home based on auth status
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
-        window.location.href = isAuthenticated ? '/home' : '/login';
-        return html``;
+
+        if (isAuthenticated) {
+          return html`<home-page></home-page>`;
+        }
+        return html`<login-page></login-page>`;
       }
     },
     {
       path: '/register',
       render: () => {
-        if (!redirectIfAuthenticated()) return html``;
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (isAuthenticated) {
+          return html`<home-page></home-page>`;
+        }
         return html`<register-page></register-page>`;
       }
     },
     {
       path: '/login',
       render: () => {
-        if (!redirectIfAuthenticated()) return html``;
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (isAuthenticated) {
+          return html`<home-page></home-page>`;
+        }
         return html`<login-page></login-page>`;
       }
     },
@@ -78,7 +62,14 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
     {
       path: '/home',
       render: () => {
-        if (!requireAuth('/home')) return html``;
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          // Store attempted path for redirect after login
+          store.dispatch(setAttemptedPath('/home'));
+          return html`<login-page></login-page>`;
+        }
         return html`<home-page></home-page>`;
       }
     },

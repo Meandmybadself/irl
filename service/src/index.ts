@@ -4,13 +4,16 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import passport from 'passport';
 import { Pool } from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from './lib/prisma.js';
 
+// Import passport configuration
+import passport from './config/passport.js';
+
 // Import routes
+import authRoutes from './routes/auth.js';
 import contactInformationRoutes from './routes/contact-information.js';
 import userRoutes from './routes/users.js';
 import personRoutes from './routes/persons.js';
@@ -67,6 +70,7 @@ server.use(passport.initialize());
 server.use(passport.session());
 
 // API Routes
+server.use('/api/auth', authRoutes);
 server.use('/api/contact-information', contactInformationRoutes);
 server.use('/api/users', userRoutes);
 server.use('/api/persons', personRoutes);
