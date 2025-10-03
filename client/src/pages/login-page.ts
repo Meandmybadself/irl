@@ -119,9 +119,11 @@ export class LoginPage extends LitElement {
       await this.store.dispatch(login(this.email, this.password));
       this.store.dispatch(addNotification('Welcome back!', 'success'));
 
-      // Redirect to attempted path or home
+      // Redirect to attempted path or home using client-side navigation
       const attemptedPath = selectAttemptedPath(this.store.getState());
-      window.location.href = attemptedPath || '/home';
+      const targetPath = attemptedPath || '/home';
+      window.history.pushState({}, '', targetPath);
+      window.dispatchEvent(new PopStateEvent('popstate'));
     } catch (error) {
       this.store.dispatch(
         addNotification(

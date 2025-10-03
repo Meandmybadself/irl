@@ -109,8 +109,10 @@ export class RegisterPage extends LitElement {
     try {
       await this.store.dispatch(register(this.email, this.password));
       this.store.dispatch(addNotification('Registration successful! Please check your email to verify your account.', 'success'));
-      // Navigate to verify email page
-      window.location.href = '/verify-email?email=' + encodeURIComponent(this.email);
+      // Navigate to verify email page using client-side navigation
+      const targetPath = '/verify-email?email=' + encodeURIComponent(this.email);
+      window.history.pushState({}, '', targetPath);
+      window.dispatchEvent(new PopStateEvent('popstate'));
     } catch (error) {
       this.store.dispatch(
         addNotification(

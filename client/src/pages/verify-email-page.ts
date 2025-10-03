@@ -121,9 +121,10 @@ export class VerifyEmailPage extends LitElement {
       this.verificationSuccess = true;
       this.store.dispatch(addNotification('Email verified successfully! You can now sign in.', 'success'));
 
-      // Redirect to login after 2 seconds
+      // Redirect to login after 2 seconds using client-side navigation
       setTimeout(() => {
-        window.location.href = '/login';
+        window.history.pushState({}, '', '/login');
+        window.dispatchEvent(new PopStateEvent('popstate'));
       }, 2000);
     } catch (error) {
       this.store.dispatch(
