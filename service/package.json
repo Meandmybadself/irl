@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
+    "dev": "NODE_OPTIONS='--no-deprecation' tsx watch src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest",
     "test:setup": "tsx src/utils/test-db-setup.ts",
