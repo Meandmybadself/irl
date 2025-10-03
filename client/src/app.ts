@@ -73,6 +73,9 @@ export class AppRoot extends LitElement {
       const routes = createRoutes(this.store);
       this.router.routes = routes;
 
+      // Force router to update after routes are set
+      this.router.goto(window.location.pathname);
+
       this.requestUpdate();
     }
   }
