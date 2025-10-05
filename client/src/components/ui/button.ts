@@ -3,6 +3,8 @@ import { customElement, property } from 'lit/decorators.js';
 
 @customElement('ui-button')
 export class UIButton extends LitElement {
+  static formAssociated = true;
+
   static styles = css`
     :host {
       display: inline-block;
@@ -88,12 +90,26 @@ export class UIButton extends LitElement {
   @property({ type: Boolean }) disabled = false;
   @property({ type: Boolean }) loading = false;
 
+  private handleClick() {
+    if (this.type === 'submit') {
+      // Find the containing form and submit it
+      const form = this.closest('form');
+      if (form) {
+        // If the form has a submit event listener, trigger it
+        // Otherwise submit the form
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(submitEvent);
+      }
+    }
+  }
+
   render() {
     return html`
       <button
         type=${this.type}
         class=${this.variant}
         ?disabled=${this.disabled || this.loading}
+        @click=${this.handleClick}
       >
         ${this.loading ? html`<span class="spinner"></span>` : ''}
         <slot></slot>
