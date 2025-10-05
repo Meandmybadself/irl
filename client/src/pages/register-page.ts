@@ -144,7 +144,7 @@ export class RegisterPage extends LitElement {
           ></ui-input>
 
           <ui-input
-            label="Password"
+            label="Password (at least 8 characters)"
             name="password"
             type="password"
             .value=${this.password}
