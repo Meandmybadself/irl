@@ -150,6 +150,7 @@ export class LoginPage extends LitElement {
             placeholder="you@example.com"
             autocomplete="email"
             required
+            autofocus
             @input-change=${this.handleInputChange}
           ></ui-input>
 
