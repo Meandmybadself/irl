@@ -70,15 +70,6 @@ router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) =
 
 // POST /api/persons - Create new person (auth required)
 router.post('/', requireAuth, validateBody(personSchema), asyncHandler(async (req, res) => {
-  // Check if user exists
-  const userExists = await prisma.user.findFirst({
-    where: { id: req.body.userId, deleted: false }
-  });
-
-  if (!userExists) {
-    throw createError(400, 'Referenced user does not exist');
-  }
-
   const item = await prisma.person.create({
     data: req.body
   });
@@ -95,15 +86,6 @@ router.post('/', requireAuth, validateBody(personSchema), asyncHandler(async (re
 // PUT /api/persons/:id - Update entire person (auth required)
 router.put('/:id', requireAuth, validateIdParam, validateBody(personSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
-
-  // Check if user exists
-  const userExists = await prisma.user.findFirst({
-    where: { id: req.body.userId, deleted: false }
-  });
-
-  if (!userExists) {
-    throw createError(400, 'Referenced user does not exist');
-  }
 
   const item = await prisma.person.update({
     where: { id },
@@ -122,17 +104,6 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(personSchema), asy
 // PATCH /api/persons/:id - Partial update person (auth required)
 router.patch('/:id', requireAuth, validateIdParam, validateBody(updatePersonSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
-
-  // Check if user exists (if userId is being updated)
-  if (req.body.userId) {
-    const userExists = await prisma.user.findFirst({
-      where: { id: req.body.userId, deleted: false }
-    });
-
-    if (!userExists) {
-      throw createError(400, 'Referenced user does not exist');
-    }
-  }
 
   const item = await prisma.person.update({
     where: { id },

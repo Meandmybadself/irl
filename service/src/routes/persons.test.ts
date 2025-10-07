@@ -51,21 +51,6 @@ describe('Persons CRUD API', () => {
       expect(response.body.message).toBe('Person created successfully');
     });
 
-    it('should fail with non-existent user ID', async () => {
-      const validPerson = getValidPerson();
-      const response = await request(server)
-        .post('/api/persons')
-        .set('X-Test-User', authHeader)
-        .send({
-          ...validPerson,
-          userId: 99999
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Referenced user does not exist');
-    });
-
     it('should fail with missing required fields', async () => {
       const response = await request(server)
         .post('/api/persons')
