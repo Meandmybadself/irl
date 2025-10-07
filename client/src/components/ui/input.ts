@@ -1,59 +1,12 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
 @customElement('ui-input')
 export class UIInput extends LitElement {
-  static styles = css`
-    :host {
-      display: block;
-    }
-
-    .input-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    label {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #374151;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 0.375rem;
-      font-size: 0.875rem;
-      line-height: 1.5;
-      transition: all 0.15s;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    input:disabled {
-      background-color: #f3f4f6;
-      cursor: not-allowed;
-    }
-
-    input.error {
-      border-color: #ef4444;
-    }
-
-    input.error:focus {
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-    }
-
-    .error-message {
-      font-size: 0.875rem;
-      color: #ef4444;
-    }
-  `;
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
 
   @property({ type: String }) label = '';
   @property({ type: String }) name = '';
@@ -79,9 +32,9 @@ export class UIInput extends LitElement {
 
   render() {
     return html`
-      <div class="input-wrapper">
+      <div class="flex flex-col gap-2">
         ${this.label
-          ? html`<label for=${this.name}>${this.label}${this.required ? ' *' : ''}</label>`
+          ? html`<label for=${this.name} class="text-sm font-medium text-gray-700">${this.label}${this.required ? ' *' : ''}</label>`
           : ''}
         <input
           id=${this.name}
@@ -92,10 +45,12 @@ export class UIInput extends LitElement {
           ?required=${this.required}
           ?disabled=${this.disabled}
           autocomplete=${this.autocomplete}
-          class=${this.error ? 'error' : ''}
+          class=${this.error
+            ? 'w-full px-3 py-2 border border-red-500 rounded-md text-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed'
+            : 'w-full px-3 py-2 border border-gray-300 rounded-md text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed'}
           @input=${this.handleInput}
         />
-        ${this.error ? html`<span class="error-message">${this.error}</span>` : ''}
+        ${this.error ? html`<span class="text-sm text-red-500">${this.error}</span>` : ''}
       </div>
     `;
   }

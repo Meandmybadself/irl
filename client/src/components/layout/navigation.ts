@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../../contexts/store-context.js';
@@ -8,109 +8,10 @@ import type { AppStore } from '../../store/index.js';
 
 @customElement('app-navigation')
 export class AppNavigation extends LitElement {
-  static styles = css`
-    :host {
-      display: block;
-    }
-
-    nav {
-      background-color: white;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 0 1rem;
-    }
-
-    .container {
-      max-width: 80rem;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 4rem;
-    }
-
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #111827;
-      text-decoration: none;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
-    }
-
-    .nav-links a {
-      color: #6b7280;
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: color 0.15s;
-    }
-
-    .nav-links a:hover {
-      color: #111827;
-    }
-
-    .user-menu {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .user-name {
-      font-size: 0.875rem;
-      color: #6b7280;
-    }
-
-    .logout-button {
-      background: none;
-      border: none;
-      color: #6b7280;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: color 0.15s;
-      padding: 0;
-    }
-
-    .logout-button:hover {
-      color: #111827;
-    }
-
-    .mobile-menu-button {
-      display: none;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.5rem;
-      color: #6b7280;
-    }
-
-    @media (max-width: 768px) {
-      .nav-links {
-        display: none;
-      }
-
-      .mobile-menu-button {
-        display: block;
-      }
-
-      .nav-links.mobile-open {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 4rem;
-        left: 0;
-        right: 0;
-        background: white;
-        border-bottom: 1px solid #e5e7eb;
-        padding: 1rem;
-        gap: 1rem;
-      }
-    }
-  `;
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
 
   @consume({ context: storeContext, subscribe: true })
   @state()
@@ -159,33 +60,45 @@ export class AppNavigation extends LitElement {
 
   render() {
     return html`
-      <nav>
-        <div class="container">
-          <a href="/" class="logo">IRL</a>
+      <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between h-16">
+            <a href="/" class="text-xl font-bold text-gray-900 no-underline">IRL</a>
 
-          ${this.isAuthenticated
-            ? html`
-                <button class="mobile-menu-button" @click=${this.toggleMobileMenu}>
-                  ☰
-                </button>
+            ${this.isAuthenticated
+              ? html`
+                  <button
+                    class="md:hidden p-2 text-gray-600 hover:text-gray-900 bg-transparent border-none cursor-pointer"
+                    @click=${this.toggleMobileMenu}
+                  >
+                    ☰
+                  </button>
 
-                <div class="nav-links ${this.mobileMenuOpen ? 'mobile-open' : ''}">
-                  <a href="/home">Home</a>
-                  <div class="user-menu">
-                    ${this.currentPerson
-                      ? html`
-                          <span class="user-name">
-                            ${this.currentPerson.firstName} ${this.currentPerson.lastName}
-                          </span>
-                        `
-                      : ''}
-                    <button class="logout-button" @click=${this.handleLogout}>
-                      Sign Out
-                    </button>
+                  <div class="${this.mobileMenuOpen
+                    ? 'flex flex-col absolute top-16 left-0 right-0 bg-white border-b border-gray-200 p-4 gap-4 md:flex md:flex-row md:static md:gap-8 md:p-0 md:border-0 md:items-center'
+                    : 'hidden md:flex md:flex-row md:gap-8 md:items-center'}">
+                    <a href="/home" class="text-sm font-medium text-gray-600 hover:text-gray-900 no-underline transition-colors">
+                      Home
+                    </a>
+                    <div class="flex items-center gap-4">
+                      ${this.currentPerson
+                        ? html`
+                            <span class="text-sm text-gray-600">
+                              ${this.currentPerson.firstName} ${this.currentPerson.lastName}
+                            </span>
+                          `
+                        : ''}
+                      <button
+                        class="text-sm font-medium text-gray-600 hover:text-gray-900 bg-transparent border-none cursor-pointer p-0 transition-colors"
+                        @click=${this.handleLogout}
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
-                </div>
-              `
-            : ''}
+                `
+              : ''}
+          </div>
         </div>
       </nav>
     `;

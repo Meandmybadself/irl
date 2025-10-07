@@ -1,89 +1,14 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
 @customElement('ui-button')
 export class UIButton extends LitElement {
   static formAssociated = true;
 
-  static styles = css`
-    :host {
-      display: inline-block;
-    }
-
-    button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 0.375rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      line-height: 1.5;
-      cursor: pointer;
-      transition: all 0.15s;
-      width: 100%;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    button.primary {
-      background-color: #3b82f6;
-      color: white;
-    }
-
-    button.primary:hover:not(:disabled) {
-      background-color: #2563eb;
-    }
-
-    button.secondary {
-      background-color: #6b7280;
-      color: white;
-    }
-
-    button.secondary:hover:not(:disabled) {
-      background-color: #4b5563;
-    }
-
-    button.outline {
-      background-color: transparent;
-      color: #3b82f6;
-      border: 1px solid #3b82f6;
-    }
-
-    button.outline:hover:not(:disabled) {
-      background-color: #eff6ff;
-    }
-
-    button.danger {
-      background-color: #ef4444;
-      color: white;
-    }
-
-    button.danger:hover:not(:disabled) {
-      background-color: #dc2626;
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 1rem;
-      height: 1rem;
-      border: 2px solid currentColor;
-      border-right-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      margin-right: 0.5rem;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-  `;
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
 
   @property({ type: String }) variant: 'primary' | 'secondary' | 'outline' | 'danger' = 'primary';
   @property({ type: String }) type: 'button' | 'submit' | 'reset' = 'button';
@@ -103,15 +28,28 @@ export class UIButton extends LitElement {
     }
   }
 
+  private getButtonClasses() {
+    const baseClasses = 'inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-all w-full disabled:opacity-50 disabled:cursor-not-allowed';
+
+    const variantClasses = {
+      primary: 'bg-blue-500 text-white hover:bg-blue-600 disabled:hover:bg-blue-500',
+      secondary: 'bg-gray-500 text-white hover:bg-gray-600 disabled:hover:bg-gray-500',
+      outline: 'bg-transparent text-blue-500 border border-blue-500 hover:bg-blue-50 disabled:hover:bg-transparent',
+      danger: 'bg-red-500 text-white hover:bg-red-600 disabled:hover:bg-red-500'
+    };
+
+    return `${baseClasses} ${variantClasses[this.variant]}`;
+  }
+
   render() {
     return html`
       <button
         type=${this.type}
-        class=${this.variant}
+        class=${this.getButtonClasses()}
         ?disabled=${this.disabled || this.loading}
         @click=${this.handleClick}
       >
-        ${this.loading ? html`<span class="spinner"></span>` : ''}
+        ${this.loading ? html`<span class="inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin mr-2"></span>` : ''}
         <slot></slot>
       </button>
     `;
