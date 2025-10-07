@@ -30,7 +30,7 @@ const AUTH_SET_ATTEMPTED_PATH = 'auth/setAttemptedPath';
 
 // Action creators
 const authRequest = () => ({ type: AUTH_REQUEST });
-const authSuccess = (userId: number, personId: number) => ({
+const authSuccess = (userId: number, personId: number | null) => ({
   type: AUTH_SUCCESS,
   payload: { userId, personId }
 });
@@ -56,7 +56,11 @@ export const login = (email: string, password: string): AppThunk => {
       const normalized = normalize(response.data, authResponseSchema);
 
       dispatch(mergeEntities(normalized.entities));
-      dispatch(authSuccess(response.data.user.id, response.data.person.id));
+      if (response.data.person) {
+        dispatch(authSuccess(response.data.user.id, response.data.person.id));
+      } else {
+        dispatch(authSuccess(response.data.user.id, null));
+      }
     } catch (error) {
       dispatch(authFailure(error instanceof Error ? error.message : 'Login failed'));
       throw error;
@@ -88,7 +92,12 @@ export const checkSession = (): AppThunk => {
       const normalized = normalize(response.data, authResponseSchema);
 
       dispatch(mergeEntities(normalized.entities));
-      dispatch(authSuccess(response.data.user.id, response.data.person.id));
+      
+      if (response.data.person) {
+        dispatch(authSuccess(response.data.user.id, response.data.person.id));
+      } else {
+        dispatch(authSuccess(response.data.user.id, null));
+      }
     } catch (error) {
       // Session check failure is expected when not logged in
       dispatch({ type: 'auth/sessionCheckComplete' });

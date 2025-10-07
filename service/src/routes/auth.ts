@@ -43,6 +43,8 @@ router.post('/login', (req, res, next) => {
       });
     }
 
+    let person: Person | null = null;
+
     // Check if user email is verified
     if (user.verificationToken) {
       return res.status(403).json({
@@ -56,23 +58,12 @@ router.post('/login', (req, res, next) => {
         return next(loginErr);
       }
 
-      // Get associated person
-      const person = await prisma.person.findFirst({
-        where: { userId: user.id, deleted: false }
-      });
 
-      if (!person) {
-        return res.status(404).json({
-          success: false,
-          error: 'Associated person record not found'
-        });
-      }
-
-      const response: ApiResponse<{ user: User; person: Person }> = {
+      const response: ApiResponse<{ user: User; person?: Person }> = {
         success: true,
         data: {
           user: excludeSensitiveFields(user),
-          person: excludePersonSensitiveFields(person)
+          person: person ? excludePersonSensitiveFields(person) : undefined
         },
         message: 'Login successful'
       };
@@ -119,15 +110,11 @@ router.get('/session', asyncHandler(async (req, res) => {
     where: { userId: user.id, deleted: false }
   });
 
-  if (!person) {
-    throw createError(404, 'Associated person record not found');
-  }
-
-  const response: ApiResponse<{ user: User; person: Person }> = {
+  const response: ApiResponse<{ user: User; person?: Person }> = {
     success: true,
     data: {
       user: excludeSensitiveFields(user),
-      person: excludePersonSensitiveFields(person)
+      person: person ? excludePersonSensitiveFields(person) : undefined
     }
   };
 
