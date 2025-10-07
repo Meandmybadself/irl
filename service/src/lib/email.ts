@@ -25,16 +25,15 @@ const resolveFromName = () => {
 }
 
 const resolveVerificationBaseUrl = () => {
+  
   return (
-    process.env.SERVICE_PUBLIC_URL ||
-    process.env.API_BASE_URL ||
     process.env.CLIENT_URL ||
     'http://localhost:3000'
   )
 }
 
 export const buildVerificationLink = (token: string) => {
-  const verificationPath = process.env.EMAIL_VERIFICATION_PATH || '/api/users/verify'
+  const verificationPath = '/verify-email'
   const url = new URL(verificationPath, resolveVerificationBaseUrl())
   url.searchParams.set('token', token)
   return url.toString()
