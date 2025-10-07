@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
@@ -11,57 +11,10 @@ import '../components/ui/button.js';
 
 @customElement('register-page')
 export class RegisterPage extends LitElement {
-  static styles = css`
-    :host {
-      display: block;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #f9fafb;
-      padding: 1rem;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 28rem;
-      background: white;
-      padding: 2rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      text-align: center;
-      margin: 0 0 2rem 0;
-      color: #111827;
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .footer {
-      margin-top: 1.5rem;
-      text-align: center;
-      font-size: 0.875rem;
-      color: #6b7280;
-    }
-
-    .footer a {
-      color: #3b82f6;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
-    }
-  `;
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
 
   @consume({ context: storeContext })
   @state()
@@ -127,41 +80,43 @@ export class RegisterPage extends LitElement {
 
   render() {
     return html`
-      <div class="container">
-        <h1>Create Account</h1>
-        <form @submit=${this.handleSubmit}>
-          <ui-input
-            label="Email"
-            name="email"
-            type="email"
-            .value=${this.email}
-            .error=${this.emailError}
-            placeholder="you@example.com"
-            autocomplete="email"
-            required
-            autofocus
-            @input-change=${this.handleInputChange}
-          ></ui-input>
+      <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-sm">
+          <h1 class="text-3xl font-bold text-center mb-8 text-gray-900">Create Account</h1>
+          <form @submit=${this.handleSubmit} class="flex flex-col gap-6">
+            <ui-input
+              label="Email"
+              name="email"
+              type="email"
+              .value=${this.email}
+              .error=${this.emailError}
+              placeholder="you@example.com"
+              autocomplete="email"
+              required
+              autofocus
+              @input-change=${this.handleInputChange}
+            ></ui-input>
 
-          <ui-input
-            label="Password (at least 8 characters)"
-            name="password"
-            type="password"
-            .value=${this.password}
-            .error=${this.passwordError}
-            placeholder="••••••••"
-            autocomplete="new-password"
-            required
-            @input-change=${this.handleInputChange}
-          ></ui-input>
+            <ui-input
+              label="Password (at least 8 characters)"
+              name="password"
+              type="password"
+              .value=${this.password}
+              .error=${this.passwordError}
+              placeholder="••••••••"
+              autocomplete="new-password"
+              required
+              @input-change=${this.handleInputChange}
+            ></ui-input>
 
-          <ui-button type="submit" variant="primary" ?loading=${this.isLoading}>
-            Create Account
-          </ui-button>
-        </form>
+            <ui-button type="submit" variant="primary" ?loading=${this.isLoading}>
+              Create Account
+            </ui-button>
+          </form>
 
-        <div class="footer">
-          Already have an account? <a href="/login">Sign in</a>
+          <div class="mt-6 text-center text-sm text-gray-600">
+            Already have an account? <a href="/login" class="text-blue-500 no-underline font-medium hover:underline">Sign in</a>
+          </div>
         </div>
       </div>
     `;

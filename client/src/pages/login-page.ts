@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
@@ -12,63 +12,10 @@ import '../components/ui/button.js';
 
 @customElement('login-page')
 export class LoginPage extends LitElement {
-  static styles = css`
-    :host {
-      display: block;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #f9fafb;
-      padding: 1rem;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 28rem;
-      background: white;
-      padding: 2rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-      font-size: 1.875rem;
-      font-weight: 700;
-      text-align: center;
-      margin: 0 0 2rem 0;
-      color: #111827;
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .footer {
-      margin-top: 1.5rem;
-      text-align: center;
-      font-size: 0.875rem;
-      color: #6b7280;
-    }
-
-    .footer a {
-      color: #3b82f6;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
-    }
-
-    .links {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-  `;
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
 
   @consume({ context: storeContext })
   @state()
@@ -138,41 +85,43 @@ export class LoginPage extends LitElement {
 
   render() {
     return html`
-      <div class="container">
-        <h1>Sign In</h1>
-        <form @submit=${this.handleSubmit}>
-          <ui-input
-            label="Email"
-            name="email"
-            type="email"
-            .value=${this.email}
-            .error=${this.emailError}
-            placeholder="you@example.com"
-            autocomplete="email"
-            required
-            autofocus
-            @input-change=${this.handleInputChange}
-          ></ui-input>
+      <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-sm">
+          <h1 class="text-3xl font-bold text-center mb-8 text-gray-900">Sign In</h1>
+          <form @submit=${this.handleSubmit} class="flex flex-col gap-6">
+            <ui-input
+              label="Email"
+              name="email"
+              type="email"
+              .value=${this.email}
+              .error=${this.emailError}
+              placeholder="you@example.com"
+              autocomplete="email"
+              required
+              autofocus
+              @input-change=${this.handleInputChange}
+            ></ui-input>
 
-          <ui-input
-            label="Password"
-            name="password"
-            type="password"
-            .value=${this.password}
-            .error=${this.passwordError}
-            placeholder="••••••••"
-            autocomplete="current-password"
-            required
-            @input-change=${this.handleInputChange}
-          ></ui-input>
+            <ui-input
+              label="Password"
+              name="password"
+              type="password"
+              .value=${this.password}
+              .error=${this.passwordError}
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+              @input-change=${this.handleInputChange}
+            ></ui-input>
 
-          <ui-button type="submit" variant="primary" ?loading=${this.isLoading}>
-            Sign In
-          </ui-button>
-        </form>
+            <ui-button type="submit" variant="primary" ?loading=${this.isLoading}>
+              Sign In
+            </ui-button>
+          </form>
 
-        <div class="footer links">
-          <a href="/register">Create account</a>
+          <div class="mt-6 text-center text-sm text-gray-600 flex justify-between gap-4">
+            <a href="/register" class="text-blue-500 no-underline font-medium hover:underline">Create account</a>
+          </div>
         </div>
       </div>
     `;
