@@ -48,6 +48,12 @@ export const selectCurrentPerson = createSelector(
   (entities, personId) => (personId ? entities.persons[personId] : null)
 );
 
+// Combined selectors
+export const selectIsSystemAdmin = createSelector(
+  [selectCurrentUser],
+  user => user?.isSystemAdmin ?? false
+);
+
 // UI selectors
 export const selectNotifications = createSelector(
   [selectUI],
