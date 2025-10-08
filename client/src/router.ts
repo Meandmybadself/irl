@@ -8,6 +8,7 @@ import './pages/register-page.js';
 import './pages/login-page.js';
 import './pages/verify-email-page.js';
 import './pages/home-page.js';
+import './pages/system-admin-page.js';
 
 export interface RouteConfig {
   path: string;
@@ -71,6 +72,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<home-page></home-page>`;
+      }
+    },
+    {
+      path: '/admin/system',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/admin/system'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<system-admin-page></system-admin-page>`;
       }
     },
     {
