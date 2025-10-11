@@ -93,7 +93,7 @@ export class VerifyEmailPage extends LitElement {
   render() {
     if (this.isVerifying) {
       return html`
-        <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4 pt-20">
           <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-sm text-center">
             <div class="text-6xl mb-4">⏳</div>
             <h1 class="text-3xl font-bold mb-4 text-gray-900">Verifying Email...</h1>
@@ -105,7 +105,7 @@ export class VerifyEmailPage extends LitElement {
 
     if (this.verificationSuccess) {
       return html`
-        <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4 pt-20">
           <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-sm text-center">
             <div class="text-6xl mb-4">✅</div>
             <h1 class="text-3xl font-bold mb-4 text-gray-900">Email Verified!</h1>
@@ -117,7 +117,7 @@ export class VerifyEmailPage extends LitElement {
     }
 
     return html`
-      <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div class="block min-h-screen flex items-center justify-center bg-gray-50 p-4 pt-20">
         <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-sm text-center">
           <div class="text-6xl mb-4">📧</div>
           <h1 class="text-3xl font-bold mb-4 text-gray-900">Verify Your Email</h1>

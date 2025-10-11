@@ -166,14 +166,14 @@ export class SystemAdminPage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12">
+        <div class="flex min-h-full items-center justify-center py-12 pt-20">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8">
+      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900">
