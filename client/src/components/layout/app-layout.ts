@@ -18,7 +18,7 @@ export class AppLayout extends LitElement {
       <div class="block min-h-screen bg-gray-50">
         ${this.showNav ? html`<app-navigation></app-navigation>` : ''}
 
-        <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="max-w-7xl mx-auto px-4 ${this.showNav ? 'pt-24 pb-8' : 'py-8'}">
           ${this.loading
             ? html`
                 <div class="flex items-center justify-center min-h-[50vh]">
