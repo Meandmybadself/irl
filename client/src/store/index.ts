@@ -4,12 +4,14 @@ import type { ApiClient } from '../services/api-client.js';
 import { entitiesReducer } from './slices/entities.js';
 import { authReducer } from './slices/auth.js';
 import { uiReducer } from './slices/ui.js';
+import { systemReducer } from './slices/system.js';
 
 // Root reducer
 const rootReducer = combineReducers({
   entities: entitiesReducer,
   auth: authReducer,
-  ui: uiReducer
+  ui: uiReducer,
+  system: systemReducer
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

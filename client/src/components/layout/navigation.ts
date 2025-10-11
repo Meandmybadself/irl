@@ -84,7 +84,7 @@ export class AppNavigation extends LitElement {
     const currentPath = window.location.pathname;
 
     return html`
-      <nav class="relative bg-gray-800">
+      <nav class="fixed top-0 left-0 right-0 bg-gray-800 z-50">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div class="flex h-16 items-center justify-between">
             <div class="flex items-center">

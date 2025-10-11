@@ -5,13 +5,21 @@ import { Router } from '@lit-labs/router';
 import { apiClient } from './services/api-client.js';
 import { createAppStore, type AppStore } from './store/index.js';
 import { checkSession } from './store/slices/auth.js';
+import { loadSystem } from './store/slices/system.js';
 import { storeContext } from './contexts/store-context.js';
 import { apiContext } from './contexts/api-context.js';
 import { createRoutes } from './router.js';
+import { updateDocumentTitle, getPageNameFromPath } from './utilities/title.js';
+import { selectSystemName } from './store/selectors.js';
 import './components/ui/notification.js';
 
 @customElement('app-root')
 export class AppRoot extends LitElement {
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
+
   static styles = css`
     :host {
       display: block;
@@ -54,15 +62,25 @@ export class AppRoot extends LitElement {
 
   private router = new Router(this, []);
 
+  private updateTitle() {
+    const state = this.store.getState();
+    const systemName = selectSystemName(state);
+    const pageName = getPageNameFromPath(window.location.pathname);
+    updateDocumentTitle(pageName, systemName);
+  }
+
   async connectedCallback() {
     super.connectedCallback();
 
     // Initialize store
     this.store = createAppStore(this.api);
 
-    // Check for existing session
+    // Check for existing session and load system data
     try {
-      await this.store.dispatch(checkSession());
+      await Promise.all([
+        this.store.dispatch(checkSession()),
+        this.store.dispatch(loadSystem())
+      ]);
     } catch (error) {
       // Session check failed, user is not logged in
       console.log('No active session');
@@ -75,6 +93,14 @@ export class AppRoot extends LitElement {
 
       // Force router to update after routes are set
       this.router.goto(window.location.pathname);
+
+      // Update title after initial load
+      this.updateTitle();
+
+      // Listen for route changes to update title
+      window.addEventListener('popstate', () => {
+        this.updateTitle();
+      });
 
       this.requestUpdate();
     }

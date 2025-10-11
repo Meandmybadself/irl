@@ -54,6 +54,20 @@ export const selectIsSystemAdmin = createSelector(
   user => user?.isSystemAdmin ?? false
 );
 
+// System selectors
+export const selectSystem = createSelector(
+  [selectEntities],
+  entities => {
+    const systemId = 1; // System is always ID 1
+    return entities.system[systemId] || null;
+  }
+);
+
+export const selectSystemName = createSelector(
+  [selectSystem],
+  system => system?.name || null
+);
+
 // UI selectors
 export const selectNotifications = createSelector(
   [selectUI],
