@@ -11,6 +11,7 @@ import './pages/home-page.js';
 import './pages/system-admin-page.js';
 import './pages/create-person-page.js';
 import './pages/persons-page.js';
+import './pages/create-group-page.js';
 
 export interface RouteConfig {
   path: string;
@@ -113,6 +114,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<create-person-page></create-person-page>`;
+      }
+    },
+    {
+      path: '/groups/create',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/groups/create'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<create-group-page></create-group-page>`;
       }
     },
     {
