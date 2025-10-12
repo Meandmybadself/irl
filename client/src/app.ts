@@ -10,8 +10,9 @@ import { storeContext } from './contexts/store-context.js';
 import { apiContext } from './contexts/api-context.js';
 import { createRoutes } from './router.js';
 import { updateDocumentTitle, getPageNameFromPath } from './utilities/title.js';
-import { selectSystemName } from './store/selectors.js';
+import { selectSystemName, selectIsAuthenticated } from './store/selectors.js';
 import './components/ui/notification.js';
+import './components/layout/navigation.js';
 
 @customElement('app-root')
 export class AppRoot extends LitElement {
@@ -60,7 +61,11 @@ export class AppRoot extends LitElement {
   @state()
   private isInitializing = true;
 
+  @state()
+  private isAuthenticated = false;
+
   private router = new Router(this, []);
+  private unsubscribe?: () => void;
 
   private updateTitle() {
     const state = this.store.getState();
@@ -100,10 +105,35 @@ export class AppRoot extends LitElement {
       // Listen for route changes to update title
       window.addEventListener('popstate', () => {
         this.updateTitle();
+        this.requestUpdate();
       });
+
+      // Subscribe to store changes to update authentication state
+      this.unsubscribe = this.store.subscribe(() => {
+        const state = this.store.getState();
+        this.isAuthenticated = selectIsAuthenticated(state);
+      });
+
+      // Set initial auth state
+      const state = this.store.getState();
+      this.isAuthenticated = selectIsAuthenticated(state);
 
       this.requestUpdate();
     }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.unsubscribe?.();
+  }
+
+  private shouldShowNavigation(): boolean {
+    const path = window.location.pathname;
+    // Don't show navigation on login, register, or verify-email pages
+    return this.isAuthenticated &&
+           path !== '/login' &&
+           path !== '/register' &&
+           path !== '/verify-email';
   }
 
   render() {
@@ -115,8 +145,12 @@ export class AppRoot extends LitElement {
       `;
     }
 
+    const showNav = this.shouldShowNavigation();
+
     return html`
       <ui-notifications></ui-notifications>
+      ${showNav ? html`<app-navigation></app-navigation>` : ''}
+      ${showNav ? html`<div class="h-16"></div>` : ''}
       ${this.router.outlet()}
     `;
   }
