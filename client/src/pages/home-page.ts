@@ -66,7 +66,7 @@ export class HomePage extends LitElement {
           <a href="/groups" class="block bg-white p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 border-transparent hover:shadow-md hover:border-blue-500">
             <div class="text-4xl mb-3">📂</div>
             <h2 class="text-xl font-semibold text-gray-900 mb-2">
-              Groups <span class="inline-block text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded font-medium ml-2">Coming Soon</span>
+              Groups
             </h2>
             <p class="text-sm text-gray-600 leading-relaxed">Browse and manage your groups</p>
           </a>
