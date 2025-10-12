@@ -8,8 +8,8 @@ import { selectIsAuthenticated } from '../store/selectors.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 
-@customElement('create-group-page')
-export class CreateGroupPage extends LitElement {
+@customElement('group-form-page')
+export class GroupFormPage extends LitElement {
   createRenderRoot() {
     return this;
   }
@@ -21,6 +21,9 @@ export class CreateGroupPage extends LitElement {
   @consume({ context: apiContext })
   @state()
   private api!: ApiClient;
+
+  @state()
+  private groupId: number | null = null;
 
   @state()
   private name = '';
@@ -46,7 +49,10 @@ export class CreateGroupPage extends LitElement {
   @state()
   private isSaving = false;
 
-  connectedCallback() {
+  @state()
+  private isLoading = false;
+
+  async connectedCallback() {
     super.connectedCallback();
 
     // Check if user is authenticated
@@ -55,6 +61,42 @@ export class CreateGroupPage extends LitElement {
       window.history.pushState({}, '', '/login');
       window.dispatchEvent(new PopStateEvent('popstate'));
       return;
+    }
+
+    // Check if we're editing an existing group
+    const pathParts = window.location.pathname.split('/');
+    if (pathParts[1] === 'groups' && pathParts[2] && pathParts[2] !== 'create') {
+      this.groupId = parseInt(pathParts[2]);
+      await this.loadGroup();
+    }
+  }
+
+  private async loadGroup() {
+    if (!this.groupId) return;
+
+    this.isLoading = true;
+    try {
+      const response = await this.api.getGroup(this.groupId);
+      if (response.success && response.data) {
+        const group = response.data;
+        this.name = group.name;
+        this.displayId = group.displayId;
+        this.description = group.description || '';
+        this.publiclyVisible = group.publiclyVisible;
+        this.allowsAnyUserToCreateSubgroup = group.allowsAnyUserToCreateSubgroup;
+      }
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Failed to load group',
+          'error'
+        )
+      );
+      // Redirect back to groups list on error
+      window.history.pushState({}, '', '/groups');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } finally {
+      this.isLoading = false;
     }
   }
 
@@ -124,18 +166,30 @@ export class CreateGroupPage extends LitElement {
         allowsAnyUserToCreateSubgroup: this.allowsAnyUserToCreateSubgroup
       };
 
-      const response = await this.api.createGroup(data);
+      let response;
+      if (this.groupId) {
+        // Update existing group
+        response = await this.api.patchGroup(this.groupId, data);
+        if (response.success) {
+          this.store.dispatch(addNotification('Group updated successfully', 'success'));
+        }
+      } else {
+        // Create new group
+        response = await this.api.createGroup(data);
+        if (response.success) {
+          this.store.dispatch(addNotification('Group created successfully', 'success'));
+        }
+      }
 
-      if (response.success && response.data) {
-        this.store.dispatch(addNotification('Group created successfully', 'success'));
-        // Navigate to groups list (when implemented) or home
-        window.history.pushState({}, '', '/home');
+      if (response.success) {
+        // Navigate to groups list
+        window.history.pushState({}, '', '/groups');
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     } catch (error) {
       this.store.dispatch(
         addNotification(
-          error instanceof Error ? error.message : 'Failed to create group',
+          error instanceof Error ? error.message : `Failed to ${this.groupId ? 'update' : 'create'} group`,
           'error'
         )
       );
@@ -145,16 +199,24 @@ export class CreateGroupPage extends LitElement {
   }
 
   private handleCancel() {
-    window.history.pushState({}, '', '/home');
+    window.history.pushState({}, '', '/groups');
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
   render() {
+    if (this.isLoading) {
+      return html`
+        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+          <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+        </div>
+      `;
+    }
+
     return html`
       <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
           <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-6">
-            Create Group
+            ${this.groupId ? 'Edit Group' : 'Create Group'}
           </h2>
 
           <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
@@ -275,7 +337,7 @@ export class CreateGroupPage extends LitElement {
                   ${this.isSaving
                     ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
                     : ''}
-                  Create Group
+                  ${this.groupId ? 'Update Group' : 'Create Group'}
                 </button>
               </div>
             </form>
@@ -288,6 +350,6 @@ export class CreateGroupPage extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'create-group-page': CreateGroupPage;
+    'group-form-page': GroupFormPage;
   }
 }

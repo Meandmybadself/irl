@@ -9,9 +9,9 @@ import './pages/login-page.js';
 import './pages/verify-email-page.js';
 import './pages/home-page.js';
 import './pages/system-admin-page.js';
-import './pages/create-person-page.js';
+import './pages/person-form-page.js';
 import './pages/persons-page.js';
-import './pages/create-group-page.js';
+import './pages/group-form-page.js';
 import './pages/groups-page.js';
 
 export interface RouteConfig {
@@ -114,7 +114,20 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/persons/create'));
           return html`<login-page></login-page>`;
         }
-        return html`<create-person-page></create-person-page>`;
+        return html`<person-form-page></person-form-page>`;
+      }
+    },
+    {
+      path: '/persons/:id',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath(window.location.pathname));
+          return html`<login-page></login-page>`;
+        }
+        return html`<person-form-page></person-form-page>`;
       }
     },
     {
@@ -140,7 +153,20 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           store.dispatch(setAttemptedPath('/groups/create'));
           return html`<login-page></login-page>`;
         }
-        return html`<create-group-page></create-group-page>`;
+        return html`<group-form-page></group-form-page>`;
+      }
+    },
+    {
+      path: '/groups/:id',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath(window.location.pathname));
+          return html`<login-page></login-page>`;
+        }
+        return html`<group-form-page></group-form-page>`;
       }
     },
     {
