@@ -71,7 +71,7 @@ export class PersonFormPage extends LitElement {
 
     // Check if we're editing an existing person
     const pathParts = window.location.pathname.split('/');
-    if (pathParts[1] === 'persons' && pathParts[2] && pathParts[2] !== 'create') {
+    if (pathParts[1] === 'persons' && pathParts[2] && pathParts[2] !== 'create' && pathParts[3] === 'edit') {
       this.personId = parseInt(pathParts[2]);
       await this.loadPerson();
     }

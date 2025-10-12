@@ -118,7 +118,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/persons/:id',
+      path: '/persons/:id/edit',
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
@@ -157,7 +157,7 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
-      path: '/groups/:id',
+      path: '/groups/:id/edit',
       render: () => {
         const state = store.getState();
         const isAuthenticated = selectIsAuthenticated(state);
