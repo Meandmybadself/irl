@@ -253,7 +253,6 @@ export class PersonsPage extends LitElement {
                                       <div class="font-medium text-gray-900">
                                         ${person.firstName} ${person.lastName}
                                       </div>
-                                      <div class="mt-1 text-gray-500">ID: ${person.id}</div>
                                     </div>
                                   </div>
                                 </td>
