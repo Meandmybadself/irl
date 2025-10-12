@@ -107,6 +107,18 @@ export class AppNavigation extends LitElement {
                         >
                           Home
                         </a>
+                        <a
+                          href="/persons/create"
+                          @click=${(e: Event) => {
+                            e.preventDefault();
+                            this.navigate('/persons/create');
+                          }}
+                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/persons/create'
+                            ? 'bg-gray-900 text-white'
+                            : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
+                        >
+                          Create Person
+                        </a>
                         ${this.isSystemAdmin
                           ? html`
                               <a
@@ -229,6 +241,18 @@ export class AppNavigation extends LitElement {
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                   >
                     Home
+                  </a>
+                  <a
+                    href="/persons/create"
+                    @click=${(e: Event) => {
+                      e.preventDefault();
+                      this.navigate('/persons/create');
+                    }}
+                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/persons/create'
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
+                  >
+                    Create Person
                   </a>
                   ${this.isSystemAdmin
                     ? html`
