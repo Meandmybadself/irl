@@ -108,16 +108,16 @@ export class AppNavigation extends LitElement {
                           Home
                         </a>
                         <a
-                          href="/persons/create"
+                          href="/persons"
                           @click=${(e: Event) => {
                             e.preventDefault();
-                            this.navigate('/persons/create');
+                            this.navigate('/persons');
                           }}
-                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/persons/create'
+                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/persons' || currentPath === '/persons/create'
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                         >
-                          Create Person
+                          People
                         </a>
                         ${this.isSystemAdmin
                           ? html`
@@ -243,16 +243,16 @@ export class AppNavigation extends LitElement {
                     Home
                   </a>
                   <a
-                    href="/persons/create"
+                    href="/persons"
                     @click=${(e: Event) => {
                       e.preventDefault();
-                      this.navigate('/persons/create');
+                      this.navigate('/persons');
                     }}
-                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/persons/create'
+                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/persons' || currentPath === '/persons/create'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                   >
-                    Create Person
+                    People
                   </a>
                   ${this.isSystemAdmin
                     ? html`

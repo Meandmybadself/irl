@@ -10,6 +10,7 @@ import './pages/verify-email-page.js';
 import './pages/home-page.js';
 import './pages/system-admin-page.js';
 import './pages/create-person-page.js';
+import './pages/persons-page.js';
 
 export interface RouteConfig {
   path: string;
@@ -86,6 +87,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<system-admin-page></system-admin-page>`;
+      }
+    },
+    {
+      path: '/persons',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/persons'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<persons-page></persons-page>`;
       }
     },
     {
