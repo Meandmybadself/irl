@@ -65,7 +65,7 @@ export class GroupFormPage extends LitElement {
 
     // Check if we're editing an existing group
     const pathParts = window.location.pathname.split('/');
-    if (pathParts[1] === 'groups' && pathParts[2] && pathParts[2] !== 'create') {
+    if (pathParts[1] === 'groups' && pathParts[2] && pathParts[2] !== 'create' && pathParts[3] === 'edit') {
       this.groupId = parseInt(pathParts[2]);
       await this.loadGroup();
     }
