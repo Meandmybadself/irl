@@ -120,12 +120,12 @@ export class AppNavigation extends LitElement {
                           People
                         </a>
                         <a
-                          href="/groups/create"
+                          href="/groups"
                           @click=${(e: Event) => {
                             e.preventDefault();
-                            this.navigate('/groups/create');
+                            this.navigate('/groups');
                           }}
-                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/groups/create'
+                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/groups' || currentPath === '/groups/create'
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                         >
@@ -267,12 +267,12 @@ export class AppNavigation extends LitElement {
                     People
                   </a>
                   <a
-                    href="/groups/create"
+                    href="/groups"
                     @click=${(e: Event) => {
                       e.preventDefault();
-                      this.navigate('/groups/create');
+                      this.navigate('/groups');
                     }}
-                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/groups/create'
+                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/groups' || currentPath === '/groups/create'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                   >
