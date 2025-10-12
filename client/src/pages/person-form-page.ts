@@ -8,8 +8,8 @@ import { selectCurrentUser } from '../store/selectors.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 
-@customElement('create-person-page')
-export class CreatePersonPage extends LitElement {
+@customElement('person-form-page')
+export class PersonFormPage extends LitElement {
   createRenderRoot() {
     return this;
   }
@@ -21,6 +21,9 @@ export class CreatePersonPage extends LitElement {
   @consume({ context: apiContext })
   @state()
   private api!: ApiClient;
+
+  @state()
+  private personId: number | null = null;
 
   @state()
   private firstName = '';
@@ -52,7 +55,10 @@ export class CreatePersonPage extends LitElement {
   @state()
   private isSaving = false;
 
-  connectedCallback() {
+  @state()
+  private isLoading = false;
+
+  async connectedCallback() {
     super.connectedCallback();
 
     // Check if user is authenticated
@@ -61,6 +67,42 @@ export class CreatePersonPage extends LitElement {
       window.history.pushState({}, '', '/login');
       window.dispatchEvent(new PopStateEvent('popstate'));
       return;
+    }
+
+    // Check if we're editing an existing person
+    const pathParts = window.location.pathname.split('/');
+    if (pathParts[1] === 'persons' && pathParts[2] && pathParts[2] !== 'create') {
+      this.personId = parseInt(pathParts[2]);
+      await this.loadPerson();
+    }
+  }
+
+  private async loadPerson() {
+    if (!this.personId) return;
+
+    this.isLoading = true;
+    try {
+      const response = await this.api.getPerson(this.personId);
+      if (response.success && response.data) {
+        const person = response.data;
+        this.firstName = person.firstName;
+        this.lastName = person.lastName;
+        this.displayId = person.displayId;
+        this.pronouns = person.pronouns || '';
+        this.imageURL = person.imageURL || '';
+      }
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Failed to load person',
+          'error'
+        )
+      );
+      // Redirect back to persons list on error
+      window.history.pushState({}, '', '/persons');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } finally {
+      this.isLoading = false;
     }
   }
 
@@ -132,7 +174,7 @@ export class CreatePersonPage extends LitElement {
     }
 
     const currentUser = selectCurrentUser(this.store.getState());
-    if (!currentUser) {
+    if (!currentUser && !this.personId) {
       this.store.dispatch(addNotification('You must be logged in to create a person', 'error'));
       return;
     }
@@ -146,21 +188,33 @@ export class CreatePersonPage extends LitElement {
         displayId: this.displayId.trim(),
         pronouns: this.pronouns.trim() || null,
         imageURL: this.imageURL.trim() || null,
-        userId: currentUser.id
+        ...(currentUser && !this.personId && { userId: currentUser.id })
       };
 
-      const response = await this.api.createPerson(data);
+      let response;
+      if (this.personId) {
+        // Update existing person
+        response = await this.api.patchPerson(this.personId, data);
+        if (response.success) {
+          this.store.dispatch(addNotification('Person updated successfully', 'success'));
+        }
+      } else {
+        // Create new person
+        response = await this.api.createPerson({ ...data, userId: currentUser!.id });
+        if (response.success) {
+          this.store.dispatch(addNotification('Person created successfully', 'success'));
+        }
+      }
 
-      if (response.success && response.data) {
-        this.store.dispatch(addNotification('Person created successfully', 'success'));
-        // Navigate to home or person list
-        window.history.pushState({}, '', '/home');
+      if (response.success) {
+        // Navigate to persons list
+        window.history.pushState({}, '', '/persons');
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     } catch (error) {
       this.store.dispatch(
         addNotification(
-          error instanceof Error ? error.message : 'Failed to create person',
+          error instanceof Error ? error.message : `Failed to ${this.personId ? 'update' : 'create'} person`,
           'error'
         )
       );
@@ -170,7 +224,7 @@ export class CreatePersonPage extends LitElement {
   }
 
   private handleCancel() {
-    window.history.pushState({}, '', '/home');
+    window.history.pushState({}, '', '/persons');
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
@@ -184,11 +238,19 @@ export class CreatePersonPage extends LitElement {
   }
 
   render() {
+    if (this.isLoading) {
+      return html`
+        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+          <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+        </div>
+      `;
+    }
+
     return html`
       <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
           <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-6">
-            Create Person
+            ${this.personId ? 'Edit Person' : 'Create Person'}
           </h2>
 
           <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
@@ -308,7 +370,7 @@ export class CreatePersonPage extends LitElement {
                   ${this.isSaving
                     ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
                     : ''}
-                  Create Person
+                  ${this.personId ? 'Update Person' : 'Create Person'}
                 </button>
               </div>
             </form>
@@ -321,6 +383,6 @@ export class CreatePersonPage extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'create-person-page': CreatePersonPage;
+    'person-form-page': PersonFormPage;
   }
 }
