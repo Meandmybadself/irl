@@ -8,7 +8,7 @@
     "build": "tsc",
     "dev": "NODE_OPTIONS='--no-deprecation' tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "test": "vitest",
+    "test": "vitest --run --passWithNoTests",
     "test:setup": "tsx src/utils/test-db-setup.ts",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
