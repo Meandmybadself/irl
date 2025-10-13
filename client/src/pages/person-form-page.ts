@@ -5,6 +5,7 @@ import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
+import { toDisplayId } from '../utilities/string.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 
@@ -129,12 +130,8 @@ export class PersonFormPage extends LitElement {
 
   private generateDisplayId() {
     if (this.firstName && this.lastName) {
-      const baseId = `${this.firstName.toLowerCase()}-${this.lastName.toLowerCase()}`;
-      const normalized = baseId
-        .replace(/[^a-z0-9-]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      this.displayId = normalized;
+      const baseId = `${this.firstName}-${this.lastName}`;
+      this.displayId = toDisplayId(baseId);
     }
   }
 
