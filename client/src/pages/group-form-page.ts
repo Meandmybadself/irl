@@ -5,6 +5,7 @@ import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectIsAuthenticated } from '../store/selectors.js';
+import { toDisplayId } from '../utilities/string.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 
@@ -121,12 +122,7 @@ export class GroupFormPage extends LitElement {
 
   private generateDisplayId() {
     if (this.name) {
-      const normalized = this.name
-        .toLowerCase()
-        .replace(/[^a-z0-9-]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      this.displayId = normalized;
+      this.displayId = toDisplayId(this.name);
     }
   }
 
