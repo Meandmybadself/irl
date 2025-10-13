@@ -213,10 +213,11 @@ export class ApiClient {
   }
 
   // Group endpoints
-  async getGroups(params?: PaginationParams): Promise<PaginatedResponse<Group>> {
+  async getGroups(page?: number, limit?: number, search?: string): Promise<PaginatedResponse<Group>> {
     const query = new URLSearchParams();
-    if (params?.page) query.set('page', params.page.toString());
-    if (params?.limit) query.set('limit', params.limit.toString());
+    if (page) query.set('page', page.toString());
+    if (limit) query.set('limit', limit.toString());
+    if (search) query.set('search', search);
     const queryString = query.toString() ? `?${query.toString()}` : '';
 
     return this.request<PaginatedResponse<Group>>(`/groups${queryString}`);

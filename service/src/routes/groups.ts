@@ -23,15 +23,26 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
+  const search = req.query.search as string | undefined;
+
+  // Build where clause with search
+  const where: any = { deleted: false };
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { displayId: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } }
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.group.findMany({
-      where: { deleted: false },
+      where,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' }
     }),
-    prisma.group.count({ where: { deleted: false } })
+    prisma.group.count({ where })
   ]);
 
   const response: PaginatedResponse<Group> = {
