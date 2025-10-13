@@ -172,26 +172,30 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   // Promote the first user account to system admin automatically
   const userCount = await prisma.user.count({ where: { deleted: false } });
   const isSystemAdmin = userCount === 0 ? true : Boolean(requestedAdmin);
+  const isFirstUser = userCount === 0;
 
   const item = await prisma.user.create({
     data: {
       ...userData,
       password: hashedPassword,
-      verificationToken,
+      verificationToken: isFirstUser ? null : verificationToken,
       isSystemAdmin
     }
   });
 
-  try {
-    await sendVerificationEmail(item.email, verificationToken);
-  } catch (error) {
-    console.error('Failed to send verification email:', error);
+  // Only send verification email if this is not the first user
+  if (!isFirstUser) {
+    try {
+      await sendVerificationEmail(item.email, verificationToken);
+    } catch (error) {
+      console.error('Failed to send verification email:', error);
+    }
   }
 
   const response: ApiResponse<User> = {
     success: true,
     data: excludeSensitiveFields(item),
-    message: 'User created successfully'
+    message: isFirstUser ? 'Account created successfully' : 'User created successfully'
   };
 
   res.status(201).json(response);

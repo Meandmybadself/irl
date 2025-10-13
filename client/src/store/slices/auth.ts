@@ -68,13 +68,14 @@ export const login = (email: string, password: string): AppThunk => {
   };
 };
 
-export const register = (email: string, password: string): AppThunk => {
+export const register = (email: string, password: string): AppThunk<Promise<{ message: string }>> => {
   return async (dispatch, _getState, { apiClient }) => {
     dispatch(authRequest());
     try {
-      await apiClient.createUser({ email, password });
+      const response = await apiClient.createUser({ email, password });
       // Don't set auth state on register - user needs to verify email first
       dispatch({ type: 'auth/registerSuccess' });
+      return { message: response.message || 'User created successfully' };
     } catch (error) {
       dispatch(authFailure(error instanceof Error ? error.message : 'Registration failed'));
       throw error;
