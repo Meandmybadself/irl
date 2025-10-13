@@ -44,10 +44,10 @@ export class GroupsPage extends LitElement {
   private async loadGroups() {
     this.isLoading = true;
     try {
-      const response = await this.api.getGroups({
-        page: this.currentPage,
-        limit: this.limit
-      });
+      const response = await this.api.getGroups(
+        this.currentPage,
+        this.limit
+      );
 
       if (response.success && response.data) {
         this.groups = response.data;

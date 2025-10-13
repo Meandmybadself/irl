@@ -3,7 +3,6 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, groupSchema, updateGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
-import { sanitizeSearchQuery, sanitizePaginationParams } from '../utils/sanitization.js';
 import type { ApiResponse, PaginatedResponse, Group } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -22,22 +21,18 @@ const formatGroup = (group: any): Group => {
 // GET /api/groups - List all groups (auth required)
 // Supports optional search query parameter: ?search=term
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  // Sanitize pagination parameters
-  const { page, limit, skip } = sanitizePaginationParams(
-    req.query.page as string,
-    req.query.limit as string
-  );
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
+  const skip = (page - 1) * limit;
+  const search = req.query.search as string | undefined;
 
-  // Sanitize search query
-  const searchQuery = sanitizeSearchQuery(req.query.search as string);
-
-  // Build where clause with search if provided
+  // Build where clause with search
   const where: any = { deleted: false };
-  if (searchQuery) {
+  if (search) {
     where.OR = [
-      { name: { contains: searchQuery, mode: 'insensitive' } },
-      { description: { contains: searchQuery, mode: 'insensitive' } },
-      { displayId: { contains: searchQuery, mode: 'insensitive' } }
+      { name: { contains: search, mode: 'insensitive' } },
+      { displayId: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } }
     ];
   }
 

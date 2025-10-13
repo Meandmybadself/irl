@@ -6,8 +6,10 @@ import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectIsAuthenticated } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
+import '../components/ui/group-search.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
+import type { Group } from '@irl/shared';
 
 @customElement('group-form-page')
 export class GroupFormPage extends LitElement {
@@ -40,6 +42,9 @@ export class GroupFormPage extends LitElement {
 
   @state()
   private allowsAnyUserToCreateSubgroup = false;
+
+  @state()
+  private parentGroup: Group | null = null;
 
   @state()
   private nameError = '';
@@ -85,6 +90,14 @@ export class GroupFormPage extends LitElement {
         this.description = group.description || '';
         this.publiclyVisible = group.publiclyVisible;
         this.allowsAnyUserToCreateSubgroup = group.allowsAnyUserToCreateSubgroup;
+
+        // Load parent group if it exists
+        if (group.parentGroupId) {
+          const parentResponse = await this.api.getGroup(group.parentGroupId);
+          if (parentResponse.success && parentResponse.data) {
+            this.parentGroup = parentResponse.data;
+          }
+        }
       }
     } catch (error) {
       this.store.dispatch(
@@ -132,6 +145,14 @@ export class GroupFormPage extends LitElement {
     }
   }
 
+  private handleGroupSelected(e: CustomEvent) {
+    this.parentGroup = e.detail.group;
+  }
+
+  private handleGroupCleared() {
+    this.parentGroup = null;
+  }
+
   private async handleSubmit(e: Event) {
     e.preventDefault();
 
@@ -159,7 +180,8 @@ export class GroupFormPage extends LitElement {
         displayId: this.displayId.trim(),
         description: this.description.trim() || null,
         publiclyVisible: this.publiclyVisible,
-        allowsAnyUserToCreateSubgroup: this.allowsAnyUserToCreateSubgroup
+        allowsAnyUserToCreateSubgroup: this.allowsAnyUserToCreateSubgroup,
+        parentGroupId: this.parentGroup?.id || null
       };
 
       let response;
@@ -274,6 +296,13 @@ export class GroupFormPage extends LitElement {
                   ></textarea>
                 </div>
               </div>
+
+              <group-search
+                .selectedGroup=${this.parentGroup}
+                .excludeGroupId=${this.groupId}
+                @group-selected=${this.handleGroupSelected}
+                @group-cleared=${this.handleGroupCleared}
+              ></group-search>
 
               <div class="relative flex items-start">
                 <div class="flex h-6 items-center">
