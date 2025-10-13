@@ -64,12 +64,24 @@ export class RegisterPage extends LitElement {
     this.isLoading = true;
 
     try {
-      await this.store.dispatch(register(this.email, this.password));
-      this.store.dispatch(addNotification('Registration successful! Please check your email to verify your account.', 'success'));
-      // Navigate to verify email page using client-side navigation
-      const targetPath = '/verify-email?email=' + encodeURIComponent(this.email);
-      window.history.pushState({}, '', targetPath);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      const result = await this.store.dispatch(register(this.email, this.password));
+
+      // Check if this was the first user (account created vs user created)
+      const isFirstUser = result.message === 'Account created successfully';
+
+      if (isFirstUser) {
+        this.store.dispatch(addNotification('Account created successfully! You can now sign in.', 'success'));
+        // Navigate to login page using client-side navigation
+        const targetPath = '/login';
+        window.history.pushState({}, '', targetPath);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } else {
+        this.store.dispatch(addNotification('Registration successful! Please check your email to verify your account.', 'success'));
+        // Navigate to verify email page using client-side navigation
+        const targetPath = '/verify-email?email=' + encodeURIComponent(this.email);
+        window.history.pushState({}, '', targetPath);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
     } catch (error) {
       this.store.dispatch(
         addNotification(
