@@ -5,9 +5,10 @@ import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
+import '../components/ui/contact-info-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
-import type { System } from '@irl/shared';
+import type { System, ContactInformation } from '@irl/shared';
 
 @customElement('system-admin-page')
 export class SystemAdminPage extends LitElement {
@@ -41,6 +42,9 @@ export class SystemAdminPage extends LitElement {
   @state()
   private nameError = '';
 
+  @state()
+  private contactInformations: ContactInformation[] = [];
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -63,6 +67,10 @@ export class SystemAdminPage extends LitElement {
         this.system = response.data;
         this.name = response.data.name;
         this.registrationOpen = response.data.registrationOpen;
+
+        // TODO: Load contact information when backend endpoint is available
+        // For now, contact information starts empty
+        this.contactInformations = [];
       }
     } catch (error) {
       // System might not exist yet, which is OK
@@ -246,6 +254,20 @@ export class SystemAdminPage extends LitElement {
                   </p>
                 </div>
               </div>
+
+              ${this.system ? html`
+                <contact-info-form
+                  entityType="system"
+                  .entityId=${this.system.id}
+                  .contactInformations=${this.contactInformations}
+                  @contact-info-changed=${(e: CustomEvent) => {
+                    this.contactInformations = e.detail.items;
+                  }}
+                  @contact-error=${(e: CustomEvent) => {
+                    this.store.dispatch(addNotification(e.detail.error, 'error'));
+                  }}
+                ></contact-info-form>
+              ` : ''}
 
               <div class="flex items-center justify-between gap-x-4">
                 <button
