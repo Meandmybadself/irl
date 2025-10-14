@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateIdParam, personSchema, updatePersonSchema } from '../middleware/validation.js';
+import { validateBody, validateDisplayIdParam, personSchema, updatePersonSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { sanitizeSearchQuery, sanitizePaginationParams } from '../utils/sanitization.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
@@ -65,12 +65,12 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// GET /api/persons/:id - Get specific person (auth required)
-router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
-  
+// GET /api/persons/:displayId - Get specific person (auth required)
+router.get('/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+
   const item = await prisma.person.findFirst({
-    where: { id, deleted: false }
+    where: { displayId, deleted: false }
   });
 
   if (!item) {
@@ -100,12 +100,12 @@ router.post('/', requireAuth, validateBody(personSchema), asyncHandler(async (re
   res.status(201).json(response);
 }));
 
-// PUT /api/persons/:id - Update entire person (auth required)
-router.put('/:id', requireAuth, validateIdParam, validateBody(personSchema), asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// PUT /api/persons/:displayId - Update entire person (auth required)
+router.put('/:displayId', requireAuth, validateDisplayIdParam, validateBody(personSchema), asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
   const item = await prisma.person.update({
-    where: { id },
+    where: { displayId },
     data: req.body
   });
 
@@ -118,12 +118,12 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(personSchema), asy
   res.json(response);
 }));
 
-// PATCH /api/persons/:id - Partial update person (auth required)
-router.patch('/:id', requireAuth, validateIdParam, validateBody(updatePersonSchema), asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// PATCH /api/persons/:displayId - Partial update person (auth required)
+router.patch('/:displayId', requireAuth, validateDisplayIdParam, validateBody(updatePersonSchema), asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
   const item = await prisma.person.update({
-    where: { id },
+    where: { displayId },
     data: req.body
   });
 
@@ -136,12 +136,12 @@ router.patch('/:id', requireAuth, validateIdParam, validateBody(updatePersonSche
   res.json(response);
 }));
 
-// DELETE /api/persons/:id - Soft delete person (auth required)
-router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// DELETE /api/persons/:displayId - Soft delete person (auth required)
+router.delete('/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
   await prisma.person.update({
-    where: { id },
+    where: { displayId },
     data: { deleted: true }
   });
 

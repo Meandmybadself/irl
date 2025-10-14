@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateIdParam, groupSchema, updateGroupSchema } from '../middleware/validation.js';
+import { validateBody, validateDisplayIdParam, groupSchema, updateGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, Group } from '@irl/shared';
 
@@ -60,12 +60,12 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// GET /api/groups/:id - Get specific group (auth required)
-router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
-  
+// GET /api/groups/:displayId - Get specific group (auth required)
+router.get('/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+
   const item = await prisma.group.findFirst({
-    where: { id, deleted: false }
+    where: { displayId, deleted: false }
   });
 
   if (!item) {
@@ -106,9 +106,9 @@ router.post('/', requireAuth, validateBody(groupSchema), asyncHandler(async (req
   res.status(201).json(response);
 }));
 
-// PUT /api/groups/:id - Update entire group (auth required)
-router.put('/:id', requireAuth, validateIdParam, validateBody(groupSchema), asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// PUT /api/groups/:displayId - Update entire group (auth required)
+router.put('/:displayId', requireAuth, validateDisplayIdParam, validateBody(groupSchema), asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
   // Check if parent group exists (if parentGroupId is provided)
   if (req.body.parentGroupId) {
@@ -122,7 +122,7 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(groupSchema), asyn
   }
 
   const item = await prisma.group.update({
-    where: { id },
+    where: { displayId },
     data: req.body
   });
 
@@ -135,9 +135,9 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(groupSchema), asyn
   res.json(response);
 }));
 
-// PATCH /api/groups/:id - Partial update group (auth required)
-router.patch('/:id', requireAuth, validateIdParam, validateBody(updateGroupSchema), asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// PATCH /api/groups/:displayId - Partial update group (auth required)
+router.patch('/:displayId', requireAuth, validateDisplayIdParam, validateBody(updateGroupSchema), asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
   // Check if parent group exists (if parentGroupId is being updated)
   if (req.body.parentGroupId) {
@@ -151,7 +151,7 @@ router.patch('/:id', requireAuth, validateIdParam, validateBody(updateGroupSchem
   }
 
   const item = await prisma.group.update({
-    where: { id },
+    where: { displayId },
     data: req.body
   });
 
@@ -164,12 +164,12 @@ router.patch('/:id', requireAuth, validateIdParam, validateBody(updateGroupSchem
   res.json(response);
 }));
 
-// DELETE /api/groups/:id - Soft delete group (auth required)
-router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// DELETE /api/groups/:displayId - Soft delete group (auth required)
+router.delete('/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
   await prisma.group.update({
-    where: { id },
+    where: { displayId },
     data: { deleted: true }
   });
 
