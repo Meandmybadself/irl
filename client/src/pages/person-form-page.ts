@@ -6,8 +6,10 @@ import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
+import '../components/ui/contact-info-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
+import type { ContactInformation } from '@irl/shared';
 
 @customElement('person-form-page')
 export class PersonFormPage extends LitElement {
@@ -59,6 +61,9 @@ export class PersonFormPage extends LitElement {
   @state()
   private isLoading = false;
 
+  @state()
+  private contactInformations: ContactInformation[] = [];
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -92,6 +97,10 @@ export class PersonFormPage extends LitElement {
         this.pronouns = person.pronouns || '';
         this.imageURL = person.imageURL || '';
       }
+
+      // TODO: Load contact information when backend endpoint is available
+      // For now, contact information starts empty
+      this.contactInformations = [];
     } catch (error) {
       this.store.dispatch(
         addNotification(
@@ -350,6 +359,18 @@ export class PersonFormPage extends LitElement {
                   ${this.imageURLError ? html`<p class="mt-1 text-sm text-red-600">${this.imageURLError}</p>` : ''}
                 </div>
               </div>
+
+              <contact-info-form
+                entityType="person"
+                .entityId=${this.personId}
+                .contactInformations=${this.contactInformations}
+                @contact-info-changed=${(e: CustomEvent) => {
+                  this.contactInformations = e.detail.items;
+                }}
+                @contact-error=${(e: CustomEvent) => {
+                  this.store.dispatch(addNotification(e.detail.error, 'error'));
+                }}
+              ></contact-info-form>
 
               <div class="flex items-center justify-between gap-x-4">
                 <button
