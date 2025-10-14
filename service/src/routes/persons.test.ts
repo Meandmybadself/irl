@@ -110,8 +110,8 @@ describeIfDatabase('Persons CRUD API', () => {
     })
   })
 
-  describe('GET /api/persons/:id', () => {
-    let personId: number
+  describe('GET /api/persons/:displayId', () => {
+    let personDisplayId: string
 
     beforeEach(async () => {
       const validPerson = getValidPerson()
@@ -121,24 +121,22 @@ describeIfDatabase('Persons CRUD API', () => {
           userId: testUserId
         }
       })
-      personId = person.id
+      personDisplayId = person.displayId
     })
 
     it('should get specific person', async () => {
-      const validPerson = getValidPerson()
       const response = await request(app)
-        .get(`/api/persons/${personId}`)
+        .get(`/api/persons/${personDisplayId}`)
         .set('X-Test-User', authHeader)
 
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)
-      expect(response.body.data.id).toBe(personId)
-      expect(response.body.data.firstName).toBe(validPerson.firstName)
+      expect(response.body.data.displayId).toBe(personDisplayId)
     })
 
     it('should return 404 for non-existent person', async () => {
       const response = await request(app)
-        .get('/api/persons/99999')
+        .get('/api/persons/non-existent-display-id')
         .set('X-Test-User', authHeader)
 
       expect(response.status).toBe(404)
@@ -146,8 +144,8 @@ describeIfDatabase('Persons CRUD API', () => {
     })
   })
 
-  describe('PUT /api/persons/:id', () => {
-    let personId: number
+  describe('PUT /api/persons/:displayId', () => {
+    let personDisplayId: string
 
     beforeEach(async () => {
       const validPerson = getValidPerson()
@@ -157,21 +155,21 @@ describeIfDatabase('Persons CRUD API', () => {
           userId: testUserId
         }
       })
-      personId = person.id
+      personDisplayId = person.displayId
     })
 
     it('should update entire person', async () => {
       const updateData = {
         firstName: 'Jane',
         lastName: 'Smith',
-        displayId: 'jane-smith-456',
+        displayId: personDisplayId,
         pronouns: 'she/her',
         imageURL: null,
         userId: testUserId
       }
 
       const response = await request(app)
-        .put(`/api/persons/${personId}`)
+        .put(`/api/persons/${personDisplayId}`)
         .set('X-Test-User', authHeader)
         .send(updateData)
 
@@ -182,8 +180,9 @@ describeIfDatabase('Persons CRUD API', () => {
     })
   })
 
-  describe('PATCH /api/persons/:id', () => {
-    let personId: number
+  describe('PATCH /api/persons/:displayId', () => {
+    let personDisplayId: string
+    let personLastName: string
 
     beforeEach(async () => {
       const validPerson = getValidPerson()
@@ -193,24 +192,25 @@ describeIfDatabase('Persons CRUD API', () => {
           userId: testUserId
         }
       })
-      personId = person.id
+      personDisplayId = person.displayId
+      personLastName = person.lastName
     })
 
     it('should partially update person', async () => {
-      const validPerson = getValidPerson()
       const response = await request(app)
-        .patch(`/api/persons/${personId}`)
+        .patch(`/api/persons/${personDisplayId}`)
         .set('X-Test-User', authHeader)
         .send({ firstName: 'Updated Name' })
 
       expect(response.status).toBe(200)
       expect(response.body.success).toBe(true)
       expect(response.body.data.firstName).toBe('Updated Name')
-      expect(response.body.data.lastName).toBe(validPerson.lastName)
+      expect(response.body.data.lastName).toBe(personLastName)
     })
   })
 
-  describe('DELETE /api/persons/:id', () => {
+  describe('DELETE /api/persons/:displayId', () => {
+    let personDisplayId: string
     let personId: number
 
     beforeEach(async () => {
@@ -221,12 +221,13 @@ describeIfDatabase('Persons CRUD API', () => {
           userId: testUserId
         }
       })
+      personDisplayId = person.displayId
       personId = person.id
     })
 
     it('should soft delete person', async () => {
       const response = await request(app)
-        .delete(`/api/persons/${personId}`)
+        .delete(`/api/persons/${personDisplayId}`)
         .set('X-Test-User', authHeader)
 
       expect(response.status).toBe(200)

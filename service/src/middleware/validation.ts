@@ -121,3 +121,17 @@ export const validateIdParam = (req: Request, res: Response, next: NextFunction)
   req.params.id = id.toString();
   next();
 };
+
+// Display ID parameter validation
+export const validateDisplayIdParam = (req: Request, res: Response, next: NextFunction) => {
+  const displayId = req.params.displayId;
+  if (!displayId || typeof displayId !== 'string' || displayId.trim().length === 0) {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid displayId parameter',
+      message: 'displayId must be a non-empty string'
+    });
+    return;
+  }
+  next();
+};
