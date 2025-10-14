@@ -187,7 +187,7 @@ export class PersonFormPage extends LitElement {
     }
 
     const currentUser = selectCurrentUser(this.store.getState());
-    if (!currentUser && !this.personId) {
+    if (!currentUser && !this.personDisplayId) {
       this.store.dispatch(addNotification('You must be logged in to create a person', 'error'));
       return;
     }
@@ -201,7 +201,7 @@ export class PersonFormPage extends LitElement {
         displayId: this.displayId.trim(),
         pronouns: this.pronouns.trim() || null,
         imageURL: this.imageURL.trim() || null,
-        ...(currentUser && !this.personId && { userId: currentUser.id })
+        ...(currentUser && !this.personDisplayId && { userId: currentUser.id })
       };
 
       let response;
@@ -227,7 +227,7 @@ export class PersonFormPage extends LitElement {
     } catch (error) {
       this.store.dispatch(
         addNotification(
-          error instanceof Error ? error.message : `Failed to ${this.personId ? 'update' : 'create'} person`,
+          error instanceof Error ? error.message : `Failed to ${this.personDisplayId ? 'update' : 'create'} person`,
           'error'
         )
       );
@@ -263,7 +263,7 @@ export class PersonFormPage extends LitElement {
       <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
           <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-6">
-            ${this.personId ? 'Edit Person' : 'Create Person'}
+            ${this.personDisplayId ? 'Edit Person' : 'Create Person'}
           </h2>
 
           <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
@@ -397,7 +397,7 @@ export class PersonFormPage extends LitElement {
                   ${this.isSaving
                     ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
                     : ''}
-                  ${this.personId ? 'Update Person' : 'Create Person'}
+                  ${this.personDisplayId ? 'Update Person' : 'Create Person'}
                 </button>
               </div>
             </form>

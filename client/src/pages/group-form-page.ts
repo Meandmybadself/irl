@@ -224,7 +224,7 @@ export class GroupFormPage extends LitElement {
     } catch (error) {
       this.store.dispatch(
         addNotification(
-          error instanceof Error ? error.message : `Failed to ${this.groupId ? 'update' : 'create'} group`,
+          error instanceof Error ? error.message : `Failed to ${this.groupDisplayId ? 'update' : 'create'} group`,
           'error'
         )
       );
@@ -251,7 +251,7 @@ export class GroupFormPage extends LitElement {
       <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
           <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-6">
-            ${this.groupId ? 'Edit Group' : 'Create Group'}
+            ${this.groupDisplayId ? 'Edit Group' : 'Create Group'}
           </h2>
 
           <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
@@ -393,7 +393,7 @@ export class GroupFormPage extends LitElement {
                   ${this.isSaving
                     ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
                     : ''}
-                  ${this.groupId ? 'Update Group' : 'Create Group'}
+                  ${this.groupDisplayId ? 'Update Group' : 'Create Group'}
                 </button>
               </div>
             </form>
