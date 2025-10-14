@@ -79,8 +79,8 @@ export class PersonsPage extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  private handleEditPerson(id: number) {
-    window.history.pushState({}, '', `/persons/${id}/edit`);
+  private handleEditPerson(displayId: string) {
+    window.history.pushState({}, '', `/persons/${displayId}/edit`);
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
@@ -264,7 +264,7 @@ export class PersonsPage extends LitElement {
                                 </td>
                                 <td class="py-5 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
                                   <button
-                                    @click=${() => this.handleEditPerson(person.id)}
+                                    @click=${() => this.handleEditPerson(person.displayId)}
                                     class="text-indigo-600 hover:text-indigo-900 bg-transparent border-none cursor-pointer"
                                   >
                                     Edit<span class="sr-only">, ${person.firstName} ${person.lastName}</span>
