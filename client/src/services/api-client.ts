@@ -181,8 +181,8 @@ export class ApiClient {
     return this.request<PaginatedResponse<Person>>(`/persons${queryString}`);
   }
 
-  async getPerson(id: number): Promise<ApiResponse<Person>> {
-    return this.request<ApiResponse<Person>>(`/persons/${id}`);
+  async getPerson(displayId: string): Promise<ApiResponse<Person>> {
+    return this.request<ApiResponse<Person>>(`/persons/${displayId}`);
   }
 
   async createPerson(data: CreatePersonRequest): Promise<ApiResponse<Person>> {
@@ -192,22 +192,22 @@ export class ApiClient {
     });
   }
 
-  async updatePerson(id: number, data: CreatePersonRequest): Promise<ApiResponse<Person>> {
-    return this.request<ApiResponse<Person>>(`/persons/${id}`, {
+  async updatePerson(displayId: string, data: CreatePersonRequest): Promise<ApiResponse<Person>> {
+    return this.request<ApiResponse<Person>>(`/persons/${displayId}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
   }
 
-  async patchPerson(id: number, data: UpdatePersonRequest): Promise<ApiResponse<Person>> {
-    return this.request<ApiResponse<Person>>(`/persons/${id}`, {
+  async patchPerson(displayId: string, data: UpdatePersonRequest): Promise<ApiResponse<Person>> {
+    return this.request<ApiResponse<Person>>(`/persons/${displayId}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     });
   }
 
-  async deletePerson(id: number): Promise<ApiResponse<null>> {
-    return this.request<ApiResponse<null>>(`/persons/${id}`, {
+  async deletePerson(displayId: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/persons/${displayId}`, {
       method: 'DELETE'
     });
   }
@@ -223,8 +223,8 @@ export class ApiClient {
     return this.request<PaginatedResponse<Group>>(`/groups${queryString}`);
   }
 
-  async getGroup(id: number): Promise<ApiResponse<Group>> {
-    return this.request<ApiResponse<Group>>(`/groups/${id}`);
+  async getGroup(displayId: string): Promise<ApiResponse<Group>> {
+    return this.request<ApiResponse<Group>>(`/groups/${displayId}`);
   }
 
   async createGroup(data: CreateGroupRequest): Promise<ApiResponse<Group>> {
@@ -234,22 +234,22 @@ export class ApiClient {
     });
   }
 
-  async updateGroup(id: number, data: CreateGroupRequest): Promise<ApiResponse<Group>> {
-    return this.request<ApiResponse<Group>>(`/groups/${id}`, {
+  async updateGroup(displayId: string, data: CreateGroupRequest): Promise<ApiResponse<Group>> {
+    return this.request<ApiResponse<Group>>(`/groups/${displayId}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
   }
 
-  async patchGroup(id: number, data: UpdateGroupRequest): Promise<ApiResponse<Group>> {
-    return this.request<ApiResponse<Group>>(`/groups/${id}`, {
+  async patchGroup(displayId: string, data: UpdateGroupRequest): Promise<ApiResponse<Group>> {
+    return this.request<ApiResponse<Group>>(`/groups/${displayId}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     });
   }
 
-  async deleteGroup(id: number): Promise<ApiResponse<null>> {
-    return this.request<ApiResponse<null>>(`/groups/${id}`, {
+  async deleteGroup(displayId: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/groups/${displayId}`, {
       method: 'DELETE'
     });
   }
