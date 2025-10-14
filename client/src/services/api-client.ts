@@ -419,13 +419,8 @@ export class ApiClient {
   }
 
   // Contact mapping endpoints - System
-  async getSystemContactInformation(params?: PaginationParams): Promise<PaginatedResponse<SystemContactInformation>> {
-    const query = new URLSearchParams();
-    if (params?.page) query.set('page', params.page.toString());
-    if (params?.limit) query.set('limit', params.limit.toString());
-    const queryString = query.toString() ? `?${query.toString()}` : '';
-
-    return this.request<PaginatedResponse<SystemContactInformation>>(`/contact-mappings/system${queryString}`);
+  async getSystemContactInformations(): Promise<ApiResponse<ContactInformation[]>> {
+    return this.request<ApiResponse<ContactInformation[]>>('/contact-mappings/system');
   }
 
   async createSystemContactInformation(data: CreateSystemContactInformationRequest): Promise<ApiResponse<SystemContactInformation>> {
@@ -442,13 +437,8 @@ export class ApiClient {
   }
 
   // Contact mapping endpoints - Person
-  async getPersonContactInformation(params?: PaginationParams): Promise<PaginatedResponse<PersonContactInformation>> {
-    const query = new URLSearchParams();
-    if (params?.page) query.set('page', params.page.toString());
-    if (params?.limit) query.set('limit', params.limit.toString());
-    const queryString = query.toString() ? `?${query.toString()}` : '';
-
-    return this.request<PaginatedResponse<PersonContactInformation>>(`/contact-mappings/person${queryString}`);
+  async getPersonContactInformations(personId: number): Promise<ApiResponse<ContactInformation[]>> {
+    return this.request<ApiResponse<ContactInformation[]>>(`/contact-mappings/person/${personId}`);
   }
 
   async createPersonContactInformation(data: CreatePersonContactInformationRequest): Promise<ApiResponse<PersonContactInformation>> {
@@ -465,13 +455,8 @@ export class ApiClient {
   }
 
   // Contact mapping endpoints - Group
-  async getGroupContactInformation(params?: PaginationParams): Promise<PaginatedResponse<GroupContactInformation>> {
-    const query = new URLSearchParams();
-    if (params?.page) query.set('page', params.page.toString());
-    if (params?.limit) query.set('limit', params.limit.toString());
-    const queryString = query.toString() ? `?${query.toString()}` : '';
-
-    return this.request<PaginatedResponse<GroupContactInformation>>(`/contact-mappings/group${queryString}`);
+  async getGroupContactInformations(groupId: number): Promise<ApiResponse<ContactInformation[]>> {
+    return this.request<ApiResponse<ContactInformation[]>>(`/contact-mappings/group/${groupId}`);
   }
 
   async createGroupContactInformation(data: CreateGroupContactInformationRequest): Promise<ApiResponse<GroupContactInformation>> {

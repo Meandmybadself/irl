@@ -1,5 +1,8 @@
 import { LitElement, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { consume } from '@lit-labs/context';
+import { apiContext } from '../../contexts/api-context.js';
+import type { ApiClient } from '../../services/api-client.js';
 import type { ContactInformation } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
 
@@ -15,17 +18,24 @@ export class ContactInfoForm extends LitElement {
     return this;
   }
 
+  @consume({ context: apiContext })
+  @state()
+  private api!: ApiClient;
+
   @property({ type: String })
   entityType!: 'system' | 'person' | 'group';
 
   @property({ type: Number })
-  entityId: number | null = null;
+  entityId!: number;
 
   @property({ type: Array })
   contactInformations: ContactInformation[] = [];
 
   @state()
   private items: ContactInfoItem[] = [];
+
+  @state()
+  private isSaving = false;
 
   @state()
   private showAddForm = false;
@@ -65,21 +75,62 @@ export class ContactInfoForm extends LitElement {
     this.items = updatedItems;
   }
 
-  private handleAddNew() {
+  private async handleAddNew() {
     if (!this.newItem.label?.trim() || !this.newItem.value?.trim()) {
       return;
     }
 
-    const itemToAdd: ContactInfoItem = {
-      ...this.newItem,
-      isDirty: true
-    };
+    this.isSaving = true;
 
-    this.items = [...this.items, itemToAdd];
-    this.newItem = this.getEmptyItem();
-    this.showAddForm = false;
+    try {
+      // Create the contact information
+      const contactData = {
+        type: this.newItem.type!,
+        label: this.newItem.label.trim(),
+        value: this.newItem.value.trim(),
+        privacy: this.newItem.privacy!
+      };
 
-    this.dispatchChangeEvent();
+      const contactResponse = await this.api.createContactInformation(contactData);
+      if (!contactResponse.success || !contactResponse.data) {
+        throw new Error(contactResponse.error || 'Failed to create contact information');
+      }
+
+      const contactId = contactResponse.data.id;
+
+      // Link the contact information to the entity
+      if (this.entityType === 'person') {
+        await this.api.createPersonContactInformation({
+          personId: this.entityId,
+          contactInformationId: contactId
+        });
+      } else if (this.entityType === 'group') {
+        await this.api.createGroupContactInformation({
+          groupId: this.entityId,
+          contactInformationId: contactId
+        });
+      } else if (this.entityType === 'system') {
+        await this.api.createSystemContactInformation({
+          systemId: this.entityId,
+          contactInformationId: contactId
+        });
+      }
+
+      // Add to local items
+      this.items = [...this.items, contactResponse.data];
+      this.newItem = this.getEmptyItem();
+      this.showAddForm = false;
+
+      this.dispatchChangeEvent();
+    } catch (error) {
+      this.dispatchEvent(new CustomEvent('contact-error', {
+        detail: { error: error instanceof Error ? error.message : 'Failed to add contact information' },
+        bubbles: true,
+        composed: true
+      }));
+    } finally {
+      this.isSaving = false;
+    }
   }
 
   private handleEdit(index: number) {
@@ -107,20 +158,75 @@ export class ContactInfoForm extends LitElement {
     this.dispatchChangeEvent();
   }
 
-  private handleSaveEdit(index: number) {
-    const updatedItems = [...this.items];
-    updatedItems[index] = { ...updatedItems[index], isEditing: false };
-    this.items = updatedItems;
-    this.dispatchChangeEvent();
+  private async handleSaveEdit(index: number) {
+    const item = this.items[index];
+    if (!item.id || !item.label?.trim() || !item.value?.trim()) {
+      return;
+    }
+
+    this.isSaving = true;
+
+    try {
+      const updateData = {
+        type: item.type!,
+        label: item.label.trim(),
+        value: item.value.trim(),
+        privacy: item.privacy!
+      };
+
+      const response = await this.api.patchContactInformation(item.id, updateData);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to update contact information');
+      }
+
+      // Update local items
+      const updatedItems = [...this.items];
+      updatedItems[index] = { ...response.data, isEditing: false, isDirty: false };
+      this.items = updatedItems;
+
+      this.dispatchChangeEvent();
+    } catch (error) {
+      this.dispatchEvent(new CustomEvent('contact-error', {
+        detail: { error: error instanceof Error ? error.message : 'Failed to update contact information' },
+        bubbles: true,
+        composed: true
+      }));
+    } finally {
+      this.isSaving = false;
+    }
   }
 
-  private handleDelete(index: number) {
+  private async handleDelete(index: number) {
+    const item = this.items[index];
+
     if (!confirm('Are you sure you want to delete this contact information?')) {
       return;
     }
 
-    this.items = this.items.filter((_, i) => i !== index);
-    this.dispatchChangeEvent();
+    if (!item.id) {
+      // Not yet saved, just remove from local state
+      this.items = this.items.filter((_, i) => i !== index);
+      this.dispatchChangeEvent();
+      return;
+    }
+
+    this.isSaving = true;
+
+    try {
+      await this.api.deleteContactInformation(item.id);
+
+      // Remove from local items
+      this.items = this.items.filter((_, i) => i !== index);
+      this.dispatchChangeEvent();
+    } catch (error) {
+      this.dispatchEvent(new CustomEvent('contact-error', {
+        detail: { error: error instanceof Error ? error.message : 'Failed to delete contact information' },
+        bubbles: true,
+        composed: true
+      }));
+    } finally {
+      this.isSaving = false;
+    }
   }
 
   private dispatchChangeEvent() {
@@ -225,7 +331,8 @@ export class ContactInfoForm extends LitElement {
             <button
               type="button"
               @click=${() => this.handleCancelEdit(index)}
-              class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              ?disabled=${this.isSaving}
+              class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -233,9 +340,10 @@ export class ContactInfoForm extends LitElement {
               <button
                 type="button"
                 @click=${() => this.handleSaveEdit(index)}
-                class="px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                ?disabled=${this.isSaving}
+                class="px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
               >
-                Save
+                ${this.isSaving ? 'Saving...' : 'Save'}
               </button>
             ` : ''}
           </div>
@@ -264,14 +372,16 @@ export class ContactInfoForm extends LitElement {
           <button
             type="button"
             @click=${() => this.handleEdit(index)}
-            class="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+            ?disabled=${this.isSaving}
+            class="text-indigo-600 hover:text-indigo-900 text-sm font-medium disabled:opacity-50"
           >
             Edit
           </button>
           <button
             type="button"
             @click=${() => this.handleDelete(index)}
-            class="text-red-600 hover:text-red-900 text-sm font-medium"
+            ?disabled=${this.isSaving}
+            class="text-red-600 hover:text-red-900 text-sm font-medium disabled:opacity-50"
           >
             Delete
           </button>
@@ -365,16 +475,18 @@ export class ContactInfoForm extends LitElement {
               <button
                 type="button"
                 @click=${() => { this.showAddForm = false; this.newItem = this.getEmptyItem(); }}
-                class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                ?disabled=${this.isSaving}
+                class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 @click=${this.handleAddNew}
-                class="px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                ?disabled=${this.isSaving}
+                class="px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
               >
-                Add
+                ${this.isSaving ? 'Saving...' : 'Add'}
               </button>
             </div>
           </div>
