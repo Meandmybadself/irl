@@ -86,9 +86,13 @@ export class GroupFormPage extends LitElement {
 
     this.isLoading = true;
     try {
-      const response = await this.api.getGroup(this.groupId);
-      if (response.success && response.data) {
-        const group = response.data;
+      const [groupResponse, contactsResponse] = await Promise.all([
+        this.api.getGroup(this.groupId),
+        this.api.getGroupContactInformations(this.groupId)
+      ]);
+
+      if (groupResponse.success && groupResponse.data) {
+        const group = groupResponse.data;
         this.name = group.name;
         this.displayId = group.displayId;
         this.description = group.description || '';
@@ -104,9 +108,9 @@ export class GroupFormPage extends LitElement {
         }
       }
 
-      // TODO: Load contact information when backend endpoint is available
-      // For now, contact information starts empty
-      this.contactInformations = [];
+      if (contactsResponse.success && contactsResponse.data) {
+        this.contactInformations = contactsResponse.data;
+      }
     } catch (error) {
       this.store.dispatch(
         addNotification(
@@ -354,17 +358,19 @@ export class GroupFormPage extends LitElement {
                 </div>
               </div>
 
-              <contact-info-form
-                entityType="group"
-                .entityId=${this.groupId}
-                .contactInformations=${this.contactInformations}
-                @contact-info-changed=${(e: CustomEvent) => {
-                  this.contactInformations = e.detail.items;
-                }}
-                @contact-error=${(e: CustomEvent) => {
-                  this.store.dispatch(addNotification(e.detail.error, 'error'));
-                }}
-              ></contact-info-form>
+              ${this.groupId ? html`
+                <contact-info-form
+                  entityType="group"
+                  .entityId=${this.groupId}
+                  .contactInformations=${this.contactInformations}
+                  @contact-info-changed=${(e: CustomEvent) => {
+                    this.contactInformations = e.detail.items;
+                  }}
+                  @contact-error=${(e: CustomEvent) => {
+                    this.store.dispatch(addNotification(e.detail.error, 'error'));
+                  }}
+                ></contact-info-form>
+              ` : ''}
 
               <div class="flex items-center justify-between gap-x-4">
                 <button

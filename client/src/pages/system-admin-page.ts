@@ -62,15 +62,19 @@ export class SystemAdminPage extends LitElement {
   private async loadSystem() {
     this.isLoading = true;
     try {
-      const response = await this.api.getSystem();
-      if (response.success && response.data) {
-        this.system = response.data;
-        this.name = response.data.name;
-        this.registrationOpen = response.data.registrationOpen;
+      const [systemResponse, contactsResponse] = await Promise.all([
+        this.api.getSystem(),
+        this.api.getSystemContactInformations()
+      ]);
 
-        // TODO: Load contact information when backend endpoint is available
-        // For now, contact information starts empty
-        this.contactInformations = [];
+      if (systemResponse.success && systemResponse.data) {
+        this.system = systemResponse.data;
+        this.name = systemResponse.data.name;
+        this.registrationOpen = systemResponse.data.registrationOpen;
+      }
+
+      if (contactsResponse.success && contactsResponse.data) {
+        this.contactInformations = contactsResponse.data;
       }
     } catch (error) {
       // System might not exist yet, which is OK
