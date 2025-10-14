@@ -30,6 +30,9 @@ export class GroupFormPage extends LitElement {
   private groupId: number | null = null;
 
   @state()
+  private groupDisplayId: string | null = null;
+
+  @state()
   private name = '';
 
   @state()
@@ -76,40 +79,42 @@ export class GroupFormPage extends LitElement {
     // Check if we're editing an existing group
     const pathParts = window.location.pathname.split('/');
     if (pathParts[1] === 'groups' && pathParts[2] && pathParts[2] !== 'create' && pathParts[3] === 'edit') {
-      this.groupId = parseInt(pathParts[2]);
+      this.groupDisplayId = pathParts[2];
       await this.loadGroup();
     }
   }
 
   private async loadGroup() {
-    if (!this.groupId) return;
+    if (!this.groupDisplayId) return;
 
     this.isLoading = true;
     try {
-      const [groupResponse, contactsResponse] = await Promise.all([
-        this.api.getGroup(this.groupId),
-        this.api.getGroupContactInformations(this.groupId)
-      ]);
+      const groupResponse = await this.api.getGroup(this.groupDisplayId);
 
       if (groupResponse.success && groupResponse.data) {
         const group = groupResponse.data;
+        this.groupId = group.id;
         this.name = group.name;
         this.displayId = group.displayId;
         this.description = group.description || '';
         this.publiclyVisible = group.publiclyVisible;
         this.allowsAnyUserToCreateSubgroup = group.allowsAnyUserToCreateSubgroup;
 
-        // Load parent group if it exists
-        if (group.parentGroupId) {
-          const parentResponse = await this.api.getGroup(group.parentGroupId);
-          if (parentResponse.success && parentResponse.data) {
-            this.parentGroup = parentResponse.data;
-          }
-        }
-      }
+        // TODO: Load parent group if it exists
+        // Note: This requires fetching by ID, but we need displayId for the new API
+        // For now, parentGroup will remain null when editing
+        // if (group.parentGroupId) {
+        //   const parentResponse = await this.api.getGroup(group.parentGroupId);
+        //   if (parentResponse.success && parentResponse.data) {
+        //     this.parentGroup = parentResponse.data;
+        //   }
+        // }
 
-      if (contactsResponse.success && contactsResponse.data) {
-        this.contactInformations = contactsResponse.data;
+        // Load contact information using numeric ID
+        const contactsResponse = await this.api.getGroupContactInformations(group.id);
+        if (contactsResponse.success && contactsResponse.data) {
+          this.contactInformations = contactsResponse.data;
+        }
       }
     } catch (error) {
       this.store.dispatch(
@@ -197,9 +202,9 @@ export class GroupFormPage extends LitElement {
       };
 
       let response;
-      if (this.groupId) {
+      if (this.groupDisplayId) {
         // Update existing group
-        response = await this.api.patchGroup(this.groupId, data);
+        response = await this.api.patchGroup(this.groupDisplayId, data);
         if (response.success) {
           this.store.dispatch(addNotification('Group updated successfully', 'success'));
         }

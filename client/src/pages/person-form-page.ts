@@ -29,6 +29,9 @@ export class PersonFormPage extends LitElement {
   private personId: number | null = null;
 
   @state()
+  private personDisplayId: string | null = null;
+
+  @state()
   private firstName = '';
 
   @state()
@@ -78,32 +81,32 @@ export class PersonFormPage extends LitElement {
     // Check if we're editing an existing person
     const pathParts = window.location.pathname.split('/');
     if (pathParts[1] === 'persons' && pathParts[2] && pathParts[2] !== 'create' && pathParts[3] === 'edit') {
-      this.personId = parseInt(pathParts[2]);
+      this.personDisplayId = pathParts[2];
       await this.loadPerson();
     }
   }
 
   private async loadPerson() {
-    if (!this.personId) return;
+    if (!this.personDisplayId) return;
 
     this.isLoading = true;
     try {
-      const [personResponse, contactsResponse] = await Promise.all([
-        this.api.getPerson(this.personId),
-        this.api.getPersonContactInformations(this.personId)
-      ]);
+      const personResponse = await this.api.getPerson(this.personDisplayId);
 
       if (personResponse.success && personResponse.data) {
         const person = personResponse.data;
+        this.personId = person.id;
         this.firstName = person.firstName;
         this.lastName = person.lastName;
         this.displayId = person.displayId;
         this.pronouns = person.pronouns || '';
         this.imageURL = person.imageURL || '';
-      }
 
-      if (contactsResponse.success && contactsResponse.data) {
-        this.contactInformations = contactsResponse.data;
+        // Load contact information using numeric ID
+        const contactsResponse = await this.api.getPersonContactInformations(person.id);
+        if (contactsResponse.success && contactsResponse.data) {
+          this.contactInformations = contactsResponse.data;
+        }
       }
     } catch (error) {
       this.store.dispatch(
@@ -202,9 +205,9 @@ export class PersonFormPage extends LitElement {
       };
 
       let response;
-      if (this.personId) {
+      if (this.personDisplayId) {
         // Update existing person
-        response = await this.api.patchPerson(this.personId, data);
+        response = await this.api.patchPerson(this.personDisplayId, data);
         if (response.success) {
           this.store.dispatch(addNotification('Person updated successfully', 'success'));
         }
