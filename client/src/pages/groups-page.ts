@@ -78,8 +78,8 @@ export class GroupsPage extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  private handleEditGroup(id: number) {
-    window.history.pushState({}, '', `/groups/${id}/edit`);
+  private handleEditGroup(displayId: string) {
+    window.history.pushState({}, '', `/groups/${displayId}/edit`);
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
@@ -244,7 +244,7 @@ export class GroupsPage extends LitElement {
                                 </td>
                                 <td class="py-2 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
                                   <button
-                                    @click=${() => this.handleEditGroup(group.id)}
+                                    @click=${() => this.handleEditGroup(group.displayId)}
                                     class="text-indigo-600 hover:text-indigo-900 bg-transparent border-none cursor-pointer"
                                   >
                                     Edit<span class="sr-only">, ${group.name}</span>
