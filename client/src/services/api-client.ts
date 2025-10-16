@@ -437,8 +437,8 @@ export class ApiClient {
   }
 
   // Contact mapping endpoints - Person
-  async getPersonContactInformations(personId: number): Promise<ApiResponse<ContactInformation[]>> {
-    return this.request<ApiResponse<ContactInformation[]>>(`/contact-mappings/person/${personId}`);
+  async getPersonContactInformations(displayId: string): Promise<ApiResponse<ContactInformation[]>> {
+    return this.request<ApiResponse<ContactInformation[]>>(`/contact-mappings/person/${displayId}`);
   }
 
   async createPersonContactInformation(data: CreatePersonContactInformationRequest): Promise<ApiResponse<PersonContactInformation>> {

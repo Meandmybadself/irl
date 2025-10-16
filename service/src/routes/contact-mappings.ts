@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateIdParam, systemContactInformationSchema, personContactInformationSchema, groupContactInformationSchema } from '../middleware/validation.js';
+import { validateBody, validateIdParam, systemContactInformationSchema, personContactInformationSchema, groupContactInformationSchema, validateDisplayIdParam } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
 
@@ -93,12 +93,14 @@ router.delete('/system/:id', requireAuth, validateIdParam, asyncHandler(async (r
 
 // Person Contact Information Routes
 // GET /api/contact-mappings/person/:personId - Get contact information for a specific person
-router.get('/person/:personId', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const personId = parseInt(req.params.personId);
+router.get('/person/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+
+  console.log('displayId', displayId);
 
   // Get all contact information for this person
   const mappings = await prisma.personContactInformation.findMany({
-    where: { personId },
+    where: { person: { displayId }, contactInformation: { deleted: false } },
     include: {
       contactInformation: true
     }
@@ -147,12 +149,31 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
   res.status(201).json(response);
 }));
 
-// DELETE /api/contact-mappings/person/:id - Delete person contact information mapping
-router.delete('/person/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// DELETE /api/contact-mappings/person/:displayId/:contactInfoId - Delete person contact information mapping
+router.delete('/person/:displayId/:contactInfoId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+  const contactInfoId = parseInt(req.params.contactInfoId);
+  
+  if (isNaN(contactInfoId) || contactInfoId <= 0) {
+    throw createError(400, 'Invalid contact information ID parameter');
+  }
 
-  await prisma.personContactInformation.delete({
-    where: { id }
+  // Find the mapping to ensure it exists
+  const mapping = await prisma.personContactInformation.findFirst({
+    where: { 
+      person: { displayId }, 
+      contactInformation: { id: contactInfoId, deleted: false } 
+    }
+  });
+
+  if (!mapping) {
+    throw createError(404, 'Person contact information mapping not found');
+  }
+
+  // Soft delete the contact information
+  await prisma.contactInformation.update({
+    where: { id: contactInfoId },
+    data: { deleted: true }
   });
 
   const response: ApiResponse<null> = {
@@ -165,12 +186,12 @@ router.delete('/person/:id', requireAuth, validateIdParam, asyncHandler(async (r
 
 // Group Contact Information Routes
 // GET /api/contact-mappings/group/:groupId - Get contact information for a specific group
-router.get('/group/:groupId', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const groupId = parseInt(req.params.groupId);
+router.get('/group/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
   // Get all contact information for this group
   const mappings = await prisma.groupContactInformation.findMany({
-    where: { groupId },
+    where: { group: { displayId }, contactInformation: { deleted: false } },
     include: {
       contactInformation: true
     }
@@ -190,7 +211,7 @@ router.get('/group/:groupId', requireAuth, validateIdParam, asyncHandler(async (
 router.post('/group', requireAuth, validateBody(groupContactInformationSchema), asyncHandler(async (req, res) => {
   // Check if group exists
   const groupExists = await prisma.group.findFirst({
-    where: { id: req.body.groupId, deleted: false }
+    where: { displayId: req.body.displayId, deleted: false }
   });
 
   if (!groupExists) {
@@ -199,7 +220,7 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
 
   // Check if contact information exists
   const contactExists = await prisma.contactInformation.findFirst({
-    where: { id: req.body.contactInformationId, deleted: false }
+    where: { id: req.body.contactInfoId, deleted: false }
   });
 
   if (!contactExists) {
@@ -207,7 +228,10 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
   }
 
   const item = await prisma.groupContactInformation.create({
-    data: req.body
+    data: {
+      groupId: groupExists.id,
+      contactInformationId: req.body.contactInfoId
+    }
   });
 
   const response: ApiResponse<GroupContactInformation> = {
@@ -219,12 +243,31 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
   res.status(201).json(response);
 }));
 
-// DELETE /api/contact-mappings/group/:id - Delete group contact information mapping
-router.delete('/group/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// DELETE /api/contact-mappings/group/:displayId/:contactInfoId - Delete group contact information mapping
+router.delete('/group/:displayId/:contactInfoId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+  const contactInfoId = parseInt(req.params.contactInfoId);
+  
+  if (isNaN(contactInfoId) || contactInfoId <= 0) {
+    throw createError(400, 'Invalid contact information ID parameter');
+  }
 
-  await prisma.groupContactInformation.delete({
-    where: { id }
+  // Find the mapping to ensure it exists
+  const mapping = await prisma.groupContactInformation.findFirst({
+    where: { 
+      group: { displayId }, 
+      contactInformation: { id: contactInfoId, deleted: false } 
+    }
+  });
+
+  if (!mapping) {
+    throw createError(404, 'Group contact information mapping not found');
+  }
+
+  // Soft delete the contact information
+  await prisma.contactInformation.update({
+    where: { id: contactInfoId },
+    data: { deleted: true }
   });
 
   const response: ApiResponse<null> = {

@@ -6,9 +6,7 @@ alwaysApply: true
 ### Client
 
 The client runs on port 3000.
-It will redirect to the login page if the user is not authenticated.  Login with the following credentials, usable only in local development:
-- Email: admin@clownpenis.fart
-- Password: password
+It will redirect to the login page if the user is not authenticated.
 
 ### Service
 
