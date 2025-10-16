@@ -103,7 +103,7 @@ export class PersonFormPage extends LitElement {
         this.imageURL = person.imageURL || '';
 
         // Load contact information using numeric ID
-        const contactsResponse = await this.api.getPersonContactInformations(person.id);
+        const contactsResponse = await this.api.getPersonContactInformations(person.displayId);
         if (contactsResponse.success && contactsResponse.data) {
           this.contactInformations = contactsResponse.data;
         }
