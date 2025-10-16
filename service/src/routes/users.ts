@@ -5,8 +5,7 @@ import { prisma } from '../lib/prisma.js';
 import { sendVerificationEmail } from '../lib/email.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, userSchema, updateUserSchema, validateIdParam } from '../middleware/validation.js';
-import { requireAuth } from '../middleware/auth.js';
-import { sanitizePaginationParams, sanitizeEmail } from '../utils/sanitization.js';
+import { requireSystemAdmin } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, User } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -69,23 +68,13 @@ const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResul
   };
 };
 
-// GET /api/users - List all users (auth required)
-// Supports optional search query parameter: ?search=term (searches email)
-router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  // Sanitize pagination parameters
-  const { page, limit, skip } = sanitizePaginationParams(
-    req.query.page as string,
-    req.query.limit as string
-  );
+// GET /api/users - List all users (admin only)
+router.get('/', requireSystemAdmin, asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
+  const skip = (page - 1) * limit;
 
-  // Sanitize search query (for email search)
-  const searchQuery = sanitizeEmail(req.query.search as string);
-
-  // Build where clause with search if provided
   const where: any = { deleted: false };
-  if (searchQuery) {
-    where.email = { contains: searchQuery, mode: 'insensitive' };
-  }
 
   const [items, total] = await Promise.all([
     prisma.user.findMany({
@@ -144,8 +133,8 @@ router.get('/verify', asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// GET /api/users/:id - Get specific user (auth required)
-router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
+// GET /api/users/:id - Get specific user (admin only)
+router.get('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   
   const users = await prisma.user.findMany({
@@ -212,8 +201,8 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   res.status(201).json(response);
 }));
 
-// PUT /api/users/:id - Update entire user (auth required)
-router.put('/:id', requireAuth, validateIdParam, validateBody(userSchema), asyncHandler(async (req, res) => {
+// PUT /api/users/:id - Update entire user (admin only)
+router.put('/:id', requireSystemAdmin, validateIdParam, validateBody(userSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   const { item, verificationToken } = await updateUserRecord(id, req.body);
 
@@ -234,8 +223,8 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(userSchema), async
   res.json(response);
 }));
 
-// PATCH /api/users/:id - Partial update user (auth required)
-router.patch('/:id', requireAuth, validateIdParam, validateBody(updateUserSchema), asyncHandler(async (req, res) => {
+// PATCH /api/users/:id - Partial update user (admin only)
+router.patch('/:id', requireSystemAdmin, validateIdParam, validateBody(updateUserSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   const { item, verificationToken } = await updateUserRecord(id, req.body);
 
@@ -256,8 +245,8 @@ router.patch('/:id', requireAuth, validateIdParam, validateBody(updateUserSchema
   res.json(response);
 }));
 
-// DELETE /api/users/:id - Soft delete user (auth required)
-router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
+// DELETE /api/users/:id - Soft delete user (admin only)
+router.delete('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   const users = await prisma.user.findMany({
