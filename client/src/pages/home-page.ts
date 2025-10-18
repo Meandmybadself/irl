@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
@@ -8,84 +8,10 @@ import '../components/layout/app-layout.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
-  static styles = css`
-    :host {
-      display: block;
-    }
-
-    .welcome {
-      background: white;
-      padding: 2rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-      margin-bottom: 2rem;
-    }
-
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #111827;
-      margin: 0 0 1rem 0;
-    }
-
-    .subtitle {
-      font-size: 1rem;
-      color: #6b7280;
-      line-height: 1.5;
-    }
-
-    .quick-links {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .link-card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-      text-decoration: none;
-      color: inherit;
-      transition: all 0.15s;
-      border: 2px solid transparent;
-    }
-
-    .link-card:hover {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      border-color: #3b82f6;
-    }
-
-    .link-card h2 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #111827;
-      margin: 0 0 0.5rem 0;
-    }
-
-    .link-card p {
-      font-size: 0.875rem;
-      color: #6b7280;
-      margin: 0;
-      line-height: 1.5;
-    }
-
-    .icon {
-      font-size: 2rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .coming-soon {
-      display: inline-block;
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-      background-color: #fef3c7;
-      color: #92400e;
-      border-radius: 0.25rem;
-      font-weight: 500;
-      margin-left: 0.5rem;
-    }
-  `;
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
 
   @consume({ context: storeContext, subscribe: true })
   @state()
@@ -121,30 +47,36 @@ export class HomePage extends LitElement {
 
     return html`
       <app-layout>
-        <div class="welcome">
-          <h1>Welcome, ${firstName}! 👋</h1>
-          <p class="subtitle">
+        <div class="bg-white p-8 rounded-lg shadow-sm mb-8">
+          <h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome, ${firstName}! 👋</h1>
+          <p class="text-base text-gray-600 leading-relaxed">
             Your community directory for exchanging contact information and staying connected.
           </p>
         </div>
 
-        <div class="quick-links">
-          <a href="/groups" class="link-card">
-            <div class="icon">👥</div>
-            <h2>Groups <span class="coming-soon">Coming Soon</span></h2>
-            <p>Browse and manage your groups</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <a href="/persons" class="block bg-white p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 border-transparent hover:shadow-md hover:border-blue-500">
+            <div class="text-4xl mb-3">👥</div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
+              People
+            </h2>
+            <p class="text-sm text-gray-600 leading-relaxed">Browse and manage people in your directory</p>
           </a>
 
-          <a href="/directory" class="link-card">
-            <div class="icon">📖</div>
-            <h2>Directory <span class="coming-soon">Coming Soon</span></h2>
-            <p>Search the community directory</p>
+          <a href="/groups" class="block bg-white p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 border-transparent hover:shadow-md hover:border-blue-500">
+            <div class="text-4xl mb-3">📂</div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
+              Groups
+            </h2>
+            <p class="text-sm text-gray-600 leading-relaxed">Browse and manage your groups</p>
           </a>
 
-          <a href="/contact" class="link-card">
-            <div class="icon">📞</div>
-            <h2>Contact Info <span class="coming-soon">Coming Soon</span></h2>
-            <p>Manage your contact information</p>
+          <a href="/contact" class="block bg-white p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 border-transparent hover:shadow-md hover:border-blue-500">
+            <div class="text-4xl mb-3">📞</div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
+              Contact Info <span class="inline-block text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded font-medium ml-2">Coming Soon</span>
+            </h2>
+            <p class="text-sm text-gray-600 leading-relaxed">Manage your contact information</p>
           </a>
         </div>
       </app-layout>

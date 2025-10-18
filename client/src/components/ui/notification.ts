@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../../contexts/store-context.js';
@@ -8,75 +8,10 @@ import type { AppStore } from '../../store/index.js';
 
 @customElement('ui-notifications')
 export class UINotifications extends LitElement {
-  static styles = css`
-    :host {
-      display: block;
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      z-index: 9999;
-      max-width: 24rem;
-    }
-
-    .notification {
-      margin-bottom: 0.75rem;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      display: flex;
-      align-items: start;
-      justify-content: space-between;
-      gap: 0.75rem;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    .notification.success {
-      background-color: #d1fae5;
-      color: #065f46;
-    }
-
-    .notification.error {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-
-    .notification.info {
-      background-color: #dbeafe;
-      color: #1e40af;
-    }
-
-    .message {
-      flex: 1;
-      font-size: 0.875rem;
-    }
-
-    .close-button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      font-size: 1.25rem;
-      line-height: 1;
-      color: currentColor;
-      opacity: 0.6;
-      transition: opacity 0.15s;
-    }
-
-    .close-button:hover {
-      opacity: 1;
-    }
-  `;
+  // Remove Shadow DOM to use Tailwind classes
+  createRenderRoot() {
+    return this;
+  }
 
   @consume({ context: storeContext, subscribe: true })
   @state()
@@ -117,22 +52,36 @@ export class UINotifications extends LitElement {
     this.store.dispatch(removeNotification(id));
   }
 
+  private getNotificationClasses(type: string) {
+    const baseClasses = 'mb-3 p-4 rounded-lg shadow-lg flex items-start justify-between gap-3 animate-slide-in';
+
+    const typeClasses = {
+      success: 'bg-green-100 text-green-800',
+      error: 'bg-red-100 text-red-800',
+      info: 'bg-blue-100 text-blue-800'
+    };
+
+    return `${baseClasses} ${typeClasses[type as keyof typeof typeClasses] || typeClasses.info}`;
+  }
+
   render() {
     return html`
-      ${this.notifications.map(
-        notification => html`
-          <div class="notification ${notification.type}">
-            <div class="message">${notification.message}</div>
-            <button
-              class="close-button"
-              @click=${() => this.handleClose(notification.id)}
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </div>
-        `
-      )}
+      <div class="fixed top-4 right-4 z-[9999] max-w-sm">
+        ${this.notifications.map(
+          notification => html`
+            <div class=${this.getNotificationClasses(notification.type)}>
+              <div class="flex-1 text-sm">${notification.message}</div>
+              <button
+                class="bg-transparent border-none cursor-pointer p-0 text-xl leading-none opacity-60 hover:opacity-100 transition-opacity"
+                @click=${() => this.handleClose(notification.id)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+          `
+        )}
+      </div>
     `;
   }
 }

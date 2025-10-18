@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+
+## General
+### Client
+
+The client runs on port 3000.
+It will redirect to the login page if the user is not authenticated.
+
+### Service
+The service runs on port 3001.
+
+## Process Steps
+
+After implementing a change, ensure TypeScript compiles without errors.
+
+## Service
+
+After implementing a change, ensure tests pass.
