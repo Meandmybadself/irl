@@ -43,6 +43,9 @@ export class ContactInfoForm extends LitElement {
   @state()
   private newItem: ContactInfoItem = this.getEmptyItem();
 
+  @state()
+  private errorMessage: string | null = null;
+
   async connectedCallback() {
     super.connectedCallback();
     this.items = [...this.contactInformations];
@@ -77,10 +80,12 @@ export class ContactInfoForm extends LitElement {
 
   private async handleAddNew() {
     if (!this.newItem.label?.trim() || !this.newItem.value?.trim()) {
+      this.errorMessage = 'Label and value are required';
       return;
     }
 
     this.isSaving = true;
+    this.errorMessage = null;
 
     try {
       // Create the contact information
@@ -123,8 +128,10 @@ export class ContactInfoForm extends LitElement {
 
       this.dispatchChangeEvent();
     } catch (error) {
+      const errorMsg = `Failed to add contact information: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      this.errorMessage = errorMsg;
       this.dispatchEvent(new CustomEvent('contact-error', {
-        detail: { error: `Failed to add contact information: ${error instanceof Error ? error.message : 'Unknown error'}` },
+        detail: { error: errorMsg },
         bubbles: true,
         composed: true
       }));
@@ -161,10 +168,12 @@ export class ContactInfoForm extends LitElement {
   private async handleSaveEdit(index: number) {
     const item = this.items[index];
     if (!item.id || !item.label?.trim() || !item.value?.trim()) {
+      this.errorMessage = 'Label and value are required';
       return;
     }
 
     this.isSaving = true;
+    this.errorMessage = null;
 
     try {
       const updateData = {
@@ -186,8 +195,10 @@ export class ContactInfoForm extends LitElement {
 
       this.dispatchChangeEvent();
     } catch (error) {
+      const errorMsg = `Failed to update contact information: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      this.errorMessage = errorMsg;
       this.dispatchEvent(new CustomEvent('contact-error', {
-        detail: { error: `Failed to update contact information: ${error instanceof Error ? error.message : 'Unknown error'}` },
+        detail: { error: errorMsg },
         bubbles: true,
         composed: true
       }));
@@ -211,6 +222,7 @@ export class ContactInfoForm extends LitElement {
     }
 
     this.isSaving = true;
+    this.errorMessage = null;
 
     try {
       await this.api.deleteContactInformation(item.id);
@@ -219,8 +231,10 @@ export class ContactInfoForm extends LitElement {
       this.items = this.items.filter((_, i) => i !== index);
       this.dispatchChangeEvent();
     } catch (error) {
+      const errorMsg = `Failed to delete contact information: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      this.errorMessage = errorMsg;
       this.dispatchEvent(new CustomEvent('contact-error', {
-        detail: { error: `Failed to delete contact information: ${error instanceof Error ? error.message : 'Unknown error'}` },
+        detail: { error: errorMsg },
         bubbles: true,
         composed: true
       }));
@@ -408,7 +422,7 @@ export class ContactInfoForm extends LitElement {
           ${!this.showAddForm ? html`
             <button
               type="button"
-              @click=${() => this.showAddForm = true}
+              @click=${() => { this.showAddForm = true; this.errorMessage = null; }}
               class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
             >
               <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -418,6 +432,35 @@ export class ContactInfoForm extends LitElement {
             </button>
           ` : ''}
         </div>
+
+        ${this.errorMessage ? html`
+          <div class="rounded-md bg-red-50 p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm font-medium text-red-800">${this.errorMessage}</p>
+              </div>
+              <div class="ml-auto pl-3">
+                <div class="-mx-1.5 -my-1.5">
+                  <button
+                    type="button"
+                    @click=${() => this.errorMessage = null}
+                    class="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-red-50"
+                  >
+                    <span class="sr-only">Dismiss</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
 
         ${this.showAddForm ? html`
           <div class="bg-indigo-50 rounded-lg p-4 space-y-4 border-2 border-indigo-300">

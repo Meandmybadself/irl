@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, systemContactInformationSchema, personContactInformationSchema, groupContactInformationSchema, validateDisplayIdParam } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
+import { canViewPersonPrivateContacts, canViewGroupPrivateContacts } from '../middleware/authorization.js';
 import type { ApiResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -114,14 +115,24 @@ router.delete('/system/:id', requireAuth, validateIdParam, asyncHandler(async (r
 
 // Person Contact Information Routes
 // GET /api/contact-mappings/person/:personId - Get contact information for a specific person
-router.get('/person/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+router.get('/person/:displayId', requireAuth, validateDisplayIdParam, canViewPersonPrivateContacts, asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
+  const canViewPrivate = (req as any).canViewPrivate || req.user?.isSystemAdmin;
 
-  console.log('displayId', displayId);
+  // Build privacy filter
+  const privacyFilter = canViewPrivate
+    ? {}
+    : { privacy: 'PUBLIC' as const };
 
   // Get all contact information for this person
   const mappings = await prisma.personContactInformation.findMany({
-    where: { person: { displayId }, contactInformation: { deleted: false } },
+    where: {
+      person: { displayId },
+      contactInformation: {
+        deleted: false,
+        ...privacyFilter
+      }
+    },
     include: {
       contactInformation: true
     }
@@ -149,20 +160,25 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
       throw createError(400, 'Referenced person does not exist');
     }
 
-    // Check if contact information exists
-    const contactExists = await tx.contactInformation.findFirst({
-      where: { id: req.body.contactInformationId, deleted: false }
-    });
+  // Check authorization: must own the person or be system admin
+  if (!req.user?.isSystemAdmin && personExists.userId !== req.user?.id) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this person');
+  }
 
-    if (!contactExists) {
-      throw createError(400, 'Referenced contact information does not exist');
-    }
-
-    // Create the mapping
-    return await tx.personContactInformation.create({
-      data: req.body
-    });
+  // Check if contact information exists
+  const contactExists = await tx.contactInformation.findFirst({
+    where: { id: req.body.contactInformationId, deleted: false }
   });
+
+  if (!contactExists) {
+    throw createError(400, 'Referenced contact information does not exist');
+  }
+
+  // Create the mapping
+  return await tx.personContactInformation.create({
+    data: req.body
+  });
+});
 
   const response: ApiResponse<PersonContactInformation> = {
     success: true,
@@ -177,7 +193,7 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
 router.delete('/person/:displayId/:contactInfoId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
   const contactInfoId = parseInt(req.params.contactInfoId);
-  
+
   if (isNaN(contactInfoId) || contactInfoId <= 0) {
     throw createError(400, 'Invalid contact information ID parameter');
   }
@@ -187,6 +203,9 @@ router.delete('/person/:displayId/:contactInfoId', requireAuth, validateDisplayI
     where: {
       person: { displayId },
       contactInformation: { id: contactInfoId, deleted: false }
+    },
+    include: {
+      person: true
     }
   });
 
@@ -194,10 +213,14 @@ router.delete('/person/:displayId/:contactInfoId', requireAuth, validateDisplayI
     throw createError(404, 'Person contact information mapping not found');
   }
 
-  // Soft delete the contact information
-  await prisma.contactInformation.update({
-    where: { id: contactInfoId },
-    data: { deleted: true }
+  // Check authorization: must own the person or be system admin
+  if (!req.user?.isSystemAdmin && mapping.person.userId !== req.user?.id) {
+    throw createError(403, 'Forbidden: You do not have permission to delete this contact information mapping');
+  }
+
+  // Delete only the mapping, not the contact information itself
+  await prisma.personContactInformation.delete({
+    where: { id: mapping.id }
   });
 
   const response: ApiResponse<null> = {
@@ -210,12 +233,24 @@ router.delete('/person/:displayId/:contactInfoId', requireAuth, validateDisplayI
 
 // Group Contact Information Routes
 // GET /api/contact-mappings/group/:groupId - Get contact information for a specific group
-router.get('/group/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+router.get('/group/:displayId', requireAuth, validateDisplayIdParam, canViewGroupPrivateContacts, asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
+  const canViewPrivate = (req as any).canViewPrivate || req.user?.isSystemAdmin;
+
+  // Build privacy filter
+  const privacyFilter = canViewPrivate
+    ? {}
+    : { privacy: 'PUBLIC' as const };
 
   // Get all contact information for this group
   const mappings = await prisma.groupContactInformation.findMany({
-    where: { group: { displayId }, contactInformation: { deleted: false } },
+    where: {
+      group: { displayId },
+      contactInformation: {
+        deleted: false,
+        ...privacyFilter
+      }
+    },
     include: {
       contactInformation: true
     }
@@ -235,16 +270,29 @@ router.get('/group/:displayId', requireAuth, validateDisplayIdParam, asyncHandle
 router.post('/group', requireAuth, validateBody(groupContactInformationSchema), asyncHandler(async (req, res) => {
   // Check if group exists
   const groupExists = await prisma.group.findFirst({
-    where: { displayId: req.body.displayId, deleted: false }
+    where: { displayId: req.body.displayId, deleted: false },
+    include: {
+      people: {
+        where: {
+          person: { userId: req.user?.id, deleted: false },
+          isAdmin: true
+        }
+      }
+    }
   });
 
   if (!groupExists) {
     throw createError(400, 'Referenced group does not exist');
   }
 
+  // Check authorization: must be group admin or system admin
+  if (!req.user?.isSystemAdmin && groupExists.people.length === 0) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this group');
+  }
+
   // Check if contact information exists
   const contactExists = await prisma.contactInformation.findFirst({
-    where: { id: req.body.contactInfoId, deleted: false }
+    where: { id: req.body.contactInformationId, deleted: false }
   });
 
   if (!contactExists) {
@@ -254,7 +302,7 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
   const item = await prisma.groupContactInformation.create({
     data: {
       groupId: groupExists.id,
-      contactInformationId: req.body.contactInfoId
+      contactInformationId: req.body.contactInformationId
     }
   });
 
@@ -271,7 +319,7 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
 router.delete('/group/:displayId/:contactInfoId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
   const contactInfoId = parseInt(req.params.contactInfoId);
-  
+
   if (isNaN(contactInfoId) || contactInfoId <= 0) {
     throw createError(400, 'Invalid contact information ID parameter');
   }
@@ -281,6 +329,18 @@ router.delete('/group/:displayId/:contactInfoId', requireAuth, validateDisplayId
     where: {
       group: { displayId },
       contactInformation: { id: contactInfoId, deleted: false }
+    },
+    include: {
+      group: {
+        include: {
+          people: {
+            where: {
+              person: { userId: req.user?.id, deleted: false },
+              isAdmin: true
+            }
+          }
+        }
+      }
     }
   });
 
@@ -288,10 +348,14 @@ router.delete('/group/:displayId/:contactInfoId', requireAuth, validateDisplayId
     throw createError(404, 'Group contact information mapping not found');
   }
 
-  // Soft delete the contact information
-  await prisma.contactInformation.update({
-    where: { id: contactInfoId },
-    data: { deleted: true }
+  // Check authorization: must be group admin or system admin
+  if (!req.user?.isSystemAdmin && mapping.group.people.length === 0) {
+    throw createError(403, 'Forbidden: You do not have permission to delete this contact information mapping');
+  }
+
+  // Delete only the mapping, not the contact information itself
+  await prisma.groupContactInformation.delete({
+    where: { id: mapping.id }
   });
 
   const response: ApiResponse<null> = {

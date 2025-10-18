@@ -7,6 +7,7 @@ import { addNotification } from '../store/slices/ui.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person } from '@irl/shared';
+import { DEFAULT_PAGE_LIMIT } from '@irl/shared';
 
 @customElement('persons-page')
 export class PersonsPage extends LitElement {
@@ -34,7 +35,7 @@ export class PersonsPage extends LitElement {
   @state()
   private totalPages = 1;
 
-  private limit = 10;
+  private limit = DEFAULT_PAGE_LIMIT;
 
   async connectedCallback() {
     super.connectedCallback();

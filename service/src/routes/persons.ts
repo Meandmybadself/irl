@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateDisplayIdParam, personSchema, updatePersonSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
-import { sanitizeSearchQuery, sanitizePaginationParams } from '../utils/sanitization.js';
+import { canModifyPerson, canCreatePerson } from '../middleware/authorization.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -86,7 +86,7 @@ router.get('/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(asyn
 }));
 
 // POST /api/persons - Create new person (auth required)
-router.post('/', requireAuth, validateBody(personSchema), asyncHandler(async (req, res) => {
+router.post('/', requireAuth, canCreatePerson, validateBody(personSchema), asyncHandler(async (req, res) => {
   const item = await prisma.person.create({
     data: req.body
   });
@@ -101,8 +101,19 @@ router.post('/', requireAuth, validateBody(personSchema), asyncHandler(async (re
 }));
 
 // PUT /api/persons/:displayId - Update entire person (auth required)
-router.put('/:displayId', requireAuth, validateDisplayIdParam, validateBody(personSchema), asyncHandler(async (req, res) => {
+router.put('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerson, validateBody(personSchema), asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
+
+  // Check if new displayId already exists (if it's being changed)
+  if (req.body.displayId && req.body.displayId !== displayId) {
+    const existingPerson = await prisma.person.findFirst({
+      where: { displayId: req.body.displayId, deleted: false }
+    });
+
+    if (existingPerson) {
+      throw createError(400, 'A person with this displayId already exists');
+    }
+  }
 
   const item = await prisma.person.update({
     where: { displayId },
@@ -119,8 +130,19 @@ router.put('/:displayId', requireAuth, validateDisplayIdParam, validateBody(pers
 }));
 
 // PATCH /api/persons/:displayId - Partial update person (auth required)
-router.patch('/:displayId', requireAuth, validateDisplayIdParam, validateBody(updatePersonSchema), asyncHandler(async (req, res) => {
+router.patch('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerson, validateBody(updatePersonSchema), asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
+
+  // Check if new displayId already exists (if it's being changed)
+  if (req.body.displayId && req.body.displayId !== displayId) {
+    const existingPerson = await prisma.person.findFirst({
+      where: { displayId: req.body.displayId, deleted: false }
+    });
+
+    if (existingPerson) {
+      throw createError(400, 'A person with this displayId already exists');
+    }
+  }
 
   const item = await prisma.person.update({
     where: { displayId },
@@ -137,7 +159,7 @@ router.patch('/:displayId', requireAuth, validateDisplayIdParam, validateBody(up
 }));
 
 // DELETE /api/persons/:displayId - Soft delete person (auth required)
-router.delete('/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+router.delete('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerson, asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
 
   await prisma.person.update({

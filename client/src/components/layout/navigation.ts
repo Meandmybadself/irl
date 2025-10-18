@@ -179,7 +179,7 @@ export class AppNavigation extends LitElement {
                                   ? html`
                                       <a
                                         href="/admin/system"
-                                        @click=${this.createClickHandler('/admin/system')}
+                                        @click=${this.createClickHandler()}
                                         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline"
                                       >
                                         System Admin
@@ -238,7 +238,7 @@ export class AppNavigation extends LitElement {
                 <div class="space-y-1 px-2 pt-2 pb-3">
                   <a
                     href="/home"
-                    @click=${this.createClickHandler('/home')}
+                    @click=${this.createClickHandler()}
                     class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/home'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -247,7 +247,7 @@ export class AppNavigation extends LitElement {
                   </a>
                   <a
                     href="/persons"
-                    @click=${this.createClickHandler('/persons')}
+                    @click=${this.createClickHandler()}
                     class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/persons' || currentPath === '/persons/create'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -256,7 +256,7 @@ export class AppNavigation extends LitElement {
                   </a>
                   <a
                     href="/groups"
-                    @click=${this.createClickHandler('/groups')}
+                    @click=${this.createClickHandler()}
                     class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/groups' || currentPath === '/groups/create'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -267,7 +267,7 @@ export class AppNavigation extends LitElement {
                     ? html`
                         <a
                           href="/admin/system"
-                          @click=${this.createClickHandler('/admin/system')}
+                          @click=${this.createClickHandler()}
                           class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/admin/system'
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"

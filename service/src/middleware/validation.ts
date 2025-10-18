@@ -83,7 +83,7 @@ export const personContactInformationSchema = z.object({
 
 export const groupContactInformationSchema = z.object({
   displayId: z.string().min(1, 'Display ID is required'),
-  contactInfoId: z.number().int('Contact Information ID must be an integer')
+  contactInformationId: z.number().int('Contact Information ID must be an integer')
 });
 
 export const personGroupSchema = z.object({

@@ -448,15 +448,15 @@ export class ApiClient {
     });
   }
 
-  async deletePersonContactInformation(id: number): Promise<ApiResponse<null>> {
-    return this.request<ApiResponse<null>>(`/contact-mappings/person/${id}`, {
+  async deletePersonContactInformation(displayId: string, contactInfoId: number): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/contact-mappings/person/${displayId}/${contactInfoId}`, {
       method: 'DELETE'
     });
   }
 
   // Contact mapping endpoints - Group
-  async getGroupContactInformations(groupId: number): Promise<ApiResponse<ContactInformation[]>> {
-    return this.request<ApiResponse<ContactInformation[]>>(`/contact-mappings/group/${groupId}`);
+  async getGroupContactInformations(displayId: string): Promise<ApiResponse<ContactInformation[]>> {
+    return this.request<ApiResponse<ContactInformation[]>>(`/contact-mappings/group/${displayId}`);
   }
 
   async createGroupContactInformation(data: CreateGroupContactInformationRequest): Promise<ApiResponse<GroupContactInformation>> {
@@ -466,8 +466,8 @@ export class ApiClient {
     });
   }
 
-  async deleteGroupContactInformation(id: number): Promise<ApiResponse<null>> {
-    return this.request<ApiResponse<null>>(`/contact-mappings/group/${id}`, {
+  async deleteGroupContactInformation(displayId: string, contactInfoId: number): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/contact-mappings/group/${displayId}/${contactInfoId}`, {
       method: 'DELETE'
     });
   }

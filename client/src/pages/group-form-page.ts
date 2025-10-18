@@ -110,18 +110,15 @@ export class GroupFormPage extends LitElement {
         //   }
         // }
 
-        // Load contact information using numeric ID
-        const contactsResponse = await this.api.getGroupContactInformations(group.id);
+        // Load contact information using displayId
+        const contactsResponse = await this.api.getGroupContactInformations(group.displayId);
         if (contactsResponse.success && contactsResponse.data) {
           this.contactInformations = contactsResponse.data;
         }
       }
     } catch (error) {
       this.store.dispatch(
-        addNotification({
-          message: `Failed to load group: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          type: 'error'
-        })
+        addNotification(`Failed to load group: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
       );
       // Redirect back to groups list on error
       window.history.pushState({}, '', '/groups');
@@ -206,19 +203,13 @@ export class GroupFormPage extends LitElement {
         // Update existing group
         response = await this.api.patchGroup(this.groupDisplayId, data);
         if (response.success) {
-          this.store.dispatch(addNotification({
-            message: 'Group updated successfully',
-            type: 'success'
-          }));
+          this.store.dispatch(addNotification('Group updated successfully', 'success'));
         }
       } else {
         // Create new group
         response = await this.api.createGroup(data);
         if (response.success) {
-          this.store.dispatch(addNotification({
-            message: 'Group created successfully',
-            type: 'success'
-          }));
+          this.store.dispatch(addNotification('Group created successfully', 'success'));
         }
       }
 
@@ -229,10 +220,7 @@ export class GroupFormPage extends LitElement {
       }
     } catch (error) {
       this.store.dispatch(
-        addNotification({
-          message: `Failed to ${this.groupDisplayId ? 'update' : 'create'} group: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          type: 'error'
-        })
+        addNotification(`Failed to ${this.groupDisplayId ? 'update' : 'create'} group: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
       );
     } finally {
       this.isSaving = false;
@@ -378,10 +366,7 @@ export class GroupFormPage extends LitElement {
                     this.contactInformations = e.detail.items;
                   }}
                   @contact-error=${(e: CustomEvent) => {
-                    this.store.dispatch(addNotification({
-                      message: e.detail.error,
-                      type: 'error'
-                    }));
+                    this.store.dispatch(addNotification(e.detail.error, 'error'));
                   }}
                 ></contact-info-form>
               ` : ''}
