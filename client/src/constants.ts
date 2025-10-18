@@ -5,6 +5,17 @@
 // Timing constants (in milliseconds)
 export const SEARCH_DEBOUNCE_MS = 300;
 
+// Routes
+export const ROUTES = {
+  HOME: '/home',
+  LOGIN: '/login',
+  PERSONS: '/persons',
+  PERSONS_CREATE: '/persons/create',
+  GROUPS: '/groups',
+  GROUPS_CREATE: '/groups/create',
+  ADMIN_SYSTEM: '/admin/system',
+} as const;
+
 // Error messages
 export const ERROR_MESSAGES = {
   CONTACT_INFO_REQUIRED: 'Label and value are required',

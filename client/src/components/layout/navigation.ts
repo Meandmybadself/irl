@@ -5,6 +5,7 @@ import { storeContext } from '../../contexts/store-context.js';
 import { logout } from '../../store/slices/auth.js';
 import { selectCurrentPerson, selectCurrentUser, selectIsAuthenticated, selectIsSystemAdmin } from '../../store/selectors.js';
 import type { AppStore } from '../../store/index.js';
+import { ROUTES } from '../../constants.js';
 
 @customElement('app-navigation')
 export class AppNavigation extends LitElement {
@@ -36,6 +37,7 @@ export class AppNavigation extends LitElement {
   private profileMenuOpen = false;
 
   private unsubscribe?: () => void;
+  private documentClickListener?: (e: Event) => void;
 
   connectedCallback() {
     super.connectedCallback();
@@ -45,11 +47,16 @@ export class AppNavigation extends LitElement {
         this.updateState();
       });
     }
+    this.documentClickListener = this.handleDocumentClick.bind(this);
+    document.addEventListener('click', this.documentClickListener);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.unsubscribe?.();
+    if (this.documentClickListener) {
+      document.removeEventListener('click', this.documentClickListener);
+    }
   }
 
   private updateState() {
@@ -62,15 +69,30 @@ export class AppNavigation extends LitElement {
 
   private async handleLogout() {
     await this.store.dispatch(logout());
-    window.location.href = '/login';
+    window.location.href = ROUTES.LOGIN;
   }
 
   private toggleMobileMenu() {
     this.mobileMenuOpen = !this.mobileMenuOpen;
   }
 
-  private toggleProfileMenu() {
+  private toggleProfileMenu(e: Event) {
+    e.stopPropagation();
     this.profileMenuOpen = !this.profileMenuOpen;
+  }
+
+  private handleDocumentClick(e: Event) {
+    const target = e.target as HTMLElement;
+    const profileButton = this.querySelector('button');
+    const profileMenu = this.querySelector('.absolute.right-0');
+
+    if (this.profileMenuOpen &&
+        profileButton &&
+        !profileButton.contains(target) &&
+        profileMenu &&
+        !profileMenu.contains(target)) {
+      this.profileMenuOpen = false;
+    }
   }
 
   private navigate(path: string) {
@@ -105,27 +127,27 @@ export class AppNavigation extends LitElement {
                     <div class="hidden sm:ml-6 sm:block">
                       <div class="flex space-x-4">
                         <a
-                          href="/home"
+                          href=${ROUTES.HOME}
                           @click=${this.createClickHandler()}
-                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/home'
+                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === ROUTES.HOME
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                         >
                           Home
                         </a>
                         <a
-                          href="/persons"
+                          href=${ROUTES.PERSONS}
                           @click=${this.createClickHandler()}
-                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/persons' || currentPath === '/persons/create'
+                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === ROUTES.PERSONS || currentPath === ROUTES.PERSONS_CREATE
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                         >
                           People
                         </a>
                         <a
-                          href="/groups"
+                          href=${ROUTES.GROUPS}
                           @click=${this.createClickHandler()}
-                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/groups' || currentPath === '/groups/create'
+                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === ROUTES.GROUPS || currentPath === ROUTES.GROUPS_CREATE
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                         >
@@ -134,9 +156,9 @@ export class AppNavigation extends LitElement {
                         ${this.isSystemAdmin
                           ? html`
                               <a
-                                href="/admin/system"
+                                href=${ROUTES.ADMIN_SYSTEM}
                                 @click=${this.createClickHandler()}
-                                class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/admin/system'
+                                class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === ROUTES.ADMIN_SYSTEM
                                   ? 'bg-gray-900 text-white'
                                   : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                               >
@@ -178,7 +200,7 @@ export class AppNavigation extends LitElement {
                                 ${this.isSystemAdmin
                                   ? html`
                                       <a
-                                        href="/admin/system"
+                                        href=${ROUTES.ADMIN_SYSTEM}
                                         @click=${this.createClickHandler()}
                                         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline"
                                       >
@@ -237,27 +259,27 @@ export class AppNavigation extends LitElement {
               <div class="sm:hidden">
                 <div class="space-y-1 px-2 pt-2 pb-3">
                   <a
-                    href="/home"
+                    href=${ROUTES.HOME}
                     @click=${this.createClickHandler()}
-                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/home'
+                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === ROUTES.HOME
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                   >
                     Home
                   </a>
                   <a
-                    href="/persons"
+                    href=${ROUTES.PERSONS}
                     @click=${this.createClickHandler()}
-                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/persons' || currentPath === '/persons/create'
+                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === ROUTES.PERSONS || currentPath === ROUTES.PERSONS_CREATE
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                   >
                     People
                   </a>
                   <a
-                    href="/groups"
+                    href=${ROUTES.GROUPS}
                     @click=${this.createClickHandler()}
-                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/groups' || currentPath === '/groups/create'
+                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === ROUTES.GROUPS || currentPath === ROUTES.GROUPS_CREATE
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                   >
@@ -266,9 +288,9 @@ export class AppNavigation extends LitElement {
                   ${this.isSystemAdmin
                     ? html`
                         <a
-                          href="/admin/system"
+                          href=${ROUTES.ADMIN_SYSTEM}
                           @click=${this.createClickHandler()}
-                          class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/admin/system'
+                          class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === ROUTES.ADMIN_SYSTEM
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                         >
