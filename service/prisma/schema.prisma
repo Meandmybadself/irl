@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,36 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
-enum ContactType {
-  EMAIL
-  PHONE
-  ADDRESS
-  URL
-}
-
-enum PrivacyLevel {
-  PRIVATE
-  PUBLIC
-}
-
-
-// Core Models
-
 model ContactInformation {
-  id        Int           @id @default(autoincrement())
-  type      ContactType
-  label     String
-  value     String
-  privacy   PrivacyLevel
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  deleted   Boolean       @default(false)
-
-  // Relations through mapping tables
-  systemContacts SystemContactInformation[]
-  personContacts PersonContactInformation[]
+  id             Int                        @id @default(autoincrement())
+  type           ContactType
+  label          String
+  value          String
+  privacy        PrivacyLevel
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  deleted        Boolean                    @default(false)
   groupContacts  GroupContactInformation[]
+  personContacts PersonContactInformation[]
+  systemContacts SystemContactInformation[]
 
   @@map("contact_information")
 }
@@ -53,67 +32,59 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   deleted           Boolean  @default(false)
-
-  // Relations
-  people Person[]
-  claims Claim[]
+  claims            Claim[]
+  people            Person[]
 
   @@map("users")
 }
 
 model Person {
-  id        Int     @id @default(autoincrement())
-  firstName String
-  lastName  String
-  displayId String  @unique
-  pronouns  String?
-  imageURL  String?
-  userId    Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deleted   Boolean  @default(false)
-
-  // Relations
-  user               User                         @relation(fields: [userId], references: [id])
+  id                 Int                        @id @default(autoincrement())
+  firstName          String
+  lastName           String
+  displayId          String                     @unique
+  pronouns           String?
+  imageURL           String?
+  userId             Int
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  deleted            Boolean                    @default(false)
+  claims             Claim[]
+  user               User                       @relation(fields: [userId], references: [id])
   contactInformation PersonContactInformation[]
   groupMemberships   PersonGroup[]
-  claims             Claim[]
 
   @@map("people")
 }
 
 model System {
-  id               Int     @id @default(1)
-  name             String
-  registrationOpen Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  deleted          Boolean  @default(false)
-
-  // Relations
+  id                 Int                        @id @default(1)
+  name               String
+  registrationOpen   Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  deleted            Boolean                    @default(false)
   contactInformation SystemContactInformation[]
 
   @@map("systems")
 }
 
 model Group {
-  id                            Int     @id @default(autoincrement())
-  displayId                     String  @unique
+  id                            Int                       @id @default(autoincrement())
+  displayId                     String                    @unique
   name                          String
   description                   String?
   parentGroupId                 Int?
-  allowsAnyUserToCreateSubgroup Boolean @default(false)
-  publiclyVisible               Boolean @default(true)
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
-  deleted                       Boolean  @default(false)
-
-  // Relations
-  parentGroup        Group?                     @relation("GroupHierarchy", fields: [parentGroupId], references: [id])
-  childGroups        Group[]                    @relation("GroupHierarchy")
-  people             PersonGroup[]
-  contactInformation GroupContactInformation[]
-  invites            GroupInvite[]
+  allowsAnyUserToCreateSubgroup Boolean                   @default(false)
+  publiclyVisible               Boolean                   @default(true)
+  createdAt                     DateTime                  @default(now())
+  updatedAt                     DateTime                  @updatedAt
+  deleted                       Boolean                   @default(false)
+  contactInformation            GroupContactInformation[]
+  invites                       GroupInvite[]
+  parentGroup                   Group?                    @relation("GroupHierarchy", fields: [parentGroupId], references: [id])
+  childGroups                   Group[]                   @relation("GroupHierarchy")
+  people                        PersonGroup[]
 
   @@map("groups")
 }
@@ -129,83 +100,80 @@ model Claim {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deleted        Boolean   @default(false)
-
-  // Relations
-  person Person @relation(fields: [personId], references: [id])
-  user   User   @relation(fields: [requestingUser], references: [id])
+  person         Person    @relation(fields: [personId], references: [id])
+  user           User      @relation(fields: [requestingUser], references: [id])
 
   @@map("claims")
 }
 
 model GroupInvite {
-  id        Int      @id @default(autoincrement())
-  groupId   Int
-  email     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deleted   Boolean  @default(false)
-  accepted  Boolean  @default(false)
+  id         Int       @id @default(autoincrement())
+  groupId    Int
+  email      String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deleted    Boolean   @default(false)
+  accepted   Boolean   @default(false)
   acceptedAt DateTime?
-
-  // Relations
-  group Group @relation(fields: [groupId], references: [id])
+  group      Group     @relation(fields: [groupId], references: [id])
 
   @@map("group_invites")
 }
 
-// Mapping/Junction Tables
-
 model SystemContactInformation {
-  id                   Int @id @default(autoincrement())
+  id                   Int                @id @default(autoincrement())
   systemId             Int
   contactInformationId Int
-
-  // Relations
-  system             System             @relation(fields: [systemId], references: [id])
-  contactInformation ContactInformation @relation(fields: [contactInformationId], references: [id])
+  contactInformation   ContactInformation @relation(fields: [contactInformationId], references: [id])
+  system               System             @relation(fields: [systemId], references: [id])
 
   @@unique([systemId, contactInformationId])
   @@map("system_contact_information")
 }
 
 model PersonContactInformation {
-  id                   Int @id @default(autoincrement())
+  id                   Int                @id @default(autoincrement())
   personId             Int
   contactInformationId Int
-
-  // Relations
-  person             Person             @relation(fields: [personId], references: [id])
-  contactInformation ContactInformation @relation(fields: [contactInformationId], references: [id])
+  contactInformation   ContactInformation @relation(fields: [contactInformationId], references: [id])
+  person               Person             @relation(fields: [personId], references: [id])
 
   @@unique([personId, contactInformationId])
   @@map("person_contact_information")
 }
 
 model GroupContactInformation {
-  id                   Int @id @default(autoincrement())
+  id                   Int                @id @default(autoincrement())
   groupId              Int
   contactInformationId Int
-
-  // Relations
-  group              Group              @relation(fields: [groupId], references: [id])
-  contactInformation ContactInformation @relation(fields: [contactInformationId], references: [id])
+  contactInformation   ContactInformation @relation(fields: [contactInformationId], references: [id])
+  group                Group              @relation(fields: [groupId], references: [id])
 
   @@unique([groupId, contactInformationId])
   @@map("group_contact_information")
 }
 
 model PersonGroup {
-  id       Int                 @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
   personId Int
   groupId  Int
   relation String
-  isAdmin  Boolean             @default(false)
-
-  // Relations
-  person Person @relation(fields: [personId], references: [id])
-  group  Group  @relation(fields: [groupId], references: [id])
+  isAdmin  Boolean @default(false)
+  group    Group   @relation(fields: [groupId], references: [id])
+  person   Person  @relation(fields: [personId], references: [id])
 
   @@unique([personId, groupId])
   @@map("person_groups")
 }
 
+enum ContactType {
+  EMAIL
+  PHONE
+  ADDRESS
+  URL
+}
+
+enum PrivacyLevel {
+  PRIVATE
+  PUBLIC
+}

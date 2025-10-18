@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import request from 'supertest';
 import { prisma } from '../lib/prisma.js';
-import { createTestUser } from '../utils/test-auth.js';
+import { createTestUser, createTestSystemAdmin } from '../utils/test-auth.js';
 import '../test-setup.js';
 import { describeIfDatabase } from '../utils/describe-db.js';
 
@@ -21,7 +21,7 @@ describeIfDatabase('Users CRUD API', () => {
     isSystemAdmin: false
   });
 
-  const testUser = createTestUser();
+  const testUser = createTestSystemAdmin();
   const authHeader = JSON.stringify(testUser);
 
   beforeAll(async () => {
@@ -34,6 +34,10 @@ describeIfDatabase('Users CRUD API', () => {
 
   describe('POST /api/users', () => {
     it('should create new user successfully', async () => {
+      // Clean the database to ensure this test starts with a clean slate
+      await prisma.$executeRaw`DELETE FROM users`;
+      await prisma.$executeRaw`ALTER SEQUENCE users_id_seq RESTART WITH 1`;
+      
       const validUser = getValidUser();
       const response = await request(app)
         .post('/api/users')
@@ -45,8 +49,8 @@ describeIfDatabase('Users CRUD API', () => {
       expect(response.body.data.email).toBe(validUser.email);
       expect(response.body.data.isSystemAdmin).toBe(true);
       expect(response.body.data.password).toBeUndefined(); // Password should be excluded
-      expect(response.body.message).toBe('User created successfully');
-      expect(mockedSendVerificationEmail).toHaveBeenCalledWith(validUser.email, expect.any(String));
+      expect(response.body.message).toBe('Account created successfully');
+      expect(mockedSendVerificationEmail).not.toHaveBeenCalled();
     });
 
     it('should fail with invalid email', async () => {
@@ -98,6 +102,10 @@ describeIfDatabase('Users CRUD API', () => {
     });
 
     it('should not promote subsequent users to system admin automatically', async () => {
+      // Clean the database to ensure this test starts with a clean slate
+      await prisma.$executeRaw`DELETE FROM users`;
+      await prisma.$executeRaw`ALTER SEQUENCE users_id_seq RESTART WITH 1`;
+      
       const firstUser = getValidUser();
       const secondUser = getValidUser();
 

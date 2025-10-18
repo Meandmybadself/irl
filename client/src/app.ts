@@ -102,11 +102,7 @@ export class AppRoot extends LitElement {
       // Update title after initial load
       this.updateTitle();
 
-      // Listen for route changes to update title
-      window.addEventListener('popstate', () => {
-        this.updateTitle();
-        this.requestUpdate();
-      });
+      window.addEventListener('popstate', this.popstateHandler);
 
       // Subscribe to store changes to update authentication state
       this.unsubscribe = this.store.subscribe(() => {
@@ -125,7 +121,13 @@ export class AppRoot extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.unsubscribe?.();
+    window.removeEventListener('popstate', this.popstateHandler);
   }
+
+  private popstateHandler = () => {
+    this.updateTitle();
+    this.requestUpdate();
+  };
 
   private shouldShowNavigation(): boolean {
     const path = window.location.pathname;
