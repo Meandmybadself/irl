@@ -4,6 +4,7 @@ import { consume } from '@lit-labs/context';
 import { apiContext } from '../../contexts/api-context.js';
 import type { ApiClient } from '../../services/api-client.js';
 import type { Group } from '@irl/shared';
+import { SEARCH_DEBOUNCE_MS } from '../../constants.js';
 
 @customElement('group-search')
 export class GroupSearch extends LitElement {
@@ -70,10 +71,10 @@ export class GroupSearch extends LitElement {
       window.clearTimeout(this.debounceTimer);
     }
 
-    // Debounce search by 300ms
+    // Debounce search
     this.debounceTimer = window.setTimeout(() => {
       this.performSearch(this.searchQuery);
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
   }
 
   private handleSelectGroup(group: Group) {

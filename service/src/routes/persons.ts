@@ -22,22 +22,21 @@ const formatPerson = (person: any): Person => {
 // GET /api/persons - List all persons (auth required)
 // Supports optional search query parameter: ?search=term
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  // Sanitize pagination parameters
-  const { page, limit, skip } = sanitizePaginationParams(
-    req.query.page as string,
-    req.query.limit as string
-  );
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
+  const skip = (page - 1) * limit;
+  const search = req.query.search as string | undefined;
+  if (search && search.length > 100) {
+    throw createError(400, 'Search query too long');
+  }
 
-  // Sanitize search query
-  const searchQuery = sanitizeSearchQuery(req.query.search as string);
-
-  // Build where clause with search if provided
+  // Build where clause with search
   const where: any = { deleted: false };
-  if (searchQuery) {
+  if (search) {
     where.OR = [
-      { firstName: { contains: searchQuery, mode: 'insensitive' } },
-      { lastName: { contains: searchQuery, mode: 'insensitive' } },
-      { displayId: { contains: searchQuery, mode: 'insensitive' } }
+      { firstName: { contains: search, mode: 'insensitive' } },
+      { lastName: { contains: search, mode: 'insensitive' } },
+      { displayId: { contains: search, mode: 'insensitive' } }
     ];
   }
 

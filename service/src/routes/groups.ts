@@ -53,6 +53,9 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
   const search = req.query.search as string | undefined;
+  if (search && search.length > 100) {
+    throw createError(400, 'Search query too long');
+  }
 
   // Build where clause with search
   const where: any = { deleted: false };

@@ -40,7 +40,6 @@ export const loadSystem = (): AppThunk => {
       }
     } catch (error) {
       // System might not exist yet, which is OK
-      console.log('No system configured yet');
       dispatch(systemFailure('System not configured'));
     }
   };
