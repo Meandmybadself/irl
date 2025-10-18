@@ -80,6 +80,15 @@ export class AppNavigation extends LitElement {
     this.profileMenuOpen = false;
   }
 
+  private createClickHandler = () => (e: Event) => {
+    const target = e.target as HTMLElement;
+    const href = target.getAttribute('href');
+    if (href) {
+      this.navigate(href);
+    } 
+    e.preventDefault();
+  };
+
   render() {
     const currentPath = window.location.pathname;
 
@@ -97,10 +106,7 @@ export class AppNavigation extends LitElement {
                       <div class="flex space-x-4">
                         <a
                           href="/home"
-                          @click=${(e: Event) => {
-                            e.preventDefault();
-                            this.navigate('/home');
-                          }}
+                          @click=${this.createClickHandler()}
                           class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/home'
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -109,10 +115,7 @@ export class AppNavigation extends LitElement {
                         </a>
                         <a
                           href="/persons"
-                          @click=${(e: Event) => {
-                            e.preventDefault();
-                            this.navigate('/persons');
-                          }}
+                          @click=${this.createClickHandler()}
                           class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/persons' || currentPath === '/persons/create'
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -121,10 +124,7 @@ export class AppNavigation extends LitElement {
                         </a>
                         <a
                           href="/groups"
-                          @click=${(e: Event) => {
-                            e.preventDefault();
-                            this.navigate('/groups');
-                          }}
+                          @click=${this.createClickHandler()}
                           class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/groups' || currentPath === '/groups/create'
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -135,10 +135,7 @@ export class AppNavigation extends LitElement {
                           ? html`
                               <a
                                 href="/admin/system"
-                                @click=${(e: Event) => {
-                                  e.preventDefault();
-                                  this.navigate('/admin/system');
-                                }}
+                                @click=${this.createClickHandler()}
                                 class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === '/admin/system'
                                   ? 'bg-gray-900 text-white'
                                   : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -182,10 +179,7 @@ export class AppNavigation extends LitElement {
                                   ? html`
                                       <a
                                         href="/admin/system"
-                                        @click=${(e: Event) => {
-                                          e.preventDefault();
-                                          this.navigate('/admin/system');
-                                        }}
+                                        @click=${this.createClickHandler('/admin/system')}
                                         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline"
                                       >
                                         System Admin
@@ -244,10 +238,7 @@ export class AppNavigation extends LitElement {
                 <div class="space-y-1 px-2 pt-2 pb-3">
                   <a
                     href="/home"
-                    @click=${(e: Event) => {
-                      e.preventDefault();
-                      this.navigate('/home');
-                    }}
+                    @click=${this.createClickHandler('/home')}
                     class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/home'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -256,10 +247,7 @@ export class AppNavigation extends LitElement {
                   </a>
                   <a
                     href="/persons"
-                    @click=${(e: Event) => {
-                      e.preventDefault();
-                      this.navigate('/persons');
-                    }}
+                    @click=${this.createClickHandler('/persons')}
                     class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/persons' || currentPath === '/persons/create'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -268,10 +256,7 @@ export class AppNavigation extends LitElement {
                   </a>
                   <a
                     href="/groups"
-                    @click=${(e: Event) => {
-                      e.preventDefault();
-                      this.navigate('/groups');
-                    }}
+                    @click=${this.createClickHandler('/groups')}
                     class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/groups' || currentPath === '/groups/create'
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
@@ -282,10 +267,7 @@ export class AppNavigation extends LitElement {
                     ? html`
                         <a
                           href="/admin/system"
-                          @click=${(e: Event) => {
-                            e.preventDefault();
-                            this.navigate('/admin/system');
-                          }}
+                          @click=${this.createClickHandler('/admin/system')}
                           class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === '/admin/system'
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"

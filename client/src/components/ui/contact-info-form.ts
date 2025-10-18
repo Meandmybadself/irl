@@ -124,7 +124,7 @@ export class ContactInfoForm extends LitElement {
       this.dispatchChangeEvent();
     } catch (error) {
       this.dispatchEvent(new CustomEvent('contact-error', {
-        detail: { error: error instanceof Error ? error.message : 'Failed to add contact information' },
+        detail: { error: `Failed to add contact information: ${error instanceof Error ? error.message : 'Unknown error'}` },
         bubbles: true,
         composed: true
       }));
@@ -187,7 +187,7 @@ export class ContactInfoForm extends LitElement {
       this.dispatchChangeEvent();
     } catch (error) {
       this.dispatchEvent(new CustomEvent('contact-error', {
-        detail: { error: error instanceof Error ? error.message : 'Failed to update contact information' },
+        detail: { error: `Failed to update contact information: ${error instanceof Error ? error.message : 'Unknown error'}` },
         bubbles: true,
         composed: true
       }));
@@ -220,7 +220,7 @@ export class ContactInfoForm extends LitElement {
       this.dispatchChangeEvent();
     } catch (error) {
       this.dispatchEvent(new CustomEvent('contact-error', {
-        detail: { error: error instanceof Error ? error.message : 'Failed to delete contact information' },
+        detail: { error: `Failed to delete contact information: ${error instanceof Error ? error.message : 'Unknown error'}` },
         bubbles: true,
         composed: true
       }));

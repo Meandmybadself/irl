@@ -110,10 +110,10 @@ export class PersonFormPage extends LitElement {
       }
     } catch (error) {
       this.store.dispatch(
-        addNotification(
-          error instanceof Error ? error.message : 'Failed to load person',
-          'error'
-        )
+        addNotification({
+          message: `Failed to load person: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          type: 'error'
+        })
       );
       // Redirect back to persons list on error
       window.history.pushState({}, '', '/persons');
@@ -188,7 +188,10 @@ export class PersonFormPage extends LitElement {
 
     const currentUser = selectCurrentUser(this.store.getState());
     if (!currentUser && !this.personDisplayId) {
-      this.store.dispatch(addNotification('You must be logged in to create a person', 'error'));
+      this.store.dispatch(addNotification({
+        message: 'You must be logged in to create a person',
+        type: 'error'
+      }));
       return;
     }
 
@@ -209,13 +212,19 @@ export class PersonFormPage extends LitElement {
         // Update existing person
         response = await this.api.patchPerson(this.personDisplayId, data);
         if (response.success) {
-          this.store.dispatch(addNotification('Person updated successfully', 'success'));
+          this.store.dispatch(addNotification({
+            message: 'Person updated successfully',
+            type: 'success'
+          }));
         }
       } else {
         // Create new person
         response = await this.api.createPerson({ ...data, userId: currentUser!.id });
         if (response.success) {
-          this.store.dispatch(addNotification('Person created successfully', 'success'));
+          this.store.dispatch(addNotification({
+            message: 'Person created successfully',
+            type: 'success'
+          }));
         }
       }
 
@@ -226,10 +235,10 @@ export class PersonFormPage extends LitElement {
       }
     } catch (error) {
       this.store.dispatch(
-        addNotification(
-          error instanceof Error ? error.message : `Failed to ${this.personDisplayId ? 'update' : 'create'} person`,
-          'error'
-        )
+        addNotification({
+          message: `Failed to ${this.personDisplayId ? 'update' : 'create'} person: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          type: 'error'
+        })
       );
     } finally {
       this.isSaving = false;
@@ -376,7 +385,10 @@ export class PersonFormPage extends LitElement {
                     this.contactInformations = e.detail.items;
                   }}
                   @contact-error=${(e: CustomEvent) => {
-                    this.store.dispatch(addNotification(e.detail.error, 'error'));
+                    this.store.dispatch(addNotification({
+                      message: e.detail.error,
+                      type: 'error'
+                    }));
                   }}
                 ></contact-info-form>
               ` : ''}

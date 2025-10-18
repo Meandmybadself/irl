@@ -157,11 +157,79 @@ export class GroupsPage extends LitElement {
     `;
   }
 
+  private renderSkeletonRow() {
+    return html`
+      <tr>
+        <td class="py-2 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
+          <div class="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+        </td>
+        <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
+          <div class="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+        </td>
+        <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
+          <div class="h-4 bg-gray-200 rounded animate-pulse w-40"></div>
+        </td>
+        <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
+          <div class="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
+        </td>
+        <td class="py-2 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
+          <div class="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+        </td>
+      </tr>
+    `;
+  }
+
+  private renderSkeletonTable() {
+    return html`
+      <div class="mt-8 flow-root">
+        <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+            <table class="relative min-w-full divide-y divide-gray-300">
+              <thead>
+                <tr>
+                  <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold whitespace-nowrap text-gray-900 sm:pl-0">
+                    Name
+                  </th>
+                  <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
+                    Display ID
+                  </th>
+                  <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
+                    Description
+                  </th>
+                  <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
+                    Visibility
+                  </th>
+                  <th scope="col" class="py-3.5 pr-4 pl-3 whitespace-nowrap sm:pr-0">
+                    <span class="sr-only">Edit</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+                ${Array.from({ length: 5 }, () => this.renderSkeletonRow())}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   render() {
     if (this.isLoading && this.groups.length === 0) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12 pt-20">
-          <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+        <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
+          <div class="px-4 sm:px-6 lg:px-8">
+            <div class="sm:flex sm:items-center">
+              <div class="sm:flex-auto">
+                <div class="h-6 bg-gray-200 rounded animate-pulse w-20"></div>
+                <div class="mt-2 h-4 bg-gray-200 rounded animate-pulse w-80"></div>
+              </div>
+              <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+                <div class="h-8 bg-gray-200 rounded animate-pulse w-24"></div>
+              </div>
+            </div>
+            ${this.renderSkeletonTable()}
+          </div>
         </div>
       `;
     }
@@ -201,7 +269,14 @@ export class GroupsPage extends LitElement {
                 </div>
               `
             : html`
-                <div class="mt-8 flow-root">
+                <div class="mt-8 flow-root relative">
+                  ${this.isLoading && this.groups.length > 0
+                    ? html`
+                        <div class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                          <div class="inline-block w-6 h-6 border-2 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+                        </div>
+                      `
+                    : ''}
                   <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
                       <table class="relative min-w-full divide-y divide-gray-300">
