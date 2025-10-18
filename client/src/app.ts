@@ -66,12 +66,18 @@ export class AppRoot extends LitElement {
 
   private router = new Router(this, []);
   private unsubscribe?: () => void;
+  private boundPopStateHandler?: () => void;
 
   private updateTitle() {
     const state = this.store.getState();
     const systemName = selectSystemName(state);
     const pageName = getPageNameFromPath(window.location.pathname);
     updateDocumentTitle(pageName, systemName);
+  }
+
+  private handlePopState() {
+    this.updateTitle();
+    this.requestUpdate();
   }
 
   async connectedCallback() {
@@ -102,7 +108,8 @@ export class AppRoot extends LitElement {
       // Update title after initial load
       this.updateTitle();
 
-      window.addEventListener('popstate', this.popstateHandler);
+      this.boundPopStateHandler = this.handlePopState.bind(this);
+      window.addEventListener('popstate', this.boundPopStateHandler);
 
       // Subscribe to store changes to update authentication state
       this.unsubscribe = this.store.subscribe(() => {
@@ -121,13 +128,10 @@ export class AppRoot extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.unsubscribe?.();
-    window.removeEventListener('popstate', this.popstateHandler);
+    if (this.boundPopStateHandler) {
+      window.removeEventListener('popstate', this.boundPopStateHandler);
+    }
   }
-
-  private popstateHandler = () => {
-    this.updateTitle();
-    this.requestUpdate();
-  };
 
   private shouldShowNavigation(): boolean {
     const path = window.location.pathname;

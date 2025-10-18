@@ -24,15 +24,29 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
+  const search = req.query.search as string | undefined;
+  if (search && search.length > 100) {
+    throw createError(400, 'Search query too long');
+  }
+
+  // Build where clause with search
+  const where: any = { deleted: false };
+  if (search) {
+    where.OR = [
+      { firstName: { contains: search, mode: 'insensitive' } },
+      { lastName: { contains: search, mode: 'insensitive' } },
+      { displayId: { contains: search, mode: 'insensitive' } }
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.person.findMany({
-      where: { deleted: false },
+      where,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' }
     }),
-    prisma.person.count({ where: { deleted: false } })
+    prisma.person.count({ where })
   ]);
 
   const response: PaginatedResponse<Person> = {

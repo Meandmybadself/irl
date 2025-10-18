@@ -78,7 +78,6 @@ export class SystemAdminPage extends LitElement {
       }
     } catch (error) {
       // System might not exist yet, which is OK
-      console.log('No system configured yet');
     } finally {
       this.isLoading = false;
     }

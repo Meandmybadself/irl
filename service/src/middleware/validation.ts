@@ -24,7 +24,10 @@ export const personSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   displayId: z.string().min(1, 'Display ID is required'),
   pronouns: z.string().optional().nullable(),
-  imageURL: z.string().url('Invalid URL format').optional().nullable(),
+  imageURL: z.string().url().refine(
+    url => url.startsWith('http://') || url.startsWith('https://'),
+    'URL must use HTTP or HTTPS protocol'
+  ).optional().nullable(),
   userId: z.number().int('User ID must be an integer')
 });
 

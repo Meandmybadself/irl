@@ -5,6 +5,7 @@ import { apiContext } from '../../contexts/api-context.js';
 import type { ApiClient } from '../../services/api-client.js';
 import type { ContactInformation } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
+import { ERROR_MESSAGES } from '../../constants.js';
 
 interface ContactInfoItem extends Partial<ContactInformation> {
   tempId?: string; // For newly added items not yet saved
@@ -80,12 +81,14 @@ export class ContactInfoForm extends LitElement {
 
   private async handleAddNew() {
     if (!this.newItem.label?.trim() || !this.newItem.value?.trim()) {
-      this.errorMessage = 'Label and value are required';
+      this.errorMessage = ERROR_MESSAGES.CONTACT_INFO_REQUIRED;
       return;
     }
 
     this.isSaving = true;
     this.errorMessage = null;
+
+    let contactId: number | undefined;
 
     try {
       // Create the contact information
@@ -98,10 +101,10 @@ export class ContactInfoForm extends LitElement {
 
       const contactResponse = await this.api.createContactInformation(contactData);
       if (!contactResponse.success || !contactResponse.data) {
-        throw new Error(contactResponse.error || 'Failed to create contact information');
+        throw new Error(contactResponse.error || ERROR_MESSAGES.CONTACT_INFO_CREATE_FAILED);
       }
 
-      const contactId = contactResponse.data.id;
+      contactId = contactResponse.data.id;
 
       // Link the contact information to the entity
       if (this.entityType === 'person') {
@@ -128,6 +131,15 @@ export class ContactInfoForm extends LitElement {
 
       this.dispatchChangeEvent();
     } catch (error) {
+      // Cleanup: delete the contact info if mapping failed
+      if (contactId) {
+        try {
+          await this.api.deleteContactInformation(contactId);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup orphaned contact information:', cleanupError);
+        }
+      }
+
       const errorMsg = `Failed to add contact information: ${error instanceof Error ? error.message : 'Unknown error'}`;
       this.errorMessage = errorMsg;
       this.dispatchEvent(new CustomEvent('contact-error', {
