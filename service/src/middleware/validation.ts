@@ -110,6 +110,13 @@ export const validateBody = (schema: z.ZodSchema) => {
   };
 };
 
+// Search query schema with sanitization
+export const searchQuerySchema = z.string()
+  .max(100, 'Search query must not exceed 100 characters')
+  .regex(/^[a-zA-Z0-9\s\-_@.]*$/, 'Search query contains invalid characters')
+  .transform(str => str.trim())
+  .optional();
+
 // ID parameter validation
 export const validateIdParam = (req: Request, res: Response, next: NextFunction) => {
   const id = parseInt(req.params.id);
@@ -137,4 +144,27 @@ export const validateDisplayIdParam = (req: Request, res: Response, next: NextFu
     return;
   }
   next();
+};
+
+// Search query validation middleware
+export const validateSearchQuery = (req: Request, res: Response, next: NextFunction) => {
+  if (req.query.search) {
+    try {
+      const validated = searchQuerySchema.parse(req.query.search);
+      req.query.search = validated;
+      next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid search query',
+          message: error.errors[0]?.message || 'Search query validation failed'
+        });
+        return;
+      }
+      next(error);
+    }
+  } else {
+    next();
+  }
 };

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateDisplayIdParam, groupSchema, updateGroupSchema } from '../middleware/validation.js';
+import { validateBody, validateDisplayIdParam, validateSearchQuery, groupSchema, updateGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { canModifyGroup, canCreateGroup } from '../middleware/authorization.js';
 import type { ApiResponse, PaginatedResponse, Group } from '@irl/shared';
@@ -47,15 +47,11 @@ const checkCircularReference = async (groupId: number, newParentId: number): Pro
 };
 
 // GET /api/groups - List all groups (auth required)
-// Supports optional search query parameter: ?search=term
-router.get('/', requireAuth, asyncHandler(async (req, res) => {
+router.get('/', requireAuth, validateSearchQuery, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
   const skip = (page - 1) * limit;
   const search = req.query.search as string | undefined;
-  if (search && search.length > 100) {
-    throw createError(400, 'Search query too long');
-  }
 
   // Build where clause with search
   const where: any = { deleted: false };
