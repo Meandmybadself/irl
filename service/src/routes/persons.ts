@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, personSchema, updatePersonSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
+import { sanitizeSearchQuery, sanitizePaginationParams } from '../utils/sanitization.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -19,19 +20,35 @@ const formatPerson = (person: any): Person => {
 };
 
 // GET /api/persons - List all persons (auth required)
+// Supports optional search query parameter: ?search=term
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
-  const skip = (page - 1) * limit;
+  // Sanitize pagination parameters
+  const { page, limit, skip } = sanitizePaginationParams(
+    req.query.page as string,
+    req.query.limit as string
+  );
+
+  // Sanitize search query
+  const searchQuery = sanitizeSearchQuery(req.query.search as string);
+
+  // Build where clause with search if provided
+  const where: any = { deleted: false };
+  if (searchQuery) {
+    where.OR = [
+      { firstName: { contains: searchQuery, mode: 'insensitive' } },
+      { lastName: { contains: searchQuery, mode: 'insensitive' } },
+      { displayId: { contains: searchQuery, mode: 'insensitive' } }
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.person.findMany({
-      where: { deleted: false },
+      where,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' }
     }),
-    prisma.person.count({ where: { deleted: false } })
+    prisma.person.count({ where })
   ]);
 
   const response: PaginatedResponse<Person> = {
