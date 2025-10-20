@@ -8,6 +8,11 @@ import './pages/register-page.js';
 import './pages/login-page.js';
 import './pages/verify-email-page.js';
 import './pages/home-page.js';
+import './pages/system-admin-page.js';
+import './pages/person-form-page.js';
+import './pages/persons-page.js';
+import './pages/group-form-page.js';
+import './pages/groups-page.js';
 
 export interface RouteConfig {
   path: string;
@@ -71,6 +76,97 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<home-page></home-page>`;
+      }
+    },
+    {
+      path: '/admin/system',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/admin/system'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<system-admin-page></system-admin-page>`;
+      }
+    },
+    {
+      path: '/persons',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/persons'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<persons-page></persons-page>`;
+      }
+    },
+    {
+      path: '/persons/create',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/persons/create'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<person-form-page></person-form-page>`;
+      }
+    },
+    {
+      path: '/persons/:id/edit',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath(window.location.pathname));
+          return html`<login-page></login-page>`;
+        }
+        return html`<person-form-page></person-form-page>`;
+      }
+    },
+    {
+      path: '/groups',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/groups'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<groups-page></groups-page>`;
+      }
+    },
+    {
+      path: '/groups/create',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/groups/create'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<group-form-page></group-form-page>`;
+      }
+    },
+    {
+      path: '/groups/:id/edit',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath(window.location.pathname));
+          return html`<login-page></login-page>`;
+        }
+        return html`<group-form-page></group-form-page>`;
       }
     },
     {

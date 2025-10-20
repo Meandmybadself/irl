@@ -24,7 +24,10 @@ export const personSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   displayId: z.string().min(1, 'Display ID is required'),
   pronouns: z.string().optional().nullable(),
-  imageURL: z.string().url('Invalid URL format').optional().nullable(),
+  imageURL: z.string().url().refine(
+    url => url.startsWith('http://') || url.startsWith('https://'),
+    'URL must use HTTP or HTTPS protocol'
+  ).optional().nullable(),
   userId: z.number().int('User ID must be an integer')
 });
 
@@ -82,7 +85,7 @@ export const personContactInformationSchema = z.object({
 });
 
 export const groupContactInformationSchema = z.object({
-  groupId: z.number().int('Group ID must be an integer'),
+  displayId: z.string().min(1, 'Display ID is required'),
   contactInformationId: z.number().int('Contact Information ID must be an integer')
 });
 
@@ -107,6 +110,13 @@ export const validateBody = (schema: z.ZodSchema) => {
   };
 };
 
+// Search query schema with sanitization
+export const searchQuerySchema = z.string()
+  .max(100, 'Search query must not exceed 100 characters')
+  .regex(/^[a-zA-Z0-9\s\-_@.]*$/, 'Search query contains invalid characters')
+  .transform(str => str.trim())
+  .optional();
+
 // ID parameter validation
 export const validateIdParam = (req: Request, res: Response, next: NextFunction) => {
   const id = parseInt(req.params.id);
@@ -120,4 +130,41 @@ export const validateIdParam = (req: Request, res: Response, next: NextFunction)
   }
   req.params.id = id.toString();
   next();
+};
+
+// Display ID parameter validation
+export const validateDisplayIdParam = (req: Request, res: Response, next: NextFunction) => {
+  const displayId = req.params.displayId;
+  if (!displayId || typeof displayId !== 'string' || displayId.trim().length === 0) {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid displayId parameter',
+      message: 'displayId must be a non-empty string'
+    });
+    return;
+  }
+  next();
+};
+
+// Search query validation middleware
+export const validateSearchQuery = (req: Request, res: Response, next: NextFunction) => {
+  if (req.query.search) {
+    try {
+      const validated = searchQuerySchema.parse(req.query.search);
+      req.query.search = validated;
+      next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid search query',
+          message: error.errors[0]?.message || 'Search query validation failed'
+        });
+        return;
+      }
+      next(error);
+    }
+  } else {
+    next();
+  }
 };

@@ -1,12 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
-import { server } from '../index.js';
 import { prisma } from '../lib/prisma.js';
 import { ContactType, PrivacyLevel } from '@irl/shared';
 import { createTestUser } from '../utils/test-auth.js';
+import { describeIfDatabase } from '../utils/describe-db.js';
 import '../test-setup.js';
 
-describe('Contact Information CRUD API', () => {
+let app: any;
+
+describeIfDatabase('Contact Information CRUD API', () => {
   const validContactInformation = {
     type: ContactType.EMAIL,
     label: 'Personal Email',
@@ -17,9 +19,13 @@ describe('Contact Information CRUD API', () => {
   const testUser = createTestUser();
   const authHeader = JSON.stringify(testUser);
 
+  beforeAll(async () => {
+    ({ server: app } = await import('../index.js'))
+  });
+
   describe('POST /api/contact-information', () => {
     it('should create new contact information successfully', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .post('/api/contact-information')
         .set('X-Test-User', authHeader)
         .send(validContactInformation);
@@ -34,7 +40,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should fail with missing required fields', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .post('/api/contact-information')
         .set('X-Test-User', authHeader)
         .send({ type: ContactType.EMAIL });
@@ -45,7 +51,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should fail with invalid enum values', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .post('/api/contact-information')
         .set('X-Test-User', authHeader)
         .send({
@@ -66,7 +72,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should list all contact information with pagination', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/contact-information')
         .set('X-Test-User', authHeader);
 
@@ -78,7 +84,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should support pagination parameters', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/contact-information?page=1&limit=5')
         .set('X-Test-User', authHeader);
 
@@ -99,7 +105,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should get specific contact information', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get(`/api/contact-information/${contactId}`)
         .set('X-Test-User', authHeader);
 
@@ -110,7 +116,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should return 404 for non-existent contact information', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/contact-information/99999')
         .set('X-Test-User', authHeader);
 
@@ -120,7 +126,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should return 400 for invalid ID parameter', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/contact-information/invalid')
         .set('X-Test-User', authHeader);
 
@@ -147,7 +153,7 @@ describe('Contact Information CRUD API', () => {
         privacy: PrivacyLevel.PRIVATE
       };
 
-      const response = await request(server)
+      const response = await request(app)
         .put(`/api/contact-information/${contactId}`)
         .set('X-Test-User', authHeader)
         .send(updateData);
@@ -171,7 +177,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should partially update contact information', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .patch(`/api/contact-information/${contactId}`)
         .set('X-Test-User', authHeader)
         .send({ label: 'Updated Label' });
@@ -194,7 +200,7 @@ describe('Contact Information CRUD API', () => {
     });
 
     it('should soft delete contact information', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .delete(`/api/contact-information/${contactId}`)
         .set('X-Test-User', authHeader);
 

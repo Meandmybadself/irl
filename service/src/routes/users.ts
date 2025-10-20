@@ -4,9 +4,8 @@ import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { sendVerificationEmail } from '../lib/email.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateIdParam, userSchema, updateUserSchema } from '../middleware/validation.js';
-import { requireAuth } from '../middleware/auth.js';
-import { sanitizePaginationParams, sanitizeEmail } from '../utils/sanitization.js';
+import { validateBody, userSchema, updateUserSchema, validateIdParam } from '../middleware/validation.js';
+import { requireSystemAdmin } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, User } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -30,10 +29,16 @@ interface UpdatedUserResult {
 }
 
 const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResult> => {
-  const existingUser = await prisma.user.findFirst({
-    where: { id, deleted: false }
+  const users = await prisma.user.findMany({
+    where: { 
+      id,
+      deleted: false,
+
+    },
+    take: 1
   });
 
+  const existingUser = users[0];
   if (!existingUser) {
     throw createError(404, 'User not found');
   }
@@ -53,7 +58,7 @@ const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResul
   }
 
   const item = await prisma.user.update({
-    where: { id },
+    where: { id: existingUser.id },
     data: updateData
   });
 
@@ -63,23 +68,13 @@ const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResul
   };
 };
 
-// GET /api/users - List all users (auth required)
-// Supports optional search query parameter: ?search=term (searches email)
-router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  // Sanitize pagination parameters
-  const { page, limit, skip } = sanitizePaginationParams(
-    req.query.page as string,
-    req.query.limit as string
-  );
+// GET /api/users - List all users (admin only)
+router.get('/', requireSystemAdmin, asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
+  const skip = (page - 1) * limit;
 
-  // Sanitize search query (for email search)
-  const searchQuery = sanitizeEmail(req.query.search as string);
-
-  // Build where clause with search if provided
   const where: any = { deleted: false };
-  if (searchQuery) {
-    where.email = { contains: searchQuery, mode: 'insensitive' };
-  }
 
   const [items, total] = await Promise.all([
     prisma.user.findMany({
@@ -138,14 +133,19 @@ router.get('/verify', asyncHandler(async (req, res) => {
   res.json(response);
 }));
 
-// GET /api/users/:id - Get specific user (auth required)
-router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// GET /api/users/:id - Get specific user (admin only)
+router.get('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
   
-  const item = await prisma.user.findFirst({
-    where: { id, deleted: false }
+  const users = await prisma.user.findMany({
+    where: { 
+      id,
+      deleted: false 
+    },
+    take: 1
   });
 
+  const item = users[0];
   if (!item) {
     throw createError(404, 'User not found');
   }
@@ -172,34 +172,38 @@ router.post('/', validateBody(userSchema), asyncHandler(async (req, res) => {
   // Promote the first user account to system admin automatically
   const userCount = await prisma.user.count({ where: { deleted: false } });
   const isSystemAdmin = userCount === 0 ? true : Boolean(requestedAdmin);
+  const isFirstUser = userCount === 0;
 
   const item = await prisma.user.create({
     data: {
       ...userData,
       password: hashedPassword,
-      verificationToken,
+      verificationToken: isFirstUser ? null : verificationToken,
       isSystemAdmin
     }
   });
 
-  try {
-    await sendVerificationEmail(item.email, verificationToken);
-  } catch (error) {
-    console.error('Failed to send verification email:', error);
+  // Only send verification email if this is not the first user
+  if (!isFirstUser) {
+    try {
+      await sendVerificationEmail(item.email, verificationToken);
+    } catch (error) {
+      console.error('Failed to send verification email:', error);
+    }
   }
 
   const response: ApiResponse<User> = {
     success: true,
     data: excludeSensitiveFields(item),
-    message: 'User created successfully'
+    message: isFirstUser ? 'Account created successfully' : 'User created successfully'
   };
 
   res.status(201).json(response);
 }));
 
-// PUT /api/users/:id - Update entire user (auth required)
-router.put('/:id', requireAuth, validateIdParam, validateBody(userSchema), asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// PUT /api/users/:id - Update entire user (admin only)
+router.put('/:id', requireSystemAdmin, validateIdParam, validateBody(userSchema), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
   const { item, verificationToken } = await updateUserRecord(id, req.body);
 
   if (verificationToken) {
@@ -219,9 +223,9 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(userSchema), async
   res.json(response);
 }));
 
-// PATCH /api/users/:id - Partial update user (auth required)
-router.patch('/:id', requireAuth, validateIdParam, validateBody(updateUserSchema), asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// PATCH /api/users/:id - Partial update user (admin only)
+router.patch('/:id', requireSystemAdmin, validateIdParam, validateBody(updateUserSchema), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
   const { item, verificationToken } = await updateUserRecord(id, req.body);
 
   if (verificationToken) {
@@ -241,12 +245,25 @@ router.patch('/:id', requireAuth, validateIdParam, validateBody(updateUserSchema
   res.json(response);
 }));
 
-// DELETE /api/users/:id - Soft delete user (auth required)
-router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// DELETE /api/users/:id - Soft delete user (admin only)
+router.delete('/:id', requireSystemAdmin, validateIdParam, asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+
+  const users = await prisma.user.findMany({
+    where: { 
+      id,
+      deleted: false 
+    },
+    take: 1
+  });
+
+  const existingUser = users[0];
+  if (!existingUser) {
+    throw createError(404, 'User not found');
+  }
 
   await prisma.user.update({
-    where: { id },
+    where: { id: existingUser.id },
     data: { deleted: true }
   });
 

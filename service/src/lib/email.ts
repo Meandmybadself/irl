@@ -25,7 +25,6 @@ const resolveFromName = () => {
 }
 
 const resolveVerificationBaseUrl = () => {
-  
   return (
     process.env.CLIENT_URL ||
     'http://localhost:3000'

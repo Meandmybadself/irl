@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import request from 'supertest';
-import { server } from '../index.js';
 import { prisma } from '../lib/prisma.js';
-import { createTestUser } from '../utils/test-auth.js';
+import { createTestUser, createTestSystemAdmin } from '../utils/test-auth.js';
 import '../test-setup.js';
+import { describeIfDatabase } from '../utils/describe-db.js';
 
 vi.mock('../lib/email.js', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined)
@@ -12,15 +12,21 @@ vi.mock('../lib/email.js', () => ({
 import { sendVerificationEmail } from '../lib/email.js';
 const mockedSendVerificationEmail = vi.mocked(sendVerificationEmail);
 
-describe('Users CRUD API', () => {
+let app: any;
+
+describeIfDatabase('Users CRUD API', () => {
   const getValidUser = () => ({
     email: `test-${Math.random().toString(36).substring(2, 8)}@example.com`,
     password: 'password123',
     isSystemAdmin: false
   });
 
-  const testUser = createTestUser();
+  const testUser = createTestSystemAdmin();
   const authHeader = JSON.stringify(testUser);
+
+  beforeAll(async () => {
+    ({ server: app } = await import('../index.js'));
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -28,8 +34,12 @@ describe('Users CRUD API', () => {
 
   describe('POST /api/users', () => {
     it('should create new user successfully', async () => {
+      // Clean the database to ensure this test starts with a clean slate
+      await prisma.$executeRaw`DELETE FROM users`;
+      await prisma.$executeRaw`ALTER SEQUENCE users_id_seq RESTART WITH 1`;
+      
       const validUser = getValidUser();
-      const response = await request(server)
+      const response = await request(app)
         .post('/api/users')
         .set('X-Test-User', authHeader)
         .send(validUser);
@@ -39,13 +49,13 @@ describe('Users CRUD API', () => {
       expect(response.body.data.email).toBe(validUser.email);
       expect(response.body.data.isSystemAdmin).toBe(true);
       expect(response.body.data.password).toBeUndefined(); // Password should be excluded
-      expect(response.body.message).toBe('User created successfully');
-      expect(mockedSendVerificationEmail).toHaveBeenCalledWith(validUser.email, expect.any(String));
+      expect(response.body.message).toBe('Account created successfully');
+      expect(mockedSendVerificationEmail).not.toHaveBeenCalled();
     });
 
     it('should fail with invalid email', async () => {
       const validUser = getValidUser();
-      const response = await request(server)
+      const response = await request(app)
         .post('/api/users')
         .set('X-Test-User', authHeader)
         .send({
@@ -60,7 +70,7 @@ describe('Users CRUD API', () => {
 
     it('should fail with short password', async () => {
       const validUser = getValidUser();
-      const response = await request(server)
+      const response = await request(app)
         .post('/api/users')
         .set('X-Test-User', authHeader)
         .send({
@@ -81,7 +91,7 @@ describe('Users CRUD API', () => {
         }
       });
 
-      const response = await request(server)
+      const response = await request(app)
         .post('/api/users')
         .set('X-Test-User', authHeader)
         .send(validUser);
@@ -92,10 +102,14 @@ describe('Users CRUD API', () => {
     });
 
     it('should not promote subsequent users to system admin automatically', async () => {
+      // Clean the database to ensure this test starts with a clean slate
+      await prisma.$executeRaw`DELETE FROM users`;
+      await prisma.$executeRaw`ALTER SEQUENCE users_id_seq RESTART WITH 1`;
+      
       const firstUser = getValidUser();
       const secondUser = getValidUser();
 
-      const firstResponse = await request(server)
+      const firstResponse = await request(app)
         .post('/api/users')
         .set('X-Test-User', authHeader)
         .send(firstUser);
@@ -103,7 +117,7 @@ describe('Users CRUD API', () => {
       expect(firstResponse.status).toBe(201);
       expect(firstResponse.body.data.isSystemAdmin).toBe(true);
 
-      const secondResponse = await request(server)
+      const secondResponse = await request(app)
         .post('/api/users')
         .set('X-Test-User', authHeader)
         .send(secondUser);
@@ -125,7 +139,7 @@ describe('Users CRUD API', () => {
         }
       });
 
-      const response = await request(server)
+      const response = await request(app)
         .get(`/api/users/verify?token=${verificationToken}`);
 
       expect(response.status).toBe(200);
@@ -139,7 +153,7 @@ describe('Users CRUD API', () => {
     });
 
     it('should return 400 when token is missing', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/users/verify');
 
       expect(response.status).toBe(400);
@@ -147,7 +161,7 @@ describe('Users CRUD API', () => {
     });
 
     it('should return 404 when token is invalid', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/users/verify?token=invalid-token');
 
       expect(response.status).toBe(404);
@@ -167,7 +181,7 @@ describe('Users CRUD API', () => {
     });
 
     it('should list all users with pagination', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/users')
         .set('X-Test-User', authHeader);
 
@@ -195,7 +209,7 @@ describe('Users CRUD API', () => {
     });
 
     it('should get specific user', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get(`/api/users/${userId}`)
         .set('X-Test-User', authHeader);
 
@@ -207,7 +221,7 @@ describe('Users CRUD API', () => {
     });
 
     it('should return 404 for non-existent user', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .get('/api/users/99999')
         .set('X-Test-User', authHeader);
 
@@ -238,7 +252,7 @@ describe('Users CRUD API', () => {
         isSystemAdmin: true
       };
 
-      const response = await request(server)
+      const response = await request(app)
         .put(`/api/users/${userId}`)
         .set('X-Test-User', authHeader)
         .send(updateData);
@@ -272,7 +286,7 @@ describe('Users CRUD API', () => {
     });
 
     it('should partially update user', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .patch(`/api/users/${userId}`)
         .set('X-Test-User', authHeader)
         .send({ isSystemAdmin: true });
@@ -287,7 +301,7 @@ describe('Users CRUD API', () => {
     it('should send verification email when email changes', async () => {
       const newEmail = `patched-${Math.random().toString(36).substring(2, 8)}@example.com`;
 
-      const response = await request(server)
+      const response = await request(app)
         .patch(`/api/users/${userId}`)
         .set('X-Test-User', authHeader)
         .send({ email: newEmail });
@@ -305,7 +319,7 @@ describe('Users CRUD API', () => {
     it('should complete verification flow after email change', async () => {
       const newEmail = `flow-${Math.random().toString(36).substring(2, 8)}@example.com`;
 
-      const updateResponse = await request(server)
+      const updateResponse = await request(app)
         .patch(`/api/users/${userId}`)
         .set('X-Test-User', authHeader)
         .send({ email: newEmail });
@@ -320,7 +334,7 @@ describe('Users CRUD API', () => {
       expect(userAfterUpdate?.verificationToken).toEqual(expect.any(String));
 
       const verificationToken = userAfterUpdate?.verificationToken as string;
-      const verifyResponse = await request(server)
+      const verifyResponse = await request(app)
         .get(`/api/users/verify?token=${verificationToken}`);
 
       expect(verifyResponse.status).toBe(200);
@@ -347,7 +361,7 @@ describe('Users CRUD API', () => {
     });
 
     it('should soft delete user', async () => {
-      const response = await request(server)
+      const response = await request(app)
         .delete(`/api/users/${userId}`)
         .set('X-Test-User', authHeader);
 

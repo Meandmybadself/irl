@@ -1,37 +1,43 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateIdParam, systemContactInformationSchema, personContactInformationSchema, groupContactInformationSchema } from '../middleware/validation.js';
+import { validateBody, validateIdParam, systemContactInformationSchema, personContactInformationSchema, groupContactInformationSchema, validateDisplayIdParam } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
-import type { ApiResponse, PaginatedResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
+import { canViewPersonPrivateContacts, canViewGroupPrivateContacts } from '../middleware/authorization.js';
+import type { ApiResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
 
 // System Contact Information Routes
-// GET /api/contact-mappings/system - List all system contact information mappings
-router.get('/system', requireAuth, asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
-  const skip = (page - 1) * limit;
+// GET /api/contact-mappings/system - Get contact information for the system
+router.get('/system', requireAuth, asyncHandler(async (_req, res) => {
+  // Get the system (there's only one)
+  const system = await prisma.system.findFirst({
+    where: { deleted: false }
+  });
 
-  const [items, total] = await Promise.all([
-    prisma.systemContactInformation.findMany({
-      skip,
-      take: limit,
-      orderBy: { id: 'desc' }
-    }),
-    prisma.systemContactInformation.count()
-  ]);
+  if (!system) {
+    const response: ApiResponse<any[]> = {
+      success: true,
+      data: []
+    };
+    res.json(response);
+    return;
+  }
 
-  const response: PaginatedResponse<SystemContactInformation> = {
-    success: true,
-    data: items,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
+  // Get all contact information for this system
+  const mappings = await prisma.systemContactInformation.findMany({
+    where: { systemId: system.id },
+    include: {
+      contactInformation: true
     }
+  });
+
+  const contactInfos = mappings.map(m => m.contactInformation);
+
+  const response: ApiResponse<any[]> = {
+    success: true,
+    data: contactInfos
   };
 
   res.json(response);
@@ -73,6 +79,53 @@ router.post('/system', requireAuth, validateBody(systemContactInformationSchema)
   res.status(201).json(response);
 }));
 
+// POST /api/contact-mappings/system/with-contact - Create contact info and mapping in a transaction
+router.post('/system/with-contact', requireAuth, asyncHandler(async (req, res) => {
+  const { type, label, value, privacy, systemId } = req.body;
+
+  // Validate required fields
+  if (!type || !label || !value || !privacy || !systemId) {
+    throw createError(400, 'Missing required fields: type, label, value, privacy, systemId');
+  }
+
+  // Check if system exists
+  const systemExists = await prisma.system.findFirst({
+    where: { id: systemId, deleted: false }
+  });
+
+  if (!systemExists) {
+    throw createError(400, 'Referenced system does not exist');
+  }
+
+  // Use transaction to create both contact info and mapping atomically
+  const result = await prisma.$transaction(async (tx) => {
+    const contact = await tx.contactInformation.create({
+      data: { type, label, value, privacy }
+    });
+
+    const mapping = await tx.systemContactInformation.create({
+      data: {
+        systemId,
+        contactInformationId: contact.id
+      }
+    });
+
+    return { contact, mapping };
+  });
+
+  const response: ApiResponse<any> = {
+    success: true,
+    data: {
+      ...result.contact,
+      createdAt: result.contact.createdAt.toISOString(),
+      updatedAt: result.contact.updatedAt.toISOString()
+    },
+    message: 'System contact information created successfully'
+  };
+
+  res.status(201).json(response);
+}));
+
 // DELETE /api/contact-mappings/system/:id - Delete system contact information mapping
 router.delete('/system/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
@@ -108,30 +161,35 @@ router.delete('/system/:id', requireAuth, validateIdParam, asyncHandler(async (r
 }));
 
 // Person Contact Information Routes
-// GET /api/contact-mappings/person - List all person contact information mappings
-router.get('/person', requireAuth, asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
-  const skip = (page - 1) * limit;
+// GET /api/contact-mappings/person/:personId - Get contact information for a specific person
+router.get('/person/:displayId', requireAuth, validateDisplayIdParam, canViewPersonPrivateContacts, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+  const canViewPrivate = (req as any).canViewPrivate || req.user?.isSystemAdmin;
 
-  const [items, total] = await Promise.all([
-    prisma.personContactInformation.findMany({
-      skip,
-      take: limit,
-      orderBy: { id: 'desc' }
-    }),
-    prisma.personContactInformation.count()
-  ]);
+  // Build privacy filter
+  const privacyFilter = canViewPrivate
+    ? {}
+    : { privacy: 'PUBLIC' as const };
 
-  const response: PaginatedResponse<PersonContactInformation> = {
-    success: true,
-    data: items,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
+  // Get all contact information for this person
+  const mappings = await prisma.personContactInformation.findMany({
+    where: {
+      person: { displayId },
+      contactInformation: {
+        deleted: false,
+        ...privacyFilter
+      }
+    },
+    include: {
+      contactInformation: true
     }
+  });
+
+  const contactInfos = mappings.map(m => m.contactInformation);
+
+  const response: ApiResponse<any[]> = {
+    success: true,
+    data: contactInfos
   };
 
   res.json(response);
@@ -149,20 +207,25 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
       throw createError(400, 'Referenced person does not exist');
     }
 
-    // Check if contact information exists
-    const contactExists = await tx.contactInformation.findFirst({
-      where: { id: req.body.contactInformationId, deleted: false }
-    });
+  // Check authorization: must own the person or be system admin
+  if (!req.user?.isSystemAdmin && personExists.userId !== req.user?.id) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this person');
+  }
 
-    if (!contactExists) {
-      throw createError(400, 'Referenced contact information does not exist');
-    }
-
-    // Create the mapping
-    return await tx.personContactInformation.create({
-      data: req.body
-    });
+  // Check if contact information exists
+  const contactExists = await tx.contactInformation.findFirst({
+    where: { id: req.body.contactInformationId, deleted: false }
   });
+
+  if (!contactExists) {
+    throw createError(400, 'Referenced contact information does not exist');
+  }
+
+  // Create the mapping
+  return await tx.personContactInformation.create({
+    data: req.body
+  });
+});
 
   const response: ApiResponse<PersonContactInformation> = {
     success: true,
@@ -173,30 +236,90 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
   res.status(201).json(response);
 }));
 
-// DELETE /api/contact-mappings/person/:id - Delete person contact information mapping
-router.delete('/person/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// POST /api/contact-mappings/person/with-contact - Create contact info and mapping in a transaction
+router.post('/person/with-contact', requireAuth, asyncHandler(async (req, res) => {
+  const { type, label, value, privacy, personId } = req.body;
 
-  await prisma.$transaction(async (tx) => {
-    // Get the mapping to find the contact information ID
-    const mapping = await tx.personContactInformation.findUnique({
-      where: { id }
+  // Validate required fields
+  if (!type || !label || !value || !privacy || !personId) {
+    throw createError(400, 'Missing required fields: type, label, value, privacy, personId');
+  }
+
+  // Check if person exists
+  const personExists = await prisma.person.findFirst({
+    where: { id: personId, deleted: false }
+  });
+
+  if (!personExists) {
+    throw createError(400, 'Referenced person does not exist');
+  }
+
+  // Check authorization: must own the person or be system admin
+  if (!req.user?.isSystemAdmin && personExists.userId !== req.user?.id) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this person');
+  }
+
+  // Use transaction to create both contact info and mapping atomically
+  const result = await prisma.$transaction(async (tx) => {
+    const contact = await tx.contactInformation.create({
+      data: { type, label, value, privacy }
     });
 
-    if (!mapping) {
-      throw createError(404, 'Person contact information mapping not found');
+    const mapping = await tx.personContactInformation.create({
+      data: {
+        personId,
+        contactInformationId: contact.id
+      }
+    });
+
+    return { contact, mapping };
+  });
+
+  const response: ApiResponse<any> = {
+    success: true,
+    data: {
+      ...result.contact,
+      createdAt: result.contact.createdAt.toISOString(),
+      updatedAt: result.contact.updatedAt.toISOString()
+    },
+    message: 'Person contact information created successfully'
+  };
+
+  res.status(201).json(response);
+}));
+
+// DELETE /api/contact-mappings/person/:displayId/:contactInfoId - Delete person contact information mapping
+router.delete('/person/:displayId/:contactInfoId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+  const contactInfoId = parseInt(req.params.contactInfoId);
+
+  if (isNaN(contactInfoId) || contactInfoId <= 0) {
+    throw createError(400, 'Invalid contact information ID parameter');
+  }
+
+  // Find the mapping to ensure it exists
+  const mapping = await prisma.personContactInformation.findFirst({
+    where: {
+      person: { displayId },
+      contactInformation: { id: contactInfoId, deleted: false }
+    },
+    include: {
+      person: true
     }
+  });
 
-    // Delete the mapping
-    await tx.personContactInformation.delete({
-      where: { id }
-    });
+  if (!mapping) {
+    throw createError(404, 'Person contact information mapping not found');
+  }
 
-    // Soft delete the underlying contact information
-    await tx.contactInformation.update({
-      where: { id: mapping.contactInformationId },
-      data: { deleted: true }
-    });
+  // Check authorization: must own the person or be system admin
+  if (!req.user?.isSystemAdmin && mapping.person.userId !== req.user?.id) {
+    throw createError(403, 'Forbidden: You do not have permission to delete this contact information mapping');
+  }
+
+  // Delete only the mapping, not the contact information itself
+  await prisma.personContactInformation.delete({
+    where: { id: mapping.id }
   });
 
   const response: ApiResponse<null> = {
@@ -208,30 +331,35 @@ router.delete('/person/:id', requireAuth, validateIdParam, asyncHandler(async (r
 }));
 
 // Group Contact Information Routes
-// GET /api/contact-mappings/group - List all group contact information mappings
-router.get('/group', requireAuth, asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
-  const skip = (page - 1) * limit;
+// GET /api/contact-mappings/group/:groupId - Get contact information for a specific group
+router.get('/group/:displayId', requireAuth, validateDisplayIdParam, canViewGroupPrivateContacts, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+  const canViewPrivate = (req as any).canViewPrivate || req.user?.isSystemAdmin;
 
-  const [items, total] = await Promise.all([
-    prisma.groupContactInformation.findMany({
-      skip,
-      take: limit,
-      orderBy: { id: 'desc' }
-    }),
-    prisma.groupContactInformation.count()
-  ]);
+  // Build privacy filter
+  const privacyFilter = canViewPrivate
+    ? {}
+    : { privacy: 'PUBLIC' as const };
 
-  const response: PaginatedResponse<GroupContactInformation> = {
-    success: true,
-    data: items,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
+  // Get all contact information for this group
+  const mappings = await prisma.groupContactInformation.findMany({
+    where: {
+      group: { displayId },
+      contactInformation: {
+        deleted: false,
+        ...privacyFilter
+      }
+    },
+    include: {
+      contactInformation: true
     }
+  });
+
+  const contactInfos = mappings.map(m => m.contactInformation);
+
+  const response: ApiResponse<any[]> = {
+    success: true,
+    data: contactInfos
   };
 
   res.json(response);
@@ -239,29 +367,42 @@ router.get('/group', requireAuth, asyncHandler(async (req, res) => {
 
 // POST /api/contact-mappings/group - Create new group contact information mapping
 router.post('/group', requireAuth, validateBody(groupContactInformationSchema), asyncHandler(async (req, res) => {
-  const item = await prisma.$transaction(async (tx) => {
-    // Check if group exists
-    const groupExists = await tx.group.findFirst({
-      where: { id: req.body.groupId, deleted: false }
-    });
-
-    if (!groupExists) {
-      throw createError(400, 'Referenced group does not exist');
+  // Check if group exists
+  const groupExists = await prisma.group.findFirst({
+    where: { displayId: req.body.displayId, deleted: false },
+    include: {
+      people: {
+        where: {
+          person: { userId: req.user?.id, deleted: false },
+          isAdmin: true
+        }
+      }
     }
+  });
 
-    // Check if contact information exists
-    const contactExists = await tx.contactInformation.findFirst({
-      where: { id: req.body.contactInformationId, deleted: false }
-    });
+  if (!groupExists) {
+    throw createError(400, 'Referenced group does not exist');
+  }
 
-    if (!contactExists) {
-      throw createError(400, 'Referenced contact information does not exist');
+  // Check authorization: must be group admin or system admin
+  if (!req.user?.isSystemAdmin && groupExists.people.length === 0) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this group');
+  }
+
+  // Check if contact information exists
+  const contactExists = await prisma.contactInformation.findFirst({
+    where: { id: req.body.contactInformationId, deleted: false }
+  });
+
+  if (!contactExists) {
+    throw createError(400, 'Referenced contact information does not exist');
+  }
+
+  const item = await prisma.groupContactInformation.create({
+    data: {
+      groupId: groupExists.id,
+      contactInformationId: req.body.contactInformationId
     }
-
-    // Create the mapping
-    return await tx.groupContactInformation.create({
-      data: req.body
-    });
   });
 
   const response: ApiResponse<GroupContactInformation> = {
@@ -273,30 +414,107 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
   res.status(201).json(response);
 }));
 
-// DELETE /api/contact-mappings/group/:id - Delete group contact information mapping
-router.delete('/group/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id);
+// POST /api/contact-mappings/group/with-contact - Create contact info and mapping in a transaction
+router.post('/group/with-contact', requireAuth, asyncHandler(async (req, res) => {
+  const { type, label, value, privacy, groupId } = req.body;
 
-  await prisma.$transaction(async (tx) => {
-    // Get the mapping to find the contact information ID
-    const mapping = await tx.groupContactInformation.findUnique({
-      where: { id }
-    });
+  // Validate required fields
+  if (!type || !label || !value || !privacy || !groupId) {
+    throw createError(400, 'Missing required fields: type, label, value, privacy, groupId');
+  }
 
-    if (!mapping) {
-      throw createError(404, 'Group contact information mapping not found');
+  // Check if group exists
+  const groupExists = await prisma.group.findFirst({
+    where: { id: groupId, deleted: false },
+    include: {
+      people: {
+        where: {
+          person: { userId: req.user?.id, deleted: false },
+          isAdmin: true
+        }
+      }
     }
+  });
 
-    // Delete the mapping
-    await tx.groupContactInformation.delete({
-      where: { id }
+  if (!groupExists) {
+    throw createError(400, 'Referenced group does not exist');
+  }
+
+  // Check authorization: must be group admin or system admin
+  if (!req.user?.isSystemAdmin && groupExists.people.length === 0) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this group');
+  }
+
+  // Use transaction to create both contact info and mapping atomically
+  const result = await prisma.$transaction(async (tx) => {
+    const contact = await tx.contactInformation.create({
+      data: { type, label, value, privacy }
     });
 
-    // Soft delete the underlying contact information
-    await tx.contactInformation.update({
-      where: { id: mapping.contactInformationId },
-      data: { deleted: true }
+    const mapping = await tx.groupContactInformation.create({
+      data: {
+        groupId,
+        contactInformationId: contact.id
+      }
     });
+
+    return { contact, mapping };
+  });
+
+  const response: ApiResponse<any> = {
+    success: true,
+    data: {
+      ...result.contact,
+      createdAt: result.contact.createdAt.toISOString(),
+      updatedAt: result.contact.updatedAt.toISOString()
+    },
+    message: 'Group contact information created successfully'
+  };
+
+  res.status(201).json(response);
+}));
+
+// DELETE /api/contact-mappings/group/:displayId/:contactInfoId - Delete group contact information mapping
+router.delete('/group/:displayId/:contactInfoId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+  const contactInfoId = parseInt(req.params.contactInfoId);
+
+  if (isNaN(contactInfoId) || contactInfoId <= 0) {
+    throw createError(400, 'Invalid contact information ID parameter');
+  }
+
+  // Find the mapping to ensure it exists
+  const mapping = await prisma.groupContactInformation.findFirst({
+    where: {
+      group: { displayId },
+      contactInformation: { id: contactInfoId, deleted: false }
+    },
+    include: {
+      group: {
+        include: {
+          people: {
+            where: {
+              person: { userId: req.user?.id, deleted: false },
+              isAdmin: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!mapping) {
+    throw createError(404, 'Group contact information mapping not found');
+  }
+
+  // Check authorization: must be group admin or system admin
+  if (!req.user?.isSystemAdmin && mapping.group.people.length === 0) {
+    throw createError(403, 'Forbidden: You do not have permission to delete this contact information mapping');
+  }
+
+  // Delete only the mapping, not the contact information itself
+  await prisma.groupContactInformation.delete({
+    where: { id: mapping.id }
   });
 
   const response: ApiResponse<null> = {

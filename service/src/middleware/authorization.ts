@@ -1,0 +1,207 @@
+import { Request, Response, NextFunction } from 'express';
+import { prisma } from '../lib/prisma.js';
+import { createError } from './error-handler.js';
+
+// Middleware to check if user can modify a person
+export const canModifyPerson = async (req: Request, _res: Response, next: NextFunction) => {
+  const { displayId } = req.params;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can modify any person
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  const person = await prisma.person.findFirst({
+    where: { displayId, deleted: false }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  if (person.userId !== userId) {
+    throw createError(403, 'Forbidden: You do not have permission to modify this person');
+  }
+
+  next();
+};
+
+// Middleware to check if user can view a person's private contact information
+export const canViewPersonPrivateContacts = async (req: Request, _res: Response, next: NextFunction) => {
+  const { displayId } = req.params;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can view any person's private contacts
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  const person = await prisma.person.findFirst({
+    where: { displayId, deleted: false }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  // Attach a flag to the request to indicate if user owns this person
+  (req as any).canViewPrivate = person.userId === userId;
+
+  next();
+};
+
+// Middleware to check if user can modify a group
+export const canModifyGroup = async (req: Request, _res: Response, next: NextFunction) => {
+  const { displayId } = req.params;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can modify any group
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  const group = await prisma.group.findFirst({
+    where: { displayId, deleted: false },
+    include: {
+      people: {
+        where: {
+          person: { userId, deleted: false },
+          isAdmin: true
+        }
+      }
+    }
+  });
+
+  if (!group) {
+    throw createError(404, 'Group not found');
+  }
+
+  // Check if user is a group admin
+  if (group.people.length === 0) {
+    throw createError(403, 'Forbidden: You do not have permission to modify this group');
+  }
+
+  next();
+};
+
+// Middleware to check if user can view a group's private contact information
+export const canViewGroupPrivateContacts = async (req: Request, _res: Response, next: NextFunction) => {
+  const { displayId } = req.params;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can view any group's private contacts
+  if (req.user?.isSystemAdmin) {
+    (req as any).canViewPrivate = true;
+    next();
+    return;
+  }
+
+  const group = await prisma.group.findFirst({
+    where: { displayId, deleted: false },
+    include: {
+      people: {
+        where: {
+          person: { userId, deleted: false }
+        }
+      }
+    }
+  });
+
+  if (!group) {
+    throw createError(404, 'Group not found');
+  }
+
+  // User can view private contacts if they are a member or admin of the group
+  (req as any).canViewPrivate = group.people.length > 0;
+
+  next();
+};
+
+// Middleware to check if user can create a person (must own or be system admin)
+export const canCreatePerson = async (req: Request, _res: Response, next: NextFunction) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can create persons for any user
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  // If creating for a specific user, must be that user
+  if (req.body.userId && req.body.userId !== userId) {
+    throw createError(403, 'Forbidden: You can only create persons for yourself');
+  }
+
+  // Set userId to current user if not specified
+  if (!req.body.userId) {
+    req.body.userId = userId;
+  }
+
+  next();
+};
+
+// Middleware to check if user can create a group or subgroup
+export const canCreateGroup = async (req: Request, _res: Response, next: NextFunction) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can always create groups
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  // If creating a subgroup, check parent group permissions
+  if (req.body.parentGroupId) {
+    const parentGroup = await prisma.group.findFirst({
+      where: { id: req.body.parentGroupId, deleted: false },
+      include: {
+        people: {
+          where: {
+            person: { userId, deleted: false }
+          }
+        }
+      }
+    });
+
+    if (!parentGroup) {
+      throw createError(400, 'Referenced parent group does not exist');
+    }
+
+    // Check if user is admin of parent group OR if parent allows any user to create subgroups
+    const isParentAdmin = parentGroup.people.some(pg => pg.isAdmin);
+
+    if (!isParentAdmin && !parentGroup.allowsAnyUserToCreateSubgroup) {
+      throw createError(403, 'Forbidden: You do not have permission to create a subgroup under this parent');
+    }
+  }
+
+  next();
+};

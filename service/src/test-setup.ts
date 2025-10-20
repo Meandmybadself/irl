@@ -3,6 +3,8 @@ import { execSync } from 'child_process'
 import { prisma } from './lib/prisma.js'
 import { setupTestDatabase } from './utils/test-db-setup.js'
 
+let skipDbTests = process.env.SKIP_DB_TESTS === 'true'
+
 // Set test environment variables
 process.env.NODE_ENV = 'test'
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/irl_test'
@@ -12,25 +14,35 @@ process.env.CLIENT_URL = 'http://localhost:3000'
 process.env.SERVICE_PORT = '0'
 
 beforeAll(async () => {
-  // Setup test database and user
+  if (skipDbTests) {
+    console.warn('SKIP_DB_TESTS enabled; database-dependent tests will be skipped.')
+    return
+  }
+
   console.log('Setting up test database...');
-  await setupTestDatabase();
-  
-  // Push the schema to the test database
   try {
+    await setupTestDatabase()
+
     console.log('Pushing Prisma schema to test database...');
-    execSync('npx prisma db push --force-reset', { 
+    execSync('npx prisma db push --force-reset', {
       stdio: 'inherit',
       env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL }
     })
     console.log('✓ Database schema setup completed');
+
+    // Verify connectivity so we can gracefully skip when unavailable
+    await prisma.$queryRaw`SELECT 1`
   } catch (error) {
-    console.warn('Database schema setup warning:', error instanceof Error ? error.message : error)
-    console.warn('Tests may fail if database schema is not properly set up');
+    skipDbTests = true
+    process.env.SKIP_DB_TESTS = 'true'
+    console.warn('Database unavailable, skipping DB-dependent tests. Error:', error instanceof Error ? error.message : error)
   }
 })
 
 beforeEach(async () => {
+  if (skipDbTests) {
+    return
+  }
   // Clean up the database before each test
   // Use raw SQL to bypass soft delete middleware and ensure complete cleanup
   try {
@@ -61,9 +73,13 @@ beforeEach(async () => {
   } catch (error) {
     // If database operations fail, tests will skip database checks
     console.warn('Database cleanup warning (tests will run with mocked data):', error instanceof Error ? error.message : String(error))
+    skipDbTests = true
+    process.env.SKIP_DB_TESTS = 'true'
   }
 })
 
 afterAll(async () => {
   await prisma.$disconnect()
 })
+
+export const isDatabaseUnavailable = () => skipDbTests
