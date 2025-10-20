@@ -79,6 +79,53 @@ router.post('/system', requireAuth, validateBody(systemContactInformationSchema)
   res.status(201).json(response);
 }));
 
+// POST /api/contact-mappings/system/with-contact - Create contact info and mapping in a transaction
+router.post('/system/with-contact', requireAuth, asyncHandler(async (req, res) => {
+  const { type, label, value, privacy, systemId } = req.body;
+
+  // Validate required fields
+  if (!type || !label || !value || !privacy || !systemId) {
+    throw createError(400, 'Missing required fields: type, label, value, privacy, systemId');
+  }
+
+  // Check if system exists
+  const systemExists = await prisma.system.findFirst({
+    where: { id: systemId, deleted: false }
+  });
+
+  if (!systemExists) {
+    throw createError(400, 'Referenced system does not exist');
+  }
+
+  // Use transaction to create both contact info and mapping atomically
+  const result = await prisma.$transaction(async (tx) => {
+    const contact = await tx.contactInformation.create({
+      data: { type, label, value, privacy }
+    });
+
+    const mapping = await tx.systemContactInformation.create({
+      data: {
+        systemId,
+        contactInformationId: contact.id
+      }
+    });
+
+    return { contact, mapping };
+  });
+
+  const response: ApiResponse<any> = {
+    success: true,
+    data: {
+      ...result.contact,
+      createdAt: result.contact.createdAt.toISOString(),
+      updatedAt: result.contact.updatedAt.toISOString()
+    },
+    message: 'System contact information created successfully'
+  };
+
+  res.status(201).json(response);
+}));
+
 // DELETE /api/contact-mappings/system/:id - Delete system contact information mapping
 router.delete('/system/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
@@ -184,6 +231,58 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
     success: true,
     data: item,
     message: 'Person contact information mapping created successfully'
+  };
+
+  res.status(201).json(response);
+}));
+
+// POST /api/contact-mappings/person/with-contact - Create contact info and mapping in a transaction
+router.post('/person/with-contact', requireAuth, asyncHandler(async (req, res) => {
+  const { type, label, value, privacy, personId } = req.body;
+
+  // Validate required fields
+  if (!type || !label || !value || !privacy || !personId) {
+    throw createError(400, 'Missing required fields: type, label, value, privacy, personId');
+  }
+
+  // Check if person exists
+  const personExists = await prisma.person.findFirst({
+    where: { id: personId, deleted: false }
+  });
+
+  if (!personExists) {
+    throw createError(400, 'Referenced person does not exist');
+  }
+
+  // Check authorization: must own the person or be system admin
+  if (!req.user?.isSystemAdmin && personExists.userId !== req.user?.id) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this person');
+  }
+
+  // Use transaction to create both contact info and mapping atomically
+  const result = await prisma.$transaction(async (tx) => {
+    const contact = await tx.contactInformation.create({
+      data: { type, label, value, privacy }
+    });
+
+    const mapping = await tx.personContactInformation.create({
+      data: {
+        personId,
+        contactInformationId: contact.id
+      }
+    });
+
+    return { contact, mapping };
+  });
+
+  const response: ApiResponse<any> = {
+    success: true,
+    data: {
+      ...result.contact,
+      createdAt: result.contact.createdAt.toISOString(),
+      updatedAt: result.contact.updatedAt.toISOString()
+    },
+    message: 'Person contact information created successfully'
   };
 
   res.status(201).json(response);
@@ -310,6 +409,66 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
     success: true,
     data: item,
     message: 'Group contact information mapping created successfully'
+  };
+
+  res.status(201).json(response);
+}));
+
+// POST /api/contact-mappings/group/with-contact - Create contact info and mapping in a transaction
+router.post('/group/with-contact', requireAuth, asyncHandler(async (req, res) => {
+  const { type, label, value, privacy, groupId } = req.body;
+
+  // Validate required fields
+  if (!type || !label || !value || !privacy || !groupId) {
+    throw createError(400, 'Missing required fields: type, label, value, privacy, groupId');
+  }
+
+  // Check if group exists
+  const groupExists = await prisma.group.findFirst({
+    where: { id: groupId, deleted: false },
+    include: {
+      people: {
+        where: {
+          person: { userId: req.user?.id, deleted: false },
+          isAdmin: true
+        }
+      }
+    }
+  });
+
+  if (!groupExists) {
+    throw createError(400, 'Referenced group does not exist');
+  }
+
+  // Check authorization: must be group admin or system admin
+  if (!req.user?.isSystemAdmin && groupExists.people.length === 0) {
+    throw createError(403, 'Forbidden: You do not have permission to add contact information to this group');
+  }
+
+  // Use transaction to create both contact info and mapping atomically
+  const result = await prisma.$transaction(async (tx) => {
+    const contact = await tx.contactInformation.create({
+      data: { type, label, value, privacy }
+    });
+
+    const mapping = await tx.groupContactInformation.create({
+      data: {
+        groupId,
+        contactInformationId: contact.id
+      }
+    });
+
+    return { contact, mapping };
+  });
+
+  const response: ApiResponse<any> = {
+    success: true,
+    data: {
+      ...result.contact,
+      createdAt: result.contact.createdAt.toISOString(),
+      updatedAt: result.contact.updatedAt.toISOString()
+    },
+    message: 'Group contact information created successfully'
   };
 
   res.status(201).json(response);

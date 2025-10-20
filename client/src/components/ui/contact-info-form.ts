@@ -88,10 +88,8 @@ export class ContactInfoForm extends LitElement {
     this.isSaving = true;
     this.errorMessage = null;
 
-    let contactId: number | undefined;
-
     try {
-      // Create the contact information
+      // Create the contact information and mapping in a single transaction
       const contactData = {
         type: this.newItem.type!,
         label: this.newItem.label.trim(),
@@ -99,29 +97,30 @@ export class ContactInfoForm extends LitElement {
         privacy: this.newItem.privacy!
       };
 
-      const contactResponse = await this.api.createContactInformation(contactData);
-      if (!contactResponse.success || !contactResponse.data) {
-        throw new Error(contactResponse.error || ERROR_MESSAGES.CONTACT_INFO_CREATE_FAILED);
-      }
+      let contactResponse;
 
-      contactId = contactResponse.data.id;
-
-      // Link the contact information to the entity
+      // Use transactional endpoints to create both contact info and mapping atomically
       if (this.entityType === 'person') {
-        await this.api.createPersonContactInformation({
-          personId: this.entityId,
-          contactInformationId: contactId
+        contactResponse = await this.api.createPersonContactInformationWithContact({
+          ...contactData,
+          personId: this.entityId
         });
       } else if (this.entityType === 'group') {
-        await this.api.createGroupContactInformation({
-          groupId: this.entityId,
-          contactInformationId: contactId
+        contactResponse = await this.api.createGroupContactInformationWithContact({
+          ...contactData,
+          groupId: this.entityId
         });
       } else if (this.entityType === 'system') {
-        await this.api.createSystemContactInformation({
-          systemId: this.entityId,
-          contactInformationId: contactId
+        contactResponse = await this.api.createSystemContactInformationWithContact({
+          ...contactData,
+          systemId: this.entityId
         });
+      } else {
+        throw new Error('Invalid entity type');
+      }
+
+      if (!contactResponse.success || !contactResponse.data) {
+        throw new Error(contactResponse.error || ERROR_MESSAGES.CONTACT_INFO_CREATE_FAILED);
       }
 
       // Add to local items
@@ -131,15 +130,6 @@ export class ContactInfoForm extends LitElement {
 
       this.dispatchChangeEvent();
     } catch (error) {
-      // Cleanup: delete the contact info if mapping failed
-      if (contactId) {
-        try {
-          await this.api.deleteContactInformation(contactId);
-        } catch (cleanupError) {
-          console.error('Failed to cleanup orphaned contact information:', cleanupError);
-        }
-      }
-
       const errorMsg = `Failed to add contact information: ${error instanceof Error ? error.message : 'Unknown error'}`;
       this.errorMessage = errorMsg;
       this.dispatchEvent(new CustomEvent('contact-error', {

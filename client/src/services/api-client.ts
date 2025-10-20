@@ -430,6 +430,13 @@ export class ApiClient {
     });
   }
 
+  async createSystemContactInformationWithContact(data: CreateContactInformationRequest & { systemId: number }): Promise<ApiResponse<ContactInformation>> {
+    return this.request<ApiResponse<ContactInformation>>('/contact-mappings/system/with-contact', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
   async deleteSystemContactInformation(id: number): Promise<ApiResponse<null>> {
     return this.request<ApiResponse<null>>(`/contact-mappings/system/${id}`, {
       method: 'DELETE'
@@ -448,6 +455,13 @@ export class ApiClient {
     });
   }
 
+  async createPersonContactInformationWithContact(data: CreateContactInformationRequest & { personId: number }): Promise<ApiResponse<ContactInformation>> {
+    return this.request<ApiResponse<ContactInformation>>('/contact-mappings/person/with-contact', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
   async deletePersonContactInformation(displayId: string, contactInfoId: number): Promise<ApiResponse<null>> {
     return this.request<ApiResponse<null>>(`/contact-mappings/person/${displayId}/${contactInfoId}`, {
       method: 'DELETE'
@@ -461,6 +475,13 @@ export class ApiClient {
 
   async createGroupContactInformation(data: CreateGroupContactInformationRequest): Promise<ApiResponse<GroupContactInformation>> {
     return this.request<ApiResponse<GroupContactInformation>>('/contact-mappings/group', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async createGroupContactInformationWithContact(data: CreateContactInformationRequest & { groupId: number }): Promise<ApiResponse<ContactInformation>> {
+    return this.request<ApiResponse<ContactInformation>>('/contact-mappings/group/with-contact', {
       method: 'POST',
       body: JSON.stringify(data)
     });
