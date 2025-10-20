@@ -77,8 +77,26 @@ router.post('/system', requireAuth, validateBody(systemContactInformationSchema)
 router.delete('/system/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
-  await prisma.systemContactInformation.delete({
-    where: { id }
+  await prisma.$transaction(async (tx) => {
+    // Get the mapping to find the contact information ID
+    const mapping = await tx.systemContactInformation.findUnique({
+      where: { id }
+    });
+
+    if (!mapping) {
+      throw createError(404, 'System contact information mapping not found');
+    }
+
+    // Delete the mapping
+    await tx.systemContactInformation.delete({
+      where: { id }
+    });
+
+    // Soft delete the underlying contact information
+    await tx.contactInformation.update({
+      where: { id: mapping.contactInformationId },
+      data: { deleted: true }
+    });
   });
 
   const response: ApiResponse<null> = {
@@ -159,8 +177,26 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
 router.delete('/person/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
-  await prisma.personContactInformation.delete({
-    where: { id }
+  await prisma.$transaction(async (tx) => {
+    // Get the mapping to find the contact information ID
+    const mapping = await tx.personContactInformation.findUnique({
+      where: { id }
+    });
+
+    if (!mapping) {
+      throw createError(404, 'Person contact information mapping not found');
+    }
+
+    // Delete the mapping
+    await tx.personContactInformation.delete({
+      where: { id }
+    });
+
+    // Soft delete the underlying contact information
+    await tx.contactInformation.update({
+      where: { id: mapping.contactInformationId },
+      data: { deleted: true }
+    });
   });
 
   const response: ApiResponse<null> = {
@@ -241,8 +277,26 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
 router.delete('/group/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
-  await prisma.groupContactInformation.delete({
-    where: { id }
+  await prisma.$transaction(async (tx) => {
+    // Get the mapping to find the contact information ID
+    const mapping = await tx.groupContactInformation.findUnique({
+      where: { id }
+    });
+
+    if (!mapping) {
+      throw createError(404, 'Group contact information mapping not found');
+    }
+
+    // Delete the mapping
+    await tx.groupContactInformation.delete({
+      where: { id }
+    });
+
+    // Soft delete the underlying contact information
+    await tx.contactInformation.update({
+      where: { id: mapping.contactInformationId },
+      data: { deleted: true }
+    });
   });
 
   const response: ApiResponse<null> = {
