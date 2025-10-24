@@ -87,18 +87,27 @@ Properties:
 ### Group
 `Group` is a collection of `Person`s.  It can be used to group `Person`s for a variety of purposes.
 
+**Group Administrators:**
+When a `Group` is created, the creator's first `Person` (ordered by `createdAt`) is automatically assigned as an administrator with the relation `Creator`. Only administrators can modify group properties. When a `User` has multiple `Person`s, any of their `Person`s marked as admin grants modification permissions, but the first `Person` is used when initially creating groups.
+
 Properties:
 * `id` - Primary Key
 * `displayId` - unique string (URL slug)
 * `name`
 * `description`
-* `people` - comprised using the `Person` mapping tables
+* `people` - comprised using the `Person` mapping tables via `PersonGroup`
 * `parentGroup` - parent `Group` ID
-* `adminPersons` - comprised using the `Person` mapping tables
-* `memberPersons` - comprised using the `Person` mapping tables
+* `adminPersons` - `Person`s with `isAdmin: true` in the `PersonGroup` mapping
+* `memberPersons` - all `Person`s in the `PersonGroup` mapping
 * `contactInformations` - comprised using the `ContactInformation` mapping tables
 * `allowsAnyUserToCreateSubgroup` - boolean
 * `publiclyVisible` - boolean
+
+**Authorization Rules:**
+* System admins can modify any group
+* Only `Person`s marked as `isAdmin: true` in the `PersonGroup` relation can modify group properties
+* The creator's first `Person` is automatically assigned as admin during group creation
+* A `User` must have at least one `Person` before creating a group
 
 ## Steps for development
 * Persist additional development steps in `TODOs.md`.  Add new tasks that need to be accomplished and mark tasks that have been previously completed.

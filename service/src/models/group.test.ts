@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { prisma } from '../lib/prisma.js'
 import { generateTestData, isDatabaseAvailable } from '../utils/test-helpers.js'
-import { 
-  createGroupWithParent, 
-  addPersonToGroup, 
+import {
+  createGroupWithParent,
+  addPersonToGroup,
   findGroupWithMembers,
-  findGroupByDisplayId 
+  findGroupByDisplayId,
+  getUserFirstPerson
 } from '../utils/prisma-helpers.js'
 
 describe('Group Operations Tests', () => {
@@ -636,6 +637,343 @@ describe('Group Operations Tests', () => {
           } as any
         })
       ).rejects.toThrow()
+    })
+  })
+
+  describe('Group Administrator Functionality', () => {
+    it('should get the first Person for a User', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      // Create user
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      // Create three persons for the user at different times
+      const person1 = await prisma.person.create({
+        data: {
+          ...generateTestData.person(user.id),
+          firstName: 'First',
+          lastName: 'Person'
+        }
+      })
+
+      // Small delay to ensure different createdAt timestamps
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      const person2 = await prisma.person.create({
+        data: {
+          ...generateTestData.person(user.id),
+          firstName: 'Second',
+          lastName: 'Person'
+        }
+      })
+
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      const person3 = await prisma.person.create({
+        data: {
+          ...generateTestData.person(user.id),
+          firstName: 'Third',
+          lastName: 'Person'
+        }
+      })
+
+      // Get first person
+      const firstPerson = await getUserFirstPerson(user.id)
+
+      expect(firstPerson).toBeDefined()
+      expect(firstPerson?.id).toBe(person1.id)
+      expect(firstPerson?.firstName).toBe('First')
+    })
+
+    it('should return null when getting first Person for user with no persons', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      // Create user with no persons
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const firstPerson = await getUserFirstPerson(user.id)
+
+      expect(firstPerson).toBeNull()
+    })
+
+    it('should automatically assign creator as admin when group is created via transaction', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      // Create user and person
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const person = await prisma.person.create({
+        data: generateTestData.person(user.id)
+      })
+
+      // Simulate the group creation flow from the API
+      const group = await prisma.$transaction(async (tx) => {
+        const newGroup = await tx.group.create({
+          data: {
+            displayId: 'test-group-' + Math.random().toString(36).substring(2, 8),
+            name: 'Test Group',
+            description: 'A test group with automatic admin assignment'
+          }
+        })
+
+        await tx.personGroup.create({
+          data: {
+            personId: person.id,
+            groupId: newGroup.id,
+            relation: 'Creator',
+            isAdmin: true
+          }
+        })
+
+        return newGroup
+      })
+
+      // Verify the group was created
+      expect(group).toBeDefined()
+
+      // Verify the person is an admin
+      const membership = await prisma.personGroup.findFirst({
+        where: {
+          groupId: group.id,
+          personId: person.id
+        }
+      })
+
+      expect(membership).toBeDefined()
+      expect(membership?.isAdmin).toBe(true)
+      expect(membership?.relation).toBe('Creator')
+    })
+
+    it('should assign first Person as admin when user has multiple persons', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      // Create user with multiple persons
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const person1 = await prisma.person.create({
+        data: {
+          ...generateTestData.person(user.id),
+          firstName: 'First',
+          lastName: 'Person'
+        }
+      })
+
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      const person2 = await prisma.person.create({
+        data: {
+          ...generateTestData.person(user.id),
+          firstName: 'Second',
+          lastName: 'Person'
+        }
+      })
+
+      // Get first person and create group with that person as admin
+      const firstPerson = await getUserFirstPerson(user.id)
+
+      const group = await prisma.$transaction(async (tx) => {
+        const newGroup = await tx.group.create({
+          data: {
+            displayId: 'test-group-' + Math.random().toString(36).substring(2, 8),
+            name: 'Multi-Person Test Group'
+          }
+        })
+
+        await tx.personGroup.create({
+          data: {
+            personId: firstPerson!.id,
+            groupId: newGroup.id,
+            relation: 'Creator',
+            isAdmin: true
+          }
+        })
+
+        return newGroup
+      })
+
+      // Verify only the first person is admin
+      const memberships = await prisma.personGroup.findMany({
+        where: { groupId: group.id }
+      })
+
+      expect(memberships).toHaveLength(1)
+      expect(memberships[0].personId).toBe(person1.id)
+      expect(memberships[0].isAdmin).toBe(true)
+    })
+
+    it('should allow admin to modify group properties', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      // Create user, person, and group with admin
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const person = await prisma.person.create({
+        data: generateTestData.person(user.id)
+      })
+
+      const group = await prisma.$transaction(async (tx) => {
+        const newGroup = await tx.group.create({
+          data: {
+            displayId: 'test-admin-group-' + Math.random().toString(36).substring(2, 8),
+            name: 'Admin Test Group',
+            description: 'Original description'
+          }
+        })
+
+        await tx.personGroup.create({
+          data: {
+            personId: person.id,
+            groupId: newGroup.id,
+            relation: 'Creator',
+            isAdmin: true
+          }
+        })
+
+        return newGroup
+      })
+
+      // Verify admin can query and would be allowed to modify
+      const groupWithAdmins = await prisma.group.findFirst({
+        where: { id: group.id, deleted: false },
+        include: {
+          people: {
+            where: {
+              person: { userId: user.id, deleted: false },
+              isAdmin: true
+            }
+          }
+        }
+      })
+
+      expect(groupWithAdmins).toBeDefined()
+      expect(groupWithAdmins!.people.length).toBeGreaterThan(0)
+
+      // Modify the group (simulating what canModifyGroup middleware would allow)
+      const updatedGroup = await prisma.group.update({
+        where: { id: group.id },
+        data: {
+          description: 'Updated by admin'
+        }
+      })
+
+      expect(updatedGroup.description).toBe('Updated by admin')
+    })
+
+    it('should not allow non-admin Person to appear in admin query', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      // Create two users
+      const adminUser = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const nonAdminUser = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const adminPerson = await prisma.person.create({
+        data: generateTestData.person(adminUser.id)
+      })
+
+      const nonAdminPerson = await prisma.person.create({
+        data: generateTestData.person(nonAdminUser.id)
+      })
+
+      // Create group with admin
+      const group = await prisma.$transaction(async (tx) => {
+        const newGroup = await tx.group.create({
+          data: {
+            displayId: 'test-mixed-group-' + Math.random().toString(36).substring(2, 8),
+            name: 'Mixed Permissions Group'
+          }
+        })
+
+        // Add admin person
+        await tx.personGroup.create({
+          data: {
+            personId: adminPerson.id,
+            groupId: newGroup.id,
+            relation: 'Creator',
+            isAdmin: true
+          }
+        })
+
+        // Add non-admin person
+        await tx.personGroup.create({
+          data: {
+            personId: nonAdminPerson.id,
+            groupId: newGroup.id,
+            relation: 'Member',
+            isAdmin: false
+          }
+        })
+
+        return newGroup
+      })
+
+      // Query as admin user - should find admin access
+      const adminQuery = await prisma.group.findFirst({
+        where: { id: group.id, deleted: false },
+        include: {
+          people: {
+            where: {
+              person: { userId: adminUser.id, deleted: false },
+              isAdmin: true
+            }
+          }
+        }
+      })
+
+      expect(adminQuery!.people.length).toBe(1)
+
+      // Query as non-admin user - should find no admin access
+      const nonAdminQuery = await prisma.group.findFirst({
+        where: { id: group.id, deleted: false },
+        include: {
+          people: {
+            where: {
+              person: { userId: nonAdminUser.id, deleted: false },
+              isAdmin: true
+            }
+          }
+        }
+      })
+
+      expect(nonAdminQuery!.people.length).toBe(0)
     })
   })
 })

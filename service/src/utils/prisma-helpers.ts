@@ -116,6 +116,26 @@ export const findUserWithPeople = async (userId: number) => {
   });
 };
 
+/**
+ * Gets the first Person associated with a User (ordered by creation date).
+ * When a User has multiple Persons, the first Person is considered the primary
+ * Person for determining group admin privileges and other primary associations.
+ *
+ * @param userId - The ID of the User
+ * @returns The first Person for the User, or null if no Person exists
+ */
+export const getUserFirstPerson = async (userId: number) => {
+  return prisma.person.findFirst({
+    where: {
+      userId,
+      deleted: false
+    },
+    orderBy: {
+      createdAt: 'asc'
+    }
+  });
+};
+
 const SINGLE_SYSTEM_ID = 1;
 
 export const findSystemWithAdmins = async () => {

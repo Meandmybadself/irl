@@ -4,6 +4,7 @@ import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateDisplayIdParam, validateSearchQuery, groupSchema, updateGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { canModifyGroup, canCreateGroup } from '../middleware/authorization.js';
+import { getUserFirstPerson } from '../utils/prisma-helpers.js';
 import type { ApiResponse, PaginatedResponse, Group } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -109,8 +110,35 @@ router.get('/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(asyn
 
 // POST /api/groups - Create new group (auth required)
 router.post('/', requireAuth, canCreateGroup, validateBody(groupSchema), asyncHandler(async (req, res) => {
-  const item = await prisma.group.create({
-    data: req.body
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // Get the user's first person to set as group admin
+  const firstPerson = await getUserFirstPerson(userId);
+
+  if (!firstPerson) {
+    throw createError(400, 'You must create a Person profile before creating a Group');
+  }
+
+  // Create the group and assign the creator's first person as admin in a transaction
+  const item = await prisma.$transaction(async (tx) => {
+    const group = await tx.group.create({
+      data: req.body
+    });
+
+    await tx.personGroup.create({
+      data: {
+        personId: firstPerson.id,
+        groupId: group.id,
+        relation: 'Creator',
+        isAdmin: true
+      }
+    });
+
+    return group;
   });
 
   const response: ApiResponse<Group> = {
