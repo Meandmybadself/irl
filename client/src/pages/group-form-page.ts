@@ -8,6 +8,7 @@ import { selectIsAuthenticated } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
 import '../components/ui/group-search.js';
 import '../components/ui/contact-info-form.js';
+import '../components/ui/group-admin-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Group, ContactInformation } from '@irl/shared';
@@ -369,6 +370,20 @@ export class GroupFormPage extends LitElement {
                     this.store.dispatch(addNotification(e.detail.error, 'error'));
                   }}
                 ></contact-info-form>
+
+                <group-admin-form
+                  .groupId=${this.groupId}
+                  .groupDisplayId=${this.groupDisplayId}
+                  @admin-added=${() => {
+                    this.store.dispatch(addNotification('Administrator added successfully', 'success'));
+                  }}
+                  @admin-removed=${() => {
+                    this.store.dispatch(addNotification('Administrator removed successfully', 'success'));
+                  }}
+                  @admin-error=${(e: CustomEvent) => {
+                    this.store.dispatch(addNotification(e.detail.error, 'error'));
+                  }}
+                ></group-admin-form>
               ` : ''}
 
               <div class="flex items-center justify-between gap-x-4">
