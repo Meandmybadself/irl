@@ -239,6 +239,12 @@ export class PersonDetailPage extends LitElement {
                             <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
                               Display ID
                             </th>
+                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
+                              Description
+                            </th>
+                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
+                              Visibility
+                            </th>
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
