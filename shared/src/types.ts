@@ -127,11 +127,15 @@ export interface PersonGroup {
   id: number;
   personId: number;
   groupId: number;
-  relation: string;
   isAdmin: boolean;
 }
 
 // Extended types with relations for API responses
+export interface PersonGroupWithRelations extends PersonGroup {
+  person?: Person;
+  group?: Group;
+}
+
 export interface PersonWithRelations extends Person {
   user?: User;
   contactInformation?: ContactInformation[];
@@ -285,13 +289,11 @@ export interface CreateGroupContactInformationRequest {
 export interface CreatePersonGroupRequest {
   personId: number;
   groupId: number;
-  relation: string;
   isAdmin?: boolean;
 }
 
 export interface UpdatePersonGroupRequest {
   personId?: number;
   groupId?: number;
-  relation?: string;
   isAdmin?: boolean;
 }

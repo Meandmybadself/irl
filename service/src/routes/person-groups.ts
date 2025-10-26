@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, personGroupSchema, updatePersonGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
+import { canModifyPersonGroup } from '../middleware/authorization.js';
 import type { ApiResponse, PaginatedResponse, PersonGroup } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -17,14 +18,39 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     prisma.personGroup.findMany({
       skip,
       take: limit,
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
+      include: {
+        person: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            displayId: true,
+            pronouns: true,
+            imageURL: true,
+            userId: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        },
+        group: {
+          select: {
+            id: true,
+            displayId: true,
+            name: true,
+            description: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }
+      }
     }),
     prisma.personGroup.count()
   ]);
 
   const response: PaginatedResponse<PersonGroup> = {
     success: true,
-    data: items,
+    data: items as any,
     pagination: {
       total,
       page,
@@ -39,9 +65,34 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 // GET /api/person-groups/:id - Get specific person-group relationship
 router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
-  
+
   const item = await prisma.personGroup.findUnique({
-    where: { id }
+    where: { id },
+    include: {
+      person: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          displayId: true,
+          pronouns: true,
+          imageURL: true,
+          userId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      },
+      group: {
+        select: {
+          id: true,
+          displayId: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }
+    }
   });
 
   if (!item) {
@@ -50,14 +101,14 @@ router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) =
 
   const response: ApiResponse<PersonGroup> = {
     success: true,
-    data: item
+    data: item as any
   };
 
   res.json(response);
 }));
 
 // POST /api/person-groups - Create new person-group relationship
-router.post('/', requireAuth, validateBody(personGroupSchema), asyncHandler(async (req, res) => {
+router.post('/', requireAuth, canModifyPersonGroup, validateBody(personGroupSchema), asyncHandler(async (req, res) => {
   // Check if person exists
   const personExists = await prisma.person.findFirst({
     where: { id: req.body.personId, deleted: false }
@@ -77,12 +128,37 @@ router.post('/', requireAuth, validateBody(personGroupSchema), asyncHandler(asyn
   }
 
   const item = await prisma.personGroup.create({
-    data: req.body
+    data: req.body,
+    include: {
+      person: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          displayId: true,
+          pronouns: true,
+          imageURL: true,
+          userId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      },
+      group: {
+        select: {
+          id: true,
+          displayId: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }
+    }
   });
 
   const response: ApiResponse<PersonGroup> = {
     success: true,
-    data: item,
+    data: item as any,
     message: 'Person-group relationship created successfully'
   };
 
@@ -90,7 +166,7 @@ router.post('/', requireAuth, validateBody(personGroupSchema), asyncHandler(asyn
 }));
 
 // PUT /api/person-groups/:id - Update entire person-group relationship
-router.put('/:id', requireAuth, validateIdParam, validateBody(personGroupSchema), asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, validateIdParam, canModifyPersonGroup, validateBody(personGroupSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if person exists
@@ -111,6 +187,26 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(personGroupSchema)
     throw createError(400, 'Referenced group does not exist');
   }
 
+  // If removing admin status, check if they're the last admin
+  if (req.body.isAdmin === false) {
+    const currentPersonGroup = await prisma.personGroup.findUnique({
+      where: { id }
+    });
+
+    if (currentPersonGroup?.isAdmin) {
+      const adminCount = await prisma.personGroup.count({
+        where: {
+          groupId: currentPersonGroup.groupId,
+          isAdmin: true
+        }
+      });
+
+      if (adminCount <= 1) {
+        throw createError(400, 'Cannot remove the last administrator from a group. Please assign another administrator first.');
+      }
+    }
+  }
+
   const item = await prisma.personGroup.update({
     where: { id },
     data: req.body
@@ -126,7 +222,7 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(personGroupSchema)
 }));
 
 // PATCH /api/person-groups/:id - Partial update person-group relationship
-router.patch('/:id', requireAuth, validateIdParam, validateBody(updatePersonGroupSchema), asyncHandler(async (req, res) => {
+router.patch('/:id', requireAuth, validateIdParam, canModifyPersonGroup, validateBody(updatePersonGroupSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
 
   // Check if person exists (if being updated)
@@ -151,6 +247,26 @@ router.patch('/:id', requireAuth, validateIdParam, validateBody(updatePersonGrou
     }
   }
 
+  // If removing admin status, check if they're the last admin
+  if (req.body.isAdmin === false) {
+    const currentPersonGroup = await prisma.personGroup.findUnique({
+      where: { id }
+    });
+
+    if (currentPersonGroup?.isAdmin) {
+      const adminCount = await prisma.personGroup.count({
+        where: {
+          groupId: currentPersonGroup.groupId,
+          isAdmin: true
+        }
+      });
+
+      if (adminCount <= 1) {
+        throw createError(400, 'Cannot remove the last administrator from a group. Please assign another administrator first.');
+      }
+    }
+  }
+
   const item = await prisma.personGroup.update({
     where: { id },
     data: req.body
@@ -166,8 +282,31 @@ router.patch('/:id', requireAuth, validateIdParam, validateBody(updatePersonGrou
 }));
 
 // DELETE /api/person-groups/:id - Delete person-group relationship
-router.delete('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, validateIdParam, canModifyPersonGroup, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
+
+  // Get the PersonGroup record to check if it's an admin
+  const personGroup = await prisma.personGroup.findUnique({
+    where: { id }
+  });
+
+  if (!personGroup) {
+    throw createError(404, 'Person-group relationship not found');
+  }
+
+  // If removing an admin, check if they're the last admin
+  if (personGroup.isAdmin) {
+    const adminCount = await prisma.personGroup.count({
+      where: {
+        groupId: personGroup.groupId,
+        isAdmin: true
+      }
+    });
+
+    if (adminCount <= 1) {
+      throw createError(400, 'Cannot remove the last administrator from a group. Please assign another administrator first.');
+    }
+  }
 
   await prisma.personGroup.delete({
     where: { id }

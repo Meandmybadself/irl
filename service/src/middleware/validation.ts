@@ -92,7 +92,6 @@ export const groupContactInformationSchema = z.object({
 export const personGroupSchema = z.object({
   personId: z.number().int('Person ID must be an integer'),
   groupId: z.number().int('Group ID must be an integer'),
-  relation: z.string().min(1, 'Relation is required'),
   isAdmin: z.boolean().optional()
 });
 

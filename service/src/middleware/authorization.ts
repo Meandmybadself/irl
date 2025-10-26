@@ -61,7 +61,15 @@ export const canViewPersonPrivateContacts = async (req: Request, _res: Response,
   next();
 };
 
-// Middleware to check if user can modify a group
+/**
+ * Middleware to check if user can modify a group.
+ *
+ * Authorization rules:
+ * 1. System admins can modify any group
+ * 2. Only users whose Person is marked as a group admin (isAdmin: true in PersonGroup) can modify the group
+ * 3. When a user has multiple Persons, any Person associated with the group as an admin grants permission
+ *
+ */
 export const canModifyGroup = async (req: Request, _res: Response, next: NextFunction) => {
   const { displayId } = req.params;
   const userId = req.user?.id;
@@ -92,7 +100,7 @@ export const canModifyGroup = async (req: Request, _res: Response, next: NextFun
     throw createError(404, 'Group not found');
   }
 
-  // Check if user is a group admin
+  // Check if user has any Person that is a group admin
   if (group.people.length === 0) {
     throw createError(403, 'Forbidden: You do not have permission to modify this group');
   }
@@ -200,6 +208,98 @@ export const canCreateGroup = async (req: Request, _res: Response, next: NextFun
 
     if (!isParentAdmin && !parentGroup.allowsAnyUserToCreateSubgroup) {
       throw createError(403, 'Forbidden: You do not have permission to create a subgroup under this parent');
+    }
+  }
+
+  next();
+};
+
+/**
+ * Middleware to check if user can modify a PersonGroup relationship.
+ *
+ * Authorization rules:
+ * 1. System admins can modify any PersonGroup relationship
+ * 2. Group admins (users with isAdmin: true in PersonGroup) can modify memberships for their group
+ * 3. Users cannot modify their own admin status (prevents privilege escalation)
+ * 4. Only admins can grant/revoke admin status to others
+ *
+ * This prevents:
+ * - Unauthorized users from adding/removing group members
+ * - Non-admins from granting themselves admin privileges
+ * - Unauthorized privilege escalation
+ */
+export const canModifyPersonGroup = async (req: Request, _res: Response, next: NextFunction) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can modify any PersonGroup relationship
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  // Get the groupId from the request (either from body for POST/PUT/PATCH or from existing record for DELETE)
+  let groupId: number;
+  let personGroupId: number | undefined;
+
+  if (req.method === 'POST') {
+    // For POST, groupId comes from body
+    groupId = req.body.groupId;
+  } else {
+    // For PUT/PATCH/DELETE, get the PersonGroup record to find the groupId
+    personGroupId = parseInt(req.params.id);
+    const personGroup = await prisma.personGroup.findUnique({
+      where: { id: personGroupId }
+    });
+
+    if (!personGroup) {
+      throw createError(404, 'Person-group relationship not found');
+    }
+
+    groupId = personGroup.groupId;
+  }
+
+  // Check if user has any Person that is an admin of this group
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, deleted: false },
+    include: {
+      people: {
+        where: {
+          person: { userId, deleted: false },
+          isAdmin: true
+        }
+      }
+    }
+  });
+
+  if (!group) {
+    throw createError(404, 'Group not found');
+  }
+
+  if (group.people.length === 0) {
+    throw createError(403, 'Forbidden: Only group administrators can modify group memberships');
+  }
+
+  // Additional check: Prevent users from granting themselves admin privileges
+  // by checking if they're trying to modify their own PersonGroup record
+  if (req.body.isAdmin !== undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+    const targetPersonId = req.body.personId || (personGroupId ? (await prisma.personGroup.findUnique({
+      where: { id: personGroupId },
+      select: { personId: true }
+    }))?.personId : undefined);
+
+    if (targetPersonId) {
+      const targetPerson = await prisma.person.findFirst({
+        where: { id: targetPersonId, deleted: false }
+      });
+
+      // Prevent users from modifying their own admin status
+      if (targetPerson?.userId === userId) {
+        throw createError(403, 'Forbidden: You cannot modify your own admin status');
+      }
     }
   }
 

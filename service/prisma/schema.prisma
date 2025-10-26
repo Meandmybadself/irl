@@ -161,7 +161,6 @@ model PersonGroup {
   id       Int     @id @default(autoincrement())
   personId Int
   groupId  Int
-  relation String
   isAdmin  Boolean @default(false)
   group    Group   @relation(fields: [groupId], references: [id])
   person   Person  @relation(fields: [personId], references: [id])

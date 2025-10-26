@@ -452,14 +452,12 @@ describe('Person Management Tests', () => {
         data: {
           personId: person.id,
           groupId: group.id,
-          relation: 'MEMBER',
           isAdmin: false
         }
       })
 
       expect(personGroup.personId).toBe(person.id)
       expect(personGroup.groupId).toBe(group.id)
-      expect(personGroup.relation).toBe('MEMBER')
       expect(personGroup.isAdmin).toBe(false)
     })
 
@@ -490,7 +488,6 @@ describe('Person Management Tests', () => {
         data: {
           personId: person.id,
           groupId: group1.id,
-          relation: 'ADMIN',
           isAdmin: true
         }
       })
@@ -499,7 +496,6 @@ describe('Person Management Tests', () => {
         data: {
           personId: person.id,
           groupId: group2.id,
-          relation: 'MEMBER',
           isAdmin: false
         }
       })
@@ -516,14 +512,12 @@ describe('Person Management Tests', () => {
       })
 
       expect(personWithGroups?.groupMemberships).toHaveLength(2)
-      
+
       const adminGroup = personWithGroups?.groupMemberships.find(pg => pg.isAdmin)
       expect(adminGroup?.group.name).toBe('School Board')
-      expect(adminGroup?.relation).toBe('ADMIN')
 
       const memberGroup = personWithGroups?.groupMemberships.find(pg => !pg.isAdmin)
       expect(memberGroup?.group.name).toBe('Parent Association')
-      expect(memberGroup?.relation).toBe('MEMBER')
     })
   })
 
