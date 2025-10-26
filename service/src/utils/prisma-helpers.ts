@@ -248,14 +248,12 @@ export const createGroupWithParent = async (data: {
 export const addPersonToGroup = async (
   personId: number,
   groupId: number,
-  relation: string,
   isAdmin = false
 ) => {
   return prisma.personGroup.create({
     data: {
       personId,
       groupId,
-      relation,
       isAdmin
     },
     include: {

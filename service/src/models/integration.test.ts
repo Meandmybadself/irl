@@ -114,14 +114,12 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       // 8. Assign Person to Group (principal of the school)
       const principalMembership = await addPersonToGroup(
         primaryPerson.id,
-        school.id, 
-        'PRINCIPAL',
+        school.id,
         true
       )
 
       expect(principalMembership.personId).toBe(primaryPerson.id)
       expect(principalMembership.groupId).toBe(school.id)
-      expect(principalMembership.relation).toBe('PRINCIPAL')
       expect(principalMembership.isAdmin).toBe(true)
 
       // 9. Verify all relationships work correctly
@@ -441,7 +439,7 @@ describe('Integration Tests - Model Relationships and Validation', () => {
         data: generateTestData.group()
       })
 
-      await addPersonToGroup(personWithContact.id, group.id, 'MEMBER', false)
+      await addPersonToGroup(personWithContact.id, group.id, false)
 
       // Create claim and new user
       const claim = await createClaim(personWithContact.id, originalUser.id)

@@ -127,7 +127,6 @@ export interface PersonGroup {
   id: number;
   personId: number;
   groupId: number;
-  relation: string;
   isAdmin: boolean;
 }
 
@@ -290,13 +289,11 @@ export interface CreateGroupContactInformationRequest {
 export interface CreatePersonGroupRequest {
   personId: number;
   groupId: number;
-  relation: string;
   isAdmin?: boolean;
 }
 
 export interface UpdatePersonGroupRequest {
   personId?: number;
   groupId?: number;
-  relation?: string;
   isAdmin?: boolean;
 }

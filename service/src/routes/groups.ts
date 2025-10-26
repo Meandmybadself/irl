@@ -133,7 +133,6 @@ router.post('/', requireAuth, canCreateGroup, validateBody(groupSchema), asyncHa
       data: {
         personId: firstPerson.id,
         groupId: group.id,
-        relation: 'Creator',
         isAdmin: true
       }
     });

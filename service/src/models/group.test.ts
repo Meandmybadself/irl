@@ -320,12 +320,11 @@ describe('Group Operations Tests', () => {
         }
       })
 
-      const membership = await addPersonToGroup(person.id, group.id, 'PRINCIPAL', true)
+      const membership = await addPersonToGroup(person.id, group.id, true)
 
       expect(membership).toBeDefined()
       expect(membership.personId).toBe(person.id)
       expect(membership.groupId).toBe(group.id)
-      expect(membership.relation).toBe('PRINCIPAL')
       expect(membership.isAdmin).toBe(true)
       expect(membership.person.firstName).toBe('Sarah')
       expect(membership.group.name).toBe('Eisenhower Elementary School')
@@ -367,11 +366,11 @@ describe('Group Operations Tests', () => {
         data: { ...generateTestData.person(user.id), firstName: 'Robert', lastName: 'Brown' }
       })
 
-      // Add members with different relations
-      await addPersonToGroup(teacher.id, group.id, 'TEACHER', true)
-      await addPersonToGroup(student1.id, group.id, 'STUDENT', false)
-      await addPersonToGroup(student2.id, group.id, 'STUDENT', false)
-      await addPersonToGroup(parent.id, group.id, 'PARENT', false)
+      // Add members with different admin statuses
+      await addPersonToGroup(teacher.id, group.id, true)
+      await addPersonToGroup(student1.id, group.id, false)
+      await addPersonToGroup(student2.id, group.id, false)
+      await addPersonToGroup(parent.id, group.id, false)
 
       // Retrieve group with all members
       const groupWithMembers = await findGroupWithMembers(group.id)
@@ -380,13 +379,9 @@ describe('Group Operations Tests', () => {
 
       const adminMembers = groupWithMembers!.people.filter(p => p.isAdmin)
       expect(adminMembers).toHaveLength(1)
-      expect(adminMembers?.[0].relation).toBe('TEACHER')
 
-      const students = groupWithMembers?.people.filter(p => p.relation === 'STUDENT')
-      expect(students).toHaveLength(2)
-
-      const parents = groupWithMembers?.people.filter(p => p.relation === 'PARENT')
-      expect(parents).toHaveLength(1)
+      const nonAdminMembers = groupWithMembers?.people.filter(p => !p.isAdmin)
+      expect(nonAdminMembers).toHaveLength(3)
     })
 
     it('should prevent duplicate Person-Group memberships', async () => {
@@ -409,11 +404,11 @@ describe('Group Operations Tests', () => {
       })
 
       // Create first membership
-      await addPersonToGroup(person.id, group.id, 'MEMBER', false)
+      await addPersonToGroup(person.id, group.id, false)
 
       // Attempt to create duplicate membership - should fail
       await expect(
-        addPersonToGroup(person.id, group.id, 'ADMIN', true)
+        addPersonToGroup(person.id, group.id, true)
       ).rejects.toThrow()
     })
 
@@ -437,18 +432,16 @@ describe('Group Operations Tests', () => {
       })
 
       // Create initial membership
-      const membership = await addPersonToGroup(person.id, group.id, 'MEMBER', false)
+      const membership = await addPersonToGroup(person.id, group.id, false)
 
-      // Update to admin role
+      // Update to admin
       const updatedMembership = await prisma.personGroup.update({
         where: { id: membership.id },
         data: {
-          relation: 'ADMIN',
           isAdmin: true
         }
       })
 
-      expect(updatedMembership.relation).toBe('ADMIN')
       expect(updatedMembership.isAdmin).toBe(true)
     })
   })
@@ -540,7 +533,7 @@ describe('Group Operations Tests', () => {
         data: generateTestData.person(user.id)
       })
 
-      await addPersonToGroup(person.id, group.id, 'PRINCIPAL', true)
+      await addPersonToGroup(person.id, group.id, true)
 
       // Find by displayId
       const foundGroup = await findGroupByDisplayId(group.displayId)
@@ -550,7 +543,7 @@ describe('Group Operations Tests', () => {
       expect(foundGroup?.contactInformation).toHaveLength(1)
       expect(foundGroup!.contactInformation[0].contactInformation.value).toBe('admin@testschool.edu')
       expect(foundGroup!.people).toHaveLength(1)
-      expect(foundGroup!.people[0].relation).toBe('PRINCIPAL')
+      expect(foundGroup!.people[0].isAdmin).toBe(true)
     })
   })
 
@@ -738,7 +731,6 @@ describe('Group Operations Tests', () => {
           data: {
             personId: person.id,
             groupId: newGroup.id,
-            relation: 'Creator',
             isAdmin: true
           }
         })
@@ -759,7 +751,6 @@ describe('Group Operations Tests', () => {
 
       expect(membership).toBeDefined()
       expect(membership?.isAdmin).toBe(true)
-      expect(membership?.relation).toBe('Creator')
     })
 
     it('should assign first Person as admin when user has multiple persons', async () => {
@@ -807,7 +798,6 @@ describe('Group Operations Tests', () => {
           data: {
             personId: firstPerson!.id,
             groupId: newGroup.id,
-            relation: 'Creator',
             isAdmin: true
           }
         })
@@ -854,7 +844,6 @@ describe('Group Operations Tests', () => {
           data: {
             personId: person.id,
             groupId: newGroup.id,
-            relation: 'Creator',
             isAdmin: true
           }
         })
@@ -927,7 +916,6 @@ describe('Group Operations Tests', () => {
           data: {
             personId: adminPerson.id,
             groupId: newGroup.id,
-            relation: 'Creator',
             isAdmin: true
           }
         })
@@ -937,7 +925,6 @@ describe('Group Operations Tests', () => {
           data: {
             personId: nonAdminPerson.id,
             groupId: newGroup.id,
-            relation: 'Member',
             isAdmin: false
           }
         })

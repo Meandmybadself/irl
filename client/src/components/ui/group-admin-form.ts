@@ -37,9 +37,6 @@ export class GroupAdminForm extends LitElement {
   @state()
   private selectedPerson: Person | null = null;
 
-  @state()
-  private relation = '';
-
   async connectedCallback() {
     super.connectedCallback();
     await this.loadAdmins();
@@ -79,11 +76,6 @@ export class GroupAdminForm extends LitElement {
     this.selectedPerson = null;
   }
 
-  private handleRelationInput(e: Event) {
-    const target = e.target as HTMLInputElement;
-    this.relation = target.value;
-  }
-
   private async handleAddAdmin(e: Event) {
     e.preventDefault();
 
@@ -98,23 +90,11 @@ export class GroupAdminForm extends LitElement {
       return;
     }
 
-    if (!this.relation.trim()) {
-      this.dispatchEvent(
-        new CustomEvent('admin-error', {
-          detail: { error: 'Please specify a relation' },
-          bubbles: true,
-          composed: true
-        })
-      );
-      return;
-    }
-
     this.isAdding = true;
     try {
       const response = await this.api.createPersonGroup({
         personId: this.selectedPerson.id,
         groupId: this.groupId,
-        relation: this.relation.trim(),
         isAdmin: true
       });
 
@@ -129,7 +109,6 @@ export class GroupAdminForm extends LitElement {
 
         // Reset form
         this.selectedPerson = null;
-        this.relation = '';
         this.showAddForm = false;
 
         // Reload admins
@@ -186,7 +165,6 @@ export class GroupAdminForm extends LitElement {
     this.showAddForm = !this.showAddForm;
     if (!this.showAddForm) {
       this.selectedPerson = null;
-      this.relation = '';
     }
   }
 
@@ -241,12 +219,9 @@ export class GroupAdminForm extends LitElement {
                             ? `${admin.person.firstName} ${admin.person.lastName}`
                             : `Person ID: ${admin.personId}`}
                         </p>
-                        <p class="text-sm text-gray-500">
-                          ${admin.relation}
-                          ${admin.person?.displayId
-                            ? html` <span class="text-gray-400">• @${admin.person.displayId}</span>`
-                            : ''}
-                        </p>
+                        ${admin.person?.displayId
+                          ? html`<p class="text-sm text-gray-500">@${admin.person.displayId}</p>`
+                          : ''}
                       </div>
                       <button
                         type="button"
@@ -275,22 +250,7 @@ export class GroupAdminForm extends LitElement {
                     @person-cleared=${this.handlePersonCleared}
                   ></person-search>
 
-                  <div>
-                    <label for="admin-relation" class="block text-sm font-medium text-gray-900 mb-2">
-                      Relation/Role
-                    </label>
-                    <input
-                      id="admin-relation"
-                      type="text"
-                      .value=${this.relation}
-                      placeholder="e.g., Administrator, Moderator, Co-organizer"
-                      class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
-                      @input=${this.handleRelationInput}
-                      required
-                    />
-                  </div>
-
-                  <div class="flex gap-2">
+                  <div class="flex gap-2 mt-4">
                     <button
                       type="submit"
                       ?disabled=${this.isAdding}
