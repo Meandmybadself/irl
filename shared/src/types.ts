@@ -132,6 +132,11 @@ export interface PersonGroup {
 }
 
 // Extended types with relations for API responses
+export interface PersonGroupWithRelations extends PersonGroup {
+  person?: Person;
+  group?: Group;
+}
+
 export interface PersonWithRelations extends Person {
   user?: User;
   contactInformation?: ContactInformation[];

@@ -17,14 +17,39 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     prisma.personGroup.findMany({
       skip,
       take: limit,
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
+      include: {
+        person: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            displayId: true,
+            pronouns: true,
+            imageURL: true,
+            userId: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        },
+        group: {
+          select: {
+            id: true,
+            displayId: true,
+            name: true,
+            description: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }
+      }
     }),
     prisma.personGroup.count()
   ]);
 
   const response: PaginatedResponse<PersonGroup> = {
     success: true,
-    data: items,
+    data: items as any,
     pagination: {
       total,
       page,
@@ -39,9 +64,34 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 // GET /api/person-groups/:id - Get specific person-group relationship
 router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
-  
+
   const item = await prisma.personGroup.findUnique({
-    where: { id }
+    where: { id },
+    include: {
+      person: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          displayId: true,
+          pronouns: true,
+          imageURL: true,
+          userId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      },
+      group: {
+        select: {
+          id: true,
+          displayId: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }
+    }
   });
 
   if (!item) {
@@ -50,7 +100,7 @@ router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) =
 
   const response: ApiResponse<PersonGroup> = {
     success: true,
-    data: item
+    data: item as any
   };
 
   res.json(response);
@@ -77,12 +127,37 @@ router.post('/', requireAuth, validateBody(personGroupSchema), asyncHandler(asyn
   }
 
   const item = await prisma.personGroup.create({
-    data: req.body
+    data: req.body,
+    include: {
+      person: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          displayId: true,
+          pronouns: true,
+          imageURL: true,
+          userId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      },
+      group: {
+        select: {
+          id: true,
+          displayId: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }
+    }
   });
 
   const response: ApiResponse<PersonGroup> = {
     success: true,
-    data: item,
+    data: item as any,
     message: 'Person-group relationship created successfully'
   };
 

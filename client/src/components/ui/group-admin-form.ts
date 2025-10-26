@@ -3,12 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { apiContext } from '../../contexts/api-context.js';
 import type { ApiClient } from '../../services/api-client.js';
-import type { Person, PersonGroup } from '@irl/shared';
+import type { Person, PersonGroupWithRelations } from '@irl/shared';
 import './person-search.js';
-
-interface AdminMember extends PersonGroup {
-  person?: Person;
-}
 
 @customElement('group-admin-form')
 export class GroupAdminForm extends LitElement {
@@ -27,7 +23,7 @@ export class GroupAdminForm extends LitElement {
   groupDisplayId!: string;
 
   @state()
-  private admins: AdminMember[] = [];
+  private admins: PersonGroupWithRelations[] = [];
 
   @state()
   private isLoading = false;
@@ -56,26 +52,10 @@ export class GroupAdminForm extends LitElement {
     try {
       const response = await this.api.getPersonGroups();
       if (response.success && response.data) {
-        // Filter for this group's admins
-        const groupAdmins = response.data.filter(
+        // Filter for this group's admins - API now includes person and group details
+        this.admins = response.data.filter(
           pg => pg.groupId === this.groupId && pg.isAdmin
-        );
-
-        // Load person details for each admin
-        const adminsWithDetails = await Promise.all(
-          groupAdmins.map(async admin => {
-            try {
-              // We need to find the person by ID - this would need an API enhancement
-              // For now, we'll just show the admin without person details
-              return admin;
-            } catch (error) {
-              console.error('Failed to load person details:', error);
-              return admin;
-            }
-          })
-        );
-
-        this.admins = adminsWithDetails;
+        ) as PersonGroupWithRelations[];
       }
     } catch (error) {
       console.error('Failed to load admins:', error);
@@ -170,7 +150,7 @@ export class GroupAdminForm extends LitElement {
     }
   }
 
-  private async handleRemoveAdmin(admin: AdminMember) {
+  private async handleRemoveAdmin(admin: PersonGroupWithRelations) {
     if (!confirm('Are you sure you want to remove this administrator?')) {
       return;
     }
@@ -257,9 +237,16 @@ export class GroupAdminForm extends LitElement {
                     <li class="flex items-center justify-between py-3 px-4">
                       <div class="flex-1">
                         <p class="text-sm font-medium text-gray-900">
-                          Person ID: ${admin.personId}
+                          ${admin.person
+                            ? `${admin.person.firstName} ${admin.person.lastName}`
+                            : `Person ID: ${admin.personId}`}
                         </p>
-                        <p class="text-sm text-gray-500">Relation: ${admin.relation}</p>
+                        <p class="text-sm text-gray-500">
+                          ${admin.relation}
+                          ${admin.person?.displayId
+                            ? html` <span class="text-gray-400">• @${admin.person.displayId}</span>`
+                            : ''}
+                        </p>
                       </div>
                       <button
                         type="button"
