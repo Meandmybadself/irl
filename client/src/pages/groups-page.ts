@@ -232,7 +232,7 @@ export class GroupsPage extends LitElement {
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
+      <div class="flex min-h-full flex-col py-12 pt-20">
         <div class="px-4 sm:px-6 lg:px-8">
           <div class="sm:flex sm:items-center">
             <div class="sm:flex-auto">
