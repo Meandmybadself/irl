@@ -375,4 +375,132 @@ describeIfDatabase('PersonGroup Authorization', () => {
       expect(response.body.success).toBe(false);
     });
   });
+
+  describe('Last Admin Protection', () => {
+    let adminMembershipId: number;
+
+    beforeEach(async () => {
+      // Get the admin membership for person1
+      const adminMembership = await prisma.personGroup.findFirst({
+        where: {
+          personId: person1.id,
+          groupId: group.id,
+          isAdmin: true
+        }
+      });
+      adminMembershipId = adminMembership!.id;
+    });
+
+    it('should prevent deleting the last admin', async () => {
+      const testAuth = createTestSystemAdmin({ id: adminUser.id });
+
+      const response = await request(app)
+        .delete(`/api/person-groups/${adminMembershipId}`)
+        .set('X-Test-User', JSON.stringify(testAuth));
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Cannot remove the last administrator');
+    });
+
+    it('should allow deleting an admin when there are multiple admins', async () => {
+      const testAuth = createTestSystemAdmin({ id: adminUser.id });
+
+      // Add another admin first
+      const secondAdmin = await prisma.personGroup.create({
+        data: {
+          personId: person2.id,
+          groupId: group.id,
+          isAdmin: true
+        }
+      });
+
+      const response = await request(app)
+        .delete(`/api/person-groups/${adminMembershipId}`)
+        .set('X-Test-User', JSON.stringify(testAuth));
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should prevent removing admin status via PATCH when last admin', async () => {
+      const testAuth = createTestSystemAdmin({ id: adminUser.id });
+
+      const response = await request(app)
+        .patch(`/api/person-groups/${adminMembershipId}`)
+        .set('X-Test-User', JSON.stringify(testAuth))
+        .send({
+          isAdmin: false
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Cannot remove the last administrator');
+    });
+
+    it('should allow removing admin status via PATCH when there are multiple admins', async () => {
+      const testAuth = createTestSystemAdmin({ id: adminUser.id });
+
+      // Add another admin first
+      await prisma.personGroup.create({
+        data: {
+          personId: person2.id,
+          groupId: group.id,
+          isAdmin: true
+        }
+      });
+
+      const response = await request(app)
+        .patch(`/api/person-groups/${adminMembershipId}`)
+        .set('X-Test-User', JSON.stringify(testAuth))
+        .send({
+          isAdmin: false
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should prevent removing admin status via PUT when last admin', async () => {
+      const testAuth = createTestSystemAdmin({ id: adminUser.id });
+
+      const response = await request(app)
+        .put(`/api/person-groups/${adminMembershipId}`)
+        .set('X-Test-User', JSON.stringify(testAuth))
+        .send({
+          personId: person1.id,
+          groupId: group.id,
+          isAdmin: false
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Cannot remove the last administrator');
+    });
+
+    it('should allow removing admin status via PUT when there are multiple admins', async () => {
+      const testAuth = createTestSystemAdmin({ id: adminUser.id });
+
+      // Add another admin first
+      await prisma.personGroup.create({
+        data: {
+          personId: person2.id,
+          groupId: group.id,
+          isAdmin: true
+        }
+      });
+
+      const response = await request(app)
+        .put(`/api/person-groups/${adminMembershipId}`)
+        .set('X-Test-User', JSON.stringify(testAuth))
+        .send({
+          personId: person1.id,
+          groupId: group.id,
+          isAdmin: false
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+  });
 });

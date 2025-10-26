@@ -69,8 +69,6 @@ export const canViewPersonPrivateContacts = async (req: Request, _res: Response,
  * 2. Only users whose Person is marked as a group admin (isAdmin: true in PersonGroup) can modify the group
  * 3. When a user has multiple Persons, any Person associated with the group as an admin grants permission
  *
- * Note: When a group is created, the creator's first Person (ordered by createdAt) is automatically
- * assigned as an admin with the 'Creator' relation.
  */
 export const canModifyGroup = async (req: Request, _res: Response, next: NextFunction) => {
   const { displayId } = req.params;

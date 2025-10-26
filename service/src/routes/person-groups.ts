@@ -187,6 +187,26 @@ router.put('/:id', requireAuth, validateIdParam, canModifyPersonGroup, validateB
     throw createError(400, 'Referenced group does not exist');
   }
 
+  // If removing admin status, check if they're the last admin
+  if (req.body.isAdmin === false) {
+    const currentPersonGroup = await prisma.personGroup.findUnique({
+      where: { id }
+    });
+
+    if (currentPersonGroup?.isAdmin) {
+      const adminCount = await prisma.personGroup.count({
+        where: {
+          groupId: currentPersonGroup.groupId,
+          isAdmin: true
+        }
+      });
+
+      if (adminCount <= 1) {
+        throw createError(400, 'Cannot remove the last administrator from a group. Please assign another administrator first.');
+      }
+    }
+  }
+
   const item = await prisma.personGroup.update({
     where: { id },
     data: req.body
@@ -227,6 +247,26 @@ router.patch('/:id', requireAuth, validateIdParam, canModifyPersonGroup, validat
     }
   }
 
+  // If removing admin status, check if they're the last admin
+  if (req.body.isAdmin === false) {
+    const currentPersonGroup = await prisma.personGroup.findUnique({
+      where: { id }
+    });
+
+    if (currentPersonGroup?.isAdmin) {
+      const adminCount = await prisma.personGroup.count({
+        where: {
+          groupId: currentPersonGroup.groupId,
+          isAdmin: true
+        }
+      });
+
+      if (adminCount <= 1) {
+        throw createError(400, 'Cannot remove the last administrator from a group. Please assign another administrator first.');
+      }
+    }
+  }
+
   const item = await prisma.personGroup.update({
     where: { id },
     data: req.body
@@ -244,6 +284,29 @@ router.patch('/:id', requireAuth, validateIdParam, canModifyPersonGroup, validat
 // DELETE /api/person-groups/:id - Delete person-group relationship
 router.delete('/:id', requireAuth, validateIdParam, canModifyPersonGroup, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
+
+  // Get the PersonGroup record to check if it's an admin
+  const personGroup = await prisma.personGroup.findUnique({
+    where: { id }
+  });
+
+  if (!personGroup) {
+    throw createError(404, 'Person-group relationship not found');
+  }
+
+  // If removing an admin, check if they're the last admin
+  if (personGroup.isAdmin) {
+    const adminCount = await prisma.personGroup.count({
+      where: {
+        groupId: personGroup.groupId,
+        isAdmin: true
+      }
+    });
+
+    if (adminCount <= 1) {
+      throw createError(400, 'Cannot remove the last administrator from a group. Please assign another administrator first.');
+    }
+  }
 
   await prisma.personGroup.delete({
     where: { id }
