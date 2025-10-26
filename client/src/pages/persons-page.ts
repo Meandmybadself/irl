@@ -4,6 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
+import '../components/ui/person-list.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person } from '@irl/shared';
@@ -78,15 +79,6 @@ export class PersonsPage extends LitElement {
   private handleCreatePerson() {
     window.history.pushState({}, '', '/persons/create');
     window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
-  private handleEditPerson(displayId: string) {
-    window.history.pushState({}, '', `/persons/${displayId}/edit`);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
-  private getInitials(firstName: string, lastName: string): string {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   }
 
   private renderPagination() {
@@ -304,52 +296,11 @@ export class PersonsPage extends LitElement {
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
-                          ${this.persons.map(
-                            person => html`
-                              <tr>
-                                <td class="py-5 pr-3 pl-4 text-sm whitespace-nowrap sm:pl-0">
-                                  <div class="flex items-center">
-                                    <div class="size-11 shrink-0">
-                                      ${person.imageURL
-                                        ? html`
-                                            <img
-                                              src="${person.imageURL}"
-                                              alt=""
-                                              class="size-11 rounded-full"
-                                            />
-                                          `
-                                        : html`
-                                            <div
-                                              class="size-11 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-sm"
-                                            >
-                                              ${this.getInitials(person.firstName, person.lastName)}
-                                            </div>
-                                          `}
-                                    </div>
-                                    <div class="ml-4">
-                                      <div class="font-medium text-gray-900">
-                                        ${person.firstName} ${person.lastName}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td class="px-3 py-5 text-sm whitespace-nowrap text-gray-500">
-                                  <div class="text-gray-900">${person.displayId}</div>
-                                </td>
-                                <td class="px-3 py-5 text-sm whitespace-nowrap text-gray-500">
-                                  ${person.pronouns || html`<span class="text-gray-400">—</span>`}
-                                </td>
-                                <td class="py-5 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
-                                  <button
-                                    @click=${() => this.handleEditPerson(person.displayId)}
-                                    class="text-indigo-600 hover:text-indigo-900 bg-transparent border-none cursor-pointer"
-                                  >
-                                    Edit<span class="sr-only">, ${person.firstName} ${person.lastName}</span>
-                                  </button>
-                                </td>
-                              </tr>
-                            `
-                          )}
+                          <person-list
+                            .persons=${this.persons}
+                            .linkToDetail=${true}
+                            .showEdit=${true}
+                          ></person-list>
                         </tbody>
                       </table>
                     </div>

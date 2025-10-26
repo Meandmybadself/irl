@@ -4,6 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
+import '../components/ui/group-list.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Group } from '@irl/shared';
@@ -76,11 +77,6 @@ export class GroupsPage extends LitElement {
 
   private handleCreateGroup() {
     window.history.pushState({}, '', '/groups/create');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
-  private handleEditGroup(displayId: string) {
-    window.history.pushState({}, '', `/groups/${displayId}/edit`);
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
@@ -301,34 +297,11 @@ export class GroupsPage extends LitElement {
                           </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
-                          ${this.groups.map(
-                            group => html`
-                              <tr>
-                                <td class="py-2 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
-                                  ${group.name}
-                                </td>
-                                <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-                                  ${group.displayId}
-                                </td>
-                                <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-                                  ${group.description || html`<span class="text-gray-400">—</span>`}
-                                </td>
-                                <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-                                  ${group.publiclyVisible
-                                    ? html`<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">Public</span>`
-                                    : html`<span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-500/20 ring-inset">Private</span>`}
-                                </td>
-                                <td class="py-2 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
-                                  <button
-                                    @click=${() => this.handleEditGroup(group.displayId)}
-                                    class="text-indigo-600 hover:text-indigo-900 bg-transparent border-none cursor-pointer"
-                                  >
-                                    Edit<span class="sr-only">, ${group.name}</span>
-                                  </button>
-                                </td>
-                              </tr>
-                            `
-                          )}
+                          <group-list
+                            .groups=${this.groups}
+                            .linkToDetail=${true}
+                            .showEdit=${true}
+                          ></group-list>
                         </tbody>
                       </table>
                     </div>
