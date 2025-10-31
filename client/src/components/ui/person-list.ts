@@ -1,6 +1,8 @@
 import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import type { Person } from '@irl/shared';
+import type { ContactInformation, Person } from '@irl/shared';
+import { ContactType, PrivacyLevel } from '@irl/shared';
+import { textStyles, backgroundColors } from '../../utilities/text-colors.js';
 
 @customElement('person-list')
 export class PersonList extends LitElement {
@@ -14,6 +16,9 @@ export class PersonList extends LitElement {
   @property({ type: Boolean })
   showAdmin = false;
 
+  @property({ type: Boolean })
+  showHeader = true;
+
   @property({ type: Array })
   adminPersonIds: number[] = [];
 
@@ -25,6 +30,108 @@ export class PersonList extends LitElement {
 
   @property({ type: Boolean })
   isLoading = false;
+
+  @property({ attribute: false })
+  personContacts: Map<number, ContactInformation[]> = new Map();
+
+  @property({ type: Boolean })
+  showPrivateContacts = false;
+
+  @property({ type: Boolean })
+  showContacts = true;
+
+  private getColumnCount(): number {
+    let count = 1; // Name
+    if (this.showContacts) {
+      count += 1; // Contact Information
+    }
+    if (this.showEdit) {
+      count += 1;
+    }
+    return count;
+  }
+
+  private getVisibleContacts(personId: number): ContactInformation[] {
+    const contacts = this.personContacts.get(personId) ?? [];
+    return this.showPrivateContacts
+      ? contacts
+      : contacts.filter(contact => contact.privacy === PrivacyLevel.PUBLIC);
+  }
+
+  private getContactTypeLabel(type: ContactType): string {
+    switch (type) {
+      case ContactType.EMAIL:
+        return 'Email';
+      case ContactType.PHONE:
+        return 'Phone';
+      case ContactType.ADDRESS:
+        return 'Address';
+      case ContactType.URL:
+        return 'Website';
+      default:
+        return 'Contact';
+    }
+  }
+
+  private renderContactValue(item: ContactInformation) {
+    const value = item.value ?? '';
+
+    switch (item.type) {
+      case ContactType.EMAIL:
+        return html`<a
+          href="mailto:${value}"
+          class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+        >
+          ${value}
+        </a>`;
+      case ContactType.PHONE:
+        return html`<a
+          href="tel:${value}"
+          class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+        >
+          ${value}
+        </a>`;
+      case ContactType.URL:
+        return html`<a
+          href="${value}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+        >
+          ${value}
+        </a>`;
+      default:
+        return html`<span class="${textStyles.table.cell}">${value}</span>`;
+    }
+  }
+
+  private renderContactColumn(personId: number) {
+    const contacts = this.getVisibleContacts(personId).filter(item => !!item.value);
+
+    if (contacts.length === 0) {
+      return html`<span class="${textStyles.body.xs} opacity-60">No contact info</span>`;
+    }
+
+    return html`
+      <div class="space-y-1">
+        ${contacts.slice(0, 3).map(
+          item => html`
+            <div class="flex flex-col">
+              <span class="font-medium ${textStyles.table.cellPrimary} text-xs">
+                ${item.label || this.getContactTypeLabel(item.type)}
+              </span>
+              <span class="truncate ${textStyles.table.cellSecondary} text-xs">
+                ${this.renderContactValue(item)}
+              </span>
+            </div>
+          `
+        )}
+        ${contacts.length > 3 
+          ? html`<span class="${textStyles.body.xs} opacity-60">+${contacts.length - 3} more</span>`
+          : ''}
+      </div>
+    `;
+  }
 
   private getInitials(firstName: string, lastName: string): string {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -49,82 +156,123 @@ export class PersonList extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  render() {
+  private renderRow(person: Person) {
+    const isAdmin = this.adminPersonIds.includes(person.id);
+    const rowClasses = this.linkToDetail
+      ? `cursor-pointer ${backgroundColors.contentHover} transition-colors`
+      : '';
+    const onClick = this.linkToDetail ? () => this.handlePersonClick(person) : undefined;
+
+    return html`
+      <tr class="${rowClasses}" @click=${onClick}>
+        <td class="py-5 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
+          <div class="flex items-center">
+            <div class="size-11 shrink-0">
+              ${person.imageURL
+                ? html`
+                    <img
+                      src="${person.imageURL}"
+                      alt="${person.firstName} ${person.lastName}"
+                      class="size-11 rounded-full dark:outline dark:outline-white/10"
+                    />
+                  `
+                : html`
+                    <div
+                      class="size-11 rounded-full bg-indigo-600 flex items-center justify-center ${textStyles.button.primary} font-medium text-sm"
+                    >
+                      ${this.getInitials(person.firstName, person.lastName)}
+                    </div>
+                  `}
+            </div>
+            <div class="ml-4">
+              <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2">
+                <span>${person.firstName} ${person.lastName}</span>
+                ${this.showAdmin && isAdmin
+                  ? html`
+                      <span class="inline-flex items-center rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300">
+                        Admin
+                      </span>
+                    `
+                  : ''}
+              </div>
+            </div>
+          </div>
+        </td>
+        ${this.showContacts
+          ? html`
+              <td class="px-8 py-5 text-sm ${textStyles.table.cellSecondary}">
+                ${this.renderContactColumn(person.id)}
+              </td>
+            `
+          : ''}
+        ${this.showEdit
+          ? html`
+              <td class="py-5 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
+                <button
+                  @click=${(e: Event) => this.handleEditPerson(e, person.displayId)}
+                  class="text-indigo-600 hover:text-indigo-500 bg-transparent border-none cursor-pointer dark:text-indigo-400 dark:hover:text-indigo-300"
+                >
+                  Edit<span class="sr-only">, ${person.firstName} ${person.lastName}</span>
+                </button>
+              </td>
+            `
+          : ''}
+      </tr>
+    `;
+  }
+
+  private renderHeader() {
+    if (!this.showHeader) {
+      return '';
+    }
+
+    return html`
+      <thead>
+        <tr>
+          <th scope="col" class="py-3.5 pr-8 pl-8 text-left ${textStyles.table.header}">
+            Name
+          </th>
+          ${this.showContacts
+            ? html`
+                <th scope="col" class="px-8 py-3.5 text-left ${textStyles.table.header}">
+                  Contact Information
+                </th>
+              `
+            : ''}
+          ${this.showEdit
+            ? html`
+                <th scope="col" class="py-3.5 pr-8 pl-8 text-right ${textStyles.table.header}">
+                  <span class="sr-only">Edit</span>
+                </th>
+              `
+            : ''}
+        </tr>
+      </thead>
+    `;
+  }
+
+  private renderBody() {
     if (this.persons.length === 0) {
       return html`
         <tr>
-          <td colspan="4" class="px-3 py-8 text-center text-sm text-gray-500">
-            No people found.
+          <td colspan="${this.getColumnCount()}" class="px-3 py-8 text-center ${textStyles.table.cellSecondary}">
+            ${this.isLoading ? 'Loading people...' : 'No people found.'}
           </td>
         </tr>
       `;
     }
 
-    return html`
-      ${this.persons.map(
-        person => {
-          const isAdmin = this.adminPersonIds.includes(person.id);
-          const rowClasses = this.linkToDetail
-            ? 'cursor-pointer hover:bg-gray-50 transition-colors'
-            : '';
+    return html`${this.persons.map(person => this.renderRow(person))}`;
+  }
 
-          return html`
-            <tr class="${rowClasses}" @click=${() => this.linkToDetail && this.handlePersonClick(person)}>
-              <td class="py-5 pr-3 pl-4 text-sm whitespace-nowrap sm:pl-0">
-                <div class="flex items-center">
-                  <div class="size-11 shrink-0">
-                    ${person.imageURL
-                      ? html`
-                          <img
-                            src="${person.imageURL}"
-                            alt=""
-                            class="size-11 rounded-full"
-                          />
-                        `
-                      : html`
-                          <div
-                            class="size-11 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-sm"
-                          >
-                            ${this.getInitials(person.firstName, person.lastName)}
-                          </div>
-                        `}
-                  </div>
-                  <div class="ml-4">
-                    <div class="font-medium text-gray-900 flex items-center gap-2">
-                      <span>${person.firstName} ${person.lastName}</span>
-                      ${this.showAdmin && isAdmin
-                        ? html`
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                              Admin
-                            </span>
-                          `
-                        : ''}
-                    </div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-3 py-5 text-sm whitespace-nowrap text-gray-500">
-                <div class="text-gray-900">${person.displayId}</div>
-              </td>
-              <td class="px-3 py-5 text-sm whitespace-nowrap text-gray-500">
-                ${person.pronouns || html`<span class="text-gray-400">—</span>`}
-              </td>
-              ${this.showEdit
-                ? html`
-                    <td class="py-5 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
-                      <button
-                        @click=${(e: Event) => this.handleEditPerson(e, person.displayId)}
-                        class="text-indigo-600 hover:text-indigo-900 bg-transparent border-none cursor-pointer"
-                      >
-                        Edit<span class="sr-only">, ${person.firstName} ${person.lastName}</span>
-                      </button>
-                    </td>
-                  `
-                : ''}
-            </tr>
-          `;
-        }
-      )}
+  render() {
+    return html`
+      <table class="relative min-w-full divide-y ${backgroundColors.divideStrong}">
+        ${this.renderHeader()}
+        <tbody class="divide-y ${backgroundColors.divide}">
+          ${this.renderBody()}
+        </tbody>
+      </table>
     `;
   }
 }

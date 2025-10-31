@@ -30,6 +30,13 @@ beforeAll(async () => {
     })
     console.log('✓ Database schema setup completed');
 
+    // Ensure legacy columns that may exist from previous schemas are removed.
+    try {
+      await prisma.$executeRaw`ALTER TABLE "person_groups" DROP COLUMN IF EXISTS "relation"`;
+    } catch (cleanupError) {
+      console.warn('• Warning: failed to drop legacy relation column:', cleanupError instanceof Error ? cleanupError.message : cleanupError);
+    }
+
     // Verify connectivity so we can gracefully skip when unavailable
     await prisma.$queryRaw`SELECT 1`
   } catch (error) {

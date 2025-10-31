@@ -1,5 +1,6 @@
 import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { backgroundColors, textColors } from '../../utilities/text-colors.js';
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
@@ -13,17 +14,17 @@ export class AppLayout extends LitElement {
 
   render() {
     return html`
-      <div class="block min-h-screen bg-gray-50">
+      <div class="block min-h-screen ${backgroundColors.pageAlt}">
         <div class="max-w-7xl mx-auto px-4 py-8">
           ${this.loading
             ? html`
                 <div class="flex items-center justify-center min-h-[50vh]">
-                  <div class="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+                  <div class="w-12 h-12 border-4 ${backgroundColors.border} border-t-blue-500 rounded-full animate-spin"></div>
                 </div>
               `
             : this.error
             ? html`
-                <div class="flex items-center justify-center min-h-[50vh] text-red-500 text-base">
+                <div class="flex items-center justify-center min-h-[50vh] ${textColors.error} text-base">
                   ${this.error}
                 </div>
               `

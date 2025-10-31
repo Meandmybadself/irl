@@ -6,6 +6,7 @@ import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
+import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/contact-info-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
@@ -256,15 +257,15 @@ export class PersonFormPage extends LitElement {
     return html`
       <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
-          <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-6">
+          <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary} mb-6">
             ${this.personDisplayId ? 'Edit Person' : 'Create Person'}
           </h2>
 
-          <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
+          <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
             <form @submit=${this.handleSubmit} class="space-y-6">
               <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
                 <div>
-                  <label for="first-name" class="block text-sm/6 font-medium text-gray-900">
+                  <label for="first-name" class="block text-sm/6 font-medium ${textColors.primary}">
                     First name
                   </label>
                   <div class="mt-2">
@@ -275,16 +276,16 @@ export class PersonFormPage extends LitElement {
                       .value=${this.firstName}
                       required
                       autocomplete="given-name"
-                      class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.firstNameError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                      class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.firstNameError ? 'outline-red-500 focus:outline-red-600' : ''}"
                       @input=${this.handleInputChange}
                       @blur=${this.handleFirstOrLastNameBlur}
                     />
-                    ${this.firstNameError ? html`<p class="mt-1 text-sm text-red-600">${this.firstNameError}</p>` : ''}
+                    ${this.firstNameError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.firstNameError}</p>` : ''}
                   </div>
                 </div>
 
                 <div>
-                  <label for="last-name" class="block text-sm/6 font-medium text-gray-900">
+                  <label for="last-name" class="block text-sm/6 font-medium ${textColors.primary}">
                     Last name
                   </label>
                   <div class="mt-2">
@@ -295,17 +296,17 @@ export class PersonFormPage extends LitElement {
                       .value=${this.lastName}
                       required
                       autocomplete="family-name"
-                      class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.lastNameError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                      class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.lastNameError ? 'outline-red-500 focus:outline-red-600' : ''}"
                       @input=${this.handleInputChange}
                       @blur=${this.handleFirstOrLastNameBlur}
                     />
-                    ${this.lastNameError ? html`<p class="mt-1 text-sm text-red-600">${this.lastNameError}</p>` : ''}
+                    ${this.lastNameError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.lastNameError}</p>` : ''}
                   </div>
                 </div>
               </div>
 
               <div>
-                <label for="display-id" class="block text-sm/6 font-medium text-gray-900">
+                <label for="display-id" class="block text-sm/6 font-medium ${textColors.primary}">
                   Display ID
                 </label>
                 <div class="mt-2">
@@ -316,18 +317,18 @@ export class PersonFormPage extends LitElement {
                     .value=${this.displayId}
                     required
                     placeholder="john-doe"
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.displayIdError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.displayIdError ? 'outline-red-500 focus:outline-red-600' : ''}"
                     @input=${this.handleInputChange}
                   />
-                  <p class="mt-1 text-sm text-gray-500">
+                  <p class="mt-1 text-sm ${textColors.tertiary}">
                     A unique, web-safe identifier for this person
                   </p>
-                  ${this.displayIdError ? html`<p class="mt-1 text-sm text-red-600">${this.displayIdError}</p>` : ''}
+                  ${this.displayIdError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.displayIdError}</p>` : ''}
                 </div>
               </div>
 
               <div>
-                <label for="pronouns" class="block text-sm/6 font-medium text-gray-900">
+                <label for="pronouns" class="block text-sm/6 font-medium ${textColors.primary}">
                   Pronouns (optional)
                 </label>
                 <div class="mt-2">
@@ -337,14 +338,14 @@ export class PersonFormPage extends LitElement {
                     name="pronouns"
                     .value=${this.pronouns}
                     placeholder="he/him, she/her, they/them"
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                     @input=${this.handleInputChange}
                   />
                 </div>
               </div>
 
               <div>
-                <label for="image-url" class="block text-sm/6 font-medium text-gray-900">
+                <label for="image-url" class="block text-sm/6 font-medium ${textColors.primary}">
                   Image URL (optional)
                 </label>
                 <div class="mt-2">
@@ -354,10 +355,10 @@ export class PersonFormPage extends LitElement {
                     name="imageURL"
                     .value=${this.imageURL}
                     placeholder="https://example.com/avatar.jpg"
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.imageURLError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.imageURLError ? 'outline-red-500 focus:outline-red-600' : ''}"
                     @input=${this.handleInputChange}
                   />
-                  ${this.imageURLError ? html`<p class="mt-1 text-sm text-red-600">${this.imageURLError}</p>` : ''}
+                  ${this.imageURLError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.imageURLError}</p>` : ''}
                 </div>
               </div>
 
@@ -379,7 +380,7 @@ export class PersonFormPage extends LitElement {
                 <button
                   type="button"
                   @click=${this.handleCancel}
-                  class="text-sm/6 font-semibold text-gray-900"
+                  class="text-sm/6 font-semibold ${textColors.primary}"
                 >
                   Cancel
                 </button>

@@ -114,7 +114,10 @@ Properties:
 * Following individual updates:
     * Run `pnpm build` to ensure that the applied changes are buildable.
     * Check to see if new functionality was added that already exists elsewhere in the system.
-    * If buildable, make a git commit detailing the updates.
+
+* Test changes to the service by using the Chrome DevTools MCP.  Browse to http://localhost:3000
+    * Test credentials to login are stored as environment variables (TEST_EMAIL & TEST_PASSWORD), available to this process.
+* If buildable and tested, make a git commit detailing the updates.
 
 ## Available Tools
 * `gh` - Use for interacting with Github

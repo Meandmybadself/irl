@@ -38,6 +38,9 @@ export class PersonDetailPage extends LitElement {
   private groups: Group[] = [];
 
   @state()
+  private groupContacts: Map<number, ContactInformation[]> = new Map();
+
+  @state()
   private adminGroupIds: number[] = [];
 
   @state()
@@ -67,6 +70,7 @@ export class PersonDetailPage extends LitElement {
 
   private async loadPerson(displayId: string) {
     this.isLoading = true;
+    this.groupContacts = new Map();
     try {
       // Load person data
       const personResponse = await this.api.getPerson(displayId);
@@ -93,6 +97,25 @@ export class PersonDetailPage extends LitElement {
         this.adminGroupIds = this.personGroups
           .filter(pg => pg.isAdmin)
           .map(pg => pg.groupId);
+
+        if (this.groups.length > 0) {
+          const contactsMap = new Map<number, ContactInformation[]>();
+          await Promise.all(
+            this.groups.map(async group => {
+              try {
+                const contactsResponse = await this.api.getGroupContactInformations(group.displayId);
+                if (contactsResponse.success && contactsResponse.data) {
+                  contactsMap.set(group.id, contactsResponse.data);
+                } else {
+                  contactsMap.set(group.id, []);
+                }
+              } catch (error) {
+                contactsMap.set(group.id, []);
+              }
+            })
+          );
+          this.groupContacts = contactsMap;
+        }
       }
     } catch (error) {
       this.store.dispatch(
@@ -229,34 +252,18 @@ export class PersonDetailPage extends LitElement {
                     </p>
                   `
                 : html`
-                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                      <table class="min-w-full divide-y divide-gray-300">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold whitespace-nowrap text-gray-900 sm:pl-6">
-                              Name
-                            </th>
-                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                              Display ID
-                            </th>
-                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                              Description
-                            </th>
-                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                              Visibility
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
-                          <group-list
-                            .groups=${this.groups}
-                            .showAdmin=${true}
-                            .adminGroupIds=${this.adminGroupIds}
-                            .linkToDetail=${true}
-                            .showEdit=${false}
-                          ></group-list>
-                        </tbody>
-                      </table>
+                    <div class="-mx-6 -mb-8 mt-4">
+                      <div class="overflow-hidden shadow ring-1 ring-black/5 sm:rounded-lg">
+                        <group-list
+                          .groups=${this.groups}
+                          .showAdmin=${true}
+                          .adminGroupIds=${this.adminGroupIds}
+                          .linkToDetail=${true}
+                          .showEdit=${false}
+                          .isLoading=${this.isLoading}
+                          .groupContacts=${this.groupContacts}
+                        ></group-list>
+                      </div>
                     </div>
                   `}
             </div>

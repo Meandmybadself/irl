@@ -38,6 +38,9 @@ export class GroupDetailPage extends LitElement {
   private persons: Person[] = [];
 
   @state()
+  private personContacts: Map<number, ContactInformation[]> = new Map();
+
+  @state()
   private adminPersonIds: number[] = [];
 
   @state()
@@ -70,6 +73,7 @@ export class GroupDetailPage extends LitElement {
 
   private async loadGroup(displayId: string) {
     this.isLoading = true;
+    this.personContacts = new Map();
     try {
       // Load group data
       const groupResponse = await this.api.getGroup(displayId);
@@ -101,6 +105,25 @@ export class GroupDetailPage extends LitElement {
             .filter(p => p.userId === currentUser.id)
             .map(p => p.id);
           this.canEdit = userPersonIds.some(id => this.adminPersonIds.includes(id));
+        }
+
+        if (this.persons.length > 0) {
+          const contactsMap = new Map<number, ContactInformation[]>();
+          await Promise.all(
+            this.persons.map(async person => {
+              try {
+                const contactsResponse = await this.api.getPersonContactInformations(person.displayId);
+                if (contactsResponse.success && contactsResponse.data) {
+                  contactsMap.set(person.id, contactsResponse.data);
+                } else {
+                  contactsMap.set(person.id, []);
+                }
+              } catch (error) {
+                contactsMap.set(person.id, []);
+              }
+            })
+          );
+          this.personContacts = contactsMap;
         }
       }
 
@@ -229,7 +252,7 @@ export class GroupDetailPage extends LitElement {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="space-y-6">
             <!-- Contact Information -->
             <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg">
               <contact-info-display
@@ -248,31 +271,18 @@ export class GroupDetailPage extends LitElement {
                     </p>
                   `
                 : html`
-                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                      <table class="min-w-full divide-y divide-gray-300">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                              Name
-                            </th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                              Display ID
-                            </th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                              Pronouns
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
-                          <person-list
-                            .persons=${this.persons}
-                            .showAdmin=${true}
-                            .adminPersonIds=${this.adminPersonIds}
-                            .linkToDetail=${true}
-                            .showEdit=${false}
-                          ></person-list>
-                        </tbody>
-                      </table>
+                    <div class="-mx-6 -mb-8 mt-4">
+                      <div class="overflow-hidden shadow ring-1 ring-black/5 sm:rounded-lg">
+                        <person-list
+                          .persons=${this.persons}
+                          .showAdmin=${true}
+                          .adminPersonIds=${this.adminPersonIds}
+                          .linkToDetail=${true}
+                          .showEdit=${false}
+                          .isLoading=${this.isLoading}
+                          .personContacts=${this.personContacts}
+                        ></person-list>
+                      </div>
                     </div>
                   `}
             </div>
