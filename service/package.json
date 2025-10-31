@@ -11,7 +11,8 @@
     "test": "vitest --run --passWithNoTests",
     "test:setup": "tsx src/utils/test-db-setup.ts",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prisma:reset": "prisma migrate reset"
   },
   "dependencies": {
     "@irl/shared": "workspace:*",

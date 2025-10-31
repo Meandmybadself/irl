@@ -5,6 +5,7 @@ import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
+import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/contact-info-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
@@ -187,18 +188,18 @@ export class SystemAdminPage extends LitElement {
       <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900">
+            <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary}">
               System Administration
             </h2>
             <button
               @click=${this.handleBack}
-              class="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+              class="text-sm font-semibold ${textColors.link} ${textColors.linkHover}"
             >
               ← Back to Home
             </button>
           </div>
 
-          <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
+          <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
             ${this.system
               ? html`
                   <div class="mb-6 rounded-md bg-blue-50 p-4">
@@ -220,7 +221,7 @@ export class SystemAdminPage extends LitElement {
 
             <form @submit=${this.handleSubmit} class="space-y-6">
               <div>
-                <label for="name" class="block text-sm/6 font-medium text-gray-900">
+                <label for="name" class="block text-sm/6 font-medium ${textColors.primary}">
                   System Name
                 </label>
                 <div class="mt-2">
@@ -230,10 +231,10 @@ export class SystemAdminPage extends LitElement {
                     type="text"
                     .value=${this.name}
                     required
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.nameError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.nameError ? 'outline-red-500 focus:outline-red-600' : ''}"
                     @input=${this.handleInputChange}
                   />
-                  ${this.nameError ? html`<p class="mt-1 text-sm text-red-600">${this.nameError}</p>` : ''}
+                  ${this.nameError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.nameError}</p>` : ''}
                 </div>
               </div>
 
@@ -244,15 +245,15 @@ export class SystemAdminPage extends LitElement {
                     name="registrationOpen"
                     type="checkbox"
                     .checked=${this.registrationOpen}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 rounded ${backgroundColors.border} text-indigo-600 focus:ring-indigo-600"
                     @change=${this.handleInputChange}
                   />
                 </div>
                 <div class="ml-3 text-sm/6">
-                  <label for="registrationOpen" class="font-medium text-gray-900">
+                  <label for="registrationOpen" class="font-medium ${textColors.primary}">
                     Registration Open
                   </label>
-                  <p class="text-gray-500">
+                  <p class="${textColors.tertiary}">
                     Allow new users to register for the system
                   </p>
                 </div>

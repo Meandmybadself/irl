@@ -418,6 +418,14 @@ export class ApiClient {
     });
   }
 
+  async getPersonGroupsByPerson(displayId: string): Promise<ApiResponse<PersonGroup[] | any>> {
+    return this.request<ApiResponse<PersonGroup[] | any>>(`/person-groups/by-person/${displayId}`);
+  }
+
+  async getPersonGroupsByGroup(displayId: string): Promise<ApiResponse<PersonGroup[] | any>> {
+    return this.request<ApiResponse<PersonGroup[] | any>>(`/person-groups/by-group/${displayId}`);
+  }
+
   // Contact mapping endpoints - System
   async getSystemContactInformations(): Promise<ApiResponse<ContactInformation[]>> {
     return this.request<ApiResponse<ContactInformation[]>>('/contact-mappings/system');
