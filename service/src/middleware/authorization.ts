@@ -229,79 +229,83 @@ export const canCreateGroup = async (req: Request, _res: Response, next: NextFun
  * - Unauthorized privilege escalation
  */
 export const canModifyPersonGroup = async (req: Request, _res: Response, next: NextFunction) => {
-  const userId = req.user?.id;
+  try {
+    const userId = req.user?.id;
 
-  if (!userId) {
-    throw createError(401, 'Authentication required');
-  }
-
-  // System admins can modify any PersonGroup relationship
-  if (req.user?.isSystemAdmin) {
-    next();
-    return;
-  }
-
-  // Get the groupId from the request (either from body for POST/PUT/PATCH or from existing record for DELETE)
-  let groupId: number;
-  let personGroupId: number | undefined;
-
-  if (req.method === 'POST') {
-    // For POST, groupId comes from body
-    groupId = req.body.groupId;
-  } else {
-    // For PUT/PATCH/DELETE, get the PersonGroup record to find the groupId
-    personGroupId = parseInt(req.params.id);
-    const personGroup = await prisma.personGroup.findUnique({
-      where: { id: personGroupId }
-    });
-
-    if (!personGroup) {
-      throw createError(404, 'Person-group relationship not found');
+    if (!userId) {
+      throw createError(401, 'Authentication required');
     }
 
-    groupId = personGroup.groupId;
-  }
+    // System admins can modify any PersonGroup relationship
+    if (req.user?.isSystemAdmin) {
+      next();
+      return;
+    }
 
-  // Check if user has any Person that is an admin of this group
-  const group = await prisma.group.findFirst({
-    where: { id: groupId, deleted: false },
-    include: {
-      people: {
-        where: {
-          person: { userId, deleted: false },
-          isAdmin: true
+    // Get the groupId from the request (either from body for POST/PUT/PATCH or from existing record for DELETE)
+    let groupId: number;
+    let personGroupId: number | undefined;
+
+    if (req.method === 'POST') {
+      // For POST, groupId comes from body
+      groupId = req.body.groupId;
+    } else {
+      // For PUT/PATCH/DELETE, get the PersonGroup record to find the groupId
+      personGroupId = parseInt(req.params.id);
+      const personGroup = await prisma.personGroup.findUnique({
+        where: { id: personGroupId }
+      });
+
+      if (!personGroup) {
+        throw createError(404, 'Person-group relationship not found');
+      }
+
+      groupId = personGroup.groupId;
+    }
+
+    // Check if user has any Person that is an admin of this group
+    const group = await prisma.group.findFirst({
+      where: { id: groupId, deleted: false },
+      include: {
+        people: {
+          where: {
+            person: { userId, deleted: false },
+            isAdmin: true
+          }
+        }
+      }
+    });
+
+    if (!group) {
+      throw createError(404, 'Group not found');
+    }
+
+    if (group.people.length === 0) {
+      throw createError(403, 'Forbidden: Only group administrators can modify group memberships');
+    }
+
+    // Additional check: Prevent users from granting themselves admin privileges
+    // by checking if they're trying to modify their own PersonGroup record
+    if (req.body.isAdmin !== undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+      const targetPersonId = req.body.personId || (personGroupId ? (await prisma.personGroup.findUnique({
+        where: { id: personGroupId },
+        select: { personId: true }
+      }))?.personId : undefined);
+
+      if (targetPersonId) {
+        const targetPerson = await prisma.person.findFirst({
+          where: { id: targetPersonId, deleted: false }
+        });
+
+        // Prevent users from modifying their own admin status
+        if (targetPerson?.userId === userId) {
+          throw createError(403, 'Forbidden: You cannot modify your own admin status');
         }
       }
     }
-  });
 
-  if (!group) {
-    throw createError(404, 'Group not found');
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  if (group.people.length === 0) {
-    throw createError(403, 'Forbidden: Only group administrators can modify group memberships');
-  }
-
-  // Additional check: Prevent users from granting themselves admin privileges
-  // by checking if they're trying to modify their own PersonGroup record
-  if (req.body.isAdmin !== undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
-    const targetPersonId = req.body.personId || (personGroupId ? (await prisma.personGroup.findUnique({
-      where: { id: personGroupId },
-      select: { personId: true }
-    }))?.personId : undefined);
-
-    if (targetPersonId) {
-      const targetPerson = await prisma.person.findFirst({
-        where: { id: targetPersonId, deleted: false }
-      });
-
-      // Prevent users from modifying their own admin status
-      if (targetPerson?.userId === userId) {
-        throw createError(403, 'Forbidden: You cannot modify your own admin status');
-      }
-    }
-  }
-
-  next();
 };

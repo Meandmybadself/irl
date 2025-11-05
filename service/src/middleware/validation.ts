@@ -94,6 +94,15 @@ export const resendVerificationSchema = z.object({
   email: z.string().email('Invalid email format')
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters')
+});
+
+export const changeEmailSchema = z.object({
+  newEmail: z.string().email('Invalid email format')
+});
+
 // Junction table schemas
 export const systemContactInformationSchema = z.object({
   systemId: z.number().int('System ID must be an integer'),

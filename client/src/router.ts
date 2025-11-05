@@ -7,6 +7,8 @@ import { setAttemptedPath } from './store/slices/auth.js';
 import './pages/register-page.js';
 import './pages/login-page.js';
 import './pages/verify-email-page.js';
+import './pages/verify-email-change-page.js';
+import './pages/profile-page.js';
 import './pages/home-page.js';
 import './pages/system-admin-page.js';
 import './pages/person-form-page.js';
@@ -64,6 +66,25 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       path: '/verify-email',
       render: () => {
         return html`<verify-email-page></verify-email-page>`;
+      }
+    },
+    {
+      path: '/verify-email-change',
+      render: () => {
+        return html`<verify-email-change-page></verify-email-change-page>`;
+      }
+    },
+    {
+      path: '/profile',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/profile'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<profile-page></profile-page>`;
       }
     },
     {

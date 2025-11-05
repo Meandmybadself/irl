@@ -9,6 +9,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
 export const ROUTES = {
   HOME: '/home',
   LOGIN: '/login',
+  PROFILE: '/profile',
   PERSONS: '/persons',
   PERSONS_CREATE: '/persons/create',
   GROUPS: '/groups',

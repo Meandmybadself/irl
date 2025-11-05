@@ -500,6 +500,29 @@ export class ApiClient {
       method: 'DELETE'
     });
   }
+
+  // Profile endpoints
+  async getProfile(): Promise<ApiResponse<User & { pendingEmail?: string }>> {
+    return this.request<ApiResponse<User & { pendingEmail?: string }>>('/users/me');
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/users/me/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+  }
+
+  async changeEmail(newEmail: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/users/me/email', {
+      method: 'POST',
+      body: JSON.stringify({ newEmail })
+    });
+  }
+
+  async verifyEmailChange(token: string): Promise<ApiResponse<User>> {
+    return this.request<ApiResponse<User>>(`/users/verify-email-change?token=${token}`);
+  }
 }
 
 // Export a default instance

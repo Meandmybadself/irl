@@ -66,6 +66,10 @@ export const createRandomName = () => ({
 
 // Database availability checker
 export const isDatabaseAvailable = async (): Promise<boolean> => {
+  // Check if database tests have been globally disabled
+  if (process.env.SKIP_DB_TESTS === 'true') {
+    return false
+  }
   try {
     const { prisma } = await import('../lib/prisma.js')
     await prisma.$queryRaw`SELECT 1`

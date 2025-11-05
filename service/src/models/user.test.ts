@@ -136,8 +136,10 @@ describe('User Management Tests', () => {
       }
 
       // Create system and user
-      await prisma.system.create({
-        data: { name: 'Eisenhower', registrationOpen: true }
+      await prisma.system.upsert({
+        where: { id: 1 },
+        update: { name: 'Eisenhower', registrationOpen: true, deleted: false },
+        create: { name: 'Eisenhower', registrationOpen: true }
       })
 
       const user = await prisma.user.create({

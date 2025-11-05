@@ -148,7 +148,7 @@ export class PersonDetailPage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+        <div class="flex min-h-full items-center justify-center py-6 pt-16">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
@@ -156,14 +156,14 @@ export class PersonDetailPage extends LitElement {
 
     if (!this.person) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+        <div class="flex min-h-full items-center justify-center py-6 pt-16">
           <p class="text-gray-500">Person not found</p>
         </div>
       `;
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
+      <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-4xl">
           <!-- Breadcrumb -->
           <nav class="flex mb-4" aria-label="Breadcrumb">
@@ -190,7 +190,7 @@ export class PersonDetailPage extends LitElement {
           <!-- Header -->
           <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg mb-6">
             <div class="flex items-start justify-between">
-              <div class="flex items-start gap-6">
+              <div class="flex items-start gap-6 flex-1">
                 <div class="shrink-0">
                   ${this.person.imageURL
                     ? html`
@@ -215,9 +215,13 @@ export class PersonDetailPage extends LitElement {
                   ${this.person.pronouns
                     ? html`<p class="mt-1 text-lg text-gray-500">${this.person.pronouns}</p>`
                     : ''}
-                  <p class="mt-2 text-sm text-gray-500">
-                    <span class="font-medium">Display ID:</span> ${this.person.displayId}
-                  </p>
+                  
+                  <div class="mt-6 pt-6 border-t border-gray-200">
+                    <contact-info-display
+                      .contactInformations=${this.contactInformations}
+                      .showPrivate=${this.canEdit}
+                    ></contact-info-display>
+                  </div>
                 </div>
               </div>
               ${this.canEdit
@@ -233,14 +237,7 @@ export class PersonDetailPage extends LitElement {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Contact Information -->
-            <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg">
-              <contact-info-display
-                .contactInformations=${this.contactInformations}
-                .showPrivate=${this.canEdit}
-              ></contact-info-display>
-            </div>
+          <div class="space-y-6">
 
             <!-- Groups -->
             <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg">
@@ -253,7 +250,7 @@ export class PersonDetailPage extends LitElement {
                   `
                 : html`
                     <div class="-mx-6 -mb-8 mt-4">
-                      <div class="overflow-hidden shadow ring-1 ring-black/5 sm:rounded-lg">
+                      <div class="overflow-hidden">
                         <group-list
                           .groups=${this.groups}
                           .showAdmin=${true}

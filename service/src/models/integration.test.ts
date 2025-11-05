@@ -369,6 +369,8 @@ describe('Integration Tests - Model Relationships and Validation', () => {
       })
 
       expect(systemWithContacts).toBeDefined()
+      expect(systemWithContacts).not.toBeNull()
+      expect(systemWithContacts?.contactInformation).toBeDefined()
       expect(systemWithContacts?.contactInformation).toHaveLength(1)
       expect(systemWithContacts!.contactInformation[0].contactInformation.value).toBe('contact@example.com')
 

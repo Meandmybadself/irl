@@ -160,7 +160,7 @@ export class GroupDetailPage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+        <div class="flex min-h-full items-center justify-center py-6 pt-16">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
@@ -168,14 +168,14 @@ export class GroupDetailPage extends LitElement {
 
     if (!this.group) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+        <div class="flex min-h-full items-center justify-center py-6 pt-16">
           <p class="text-gray-500">Group not found</p>
         </div>
       `;
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
+      <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-4xl">
           <!-- Breadcrumb -->
           <nav class="flex mb-4" aria-label="Breadcrumb">
@@ -220,10 +220,6 @@ export class GroupDetailPage extends LitElement {
                     <dd class="mt-1 text-sm text-gray-900">${this.group.displayId}</dd>
                   </div>
                   <div>
-                    <dt class="text-sm font-medium text-gray-500">Members</dt>
-                    <dd class="mt-1 text-sm text-gray-900">${this.persons.length}</dd>
-                  </div>
-                  <div>
                     <dt class="text-sm font-medium text-gray-500">Subgroup Creation</dt>
                     <dd class="mt-1 text-sm text-gray-900">
                       ${this.group.allowsAnyUserToCreateSubgroup ? 'Open to any user' : 'Restricted'}
@@ -238,6 +234,13 @@ export class GroupDetailPage extends LitElement {
                       `
                     : ''}
                 </dl>
+                
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                  <contact-info-display
+                    .contactInformations=${this.contactInformations}
+                    .showPrivate=${this.canEdit}
+                  ></contact-info-display>
+                </div>
               </div>
               ${this.canEdit
                 ? html`
@@ -253,13 +256,6 @@ export class GroupDetailPage extends LitElement {
           </div>
 
           <div class="space-y-6">
-            <!-- Contact Information -->
-            <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg">
-              <contact-info-display
-                .contactInformations=${this.contactInformations}
-                .showPrivate=${this.canEdit}
-              ></contact-info-display>
-            </div>
 
             <!-- Members -->
             <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg">
@@ -272,7 +268,7 @@ export class GroupDetailPage extends LitElement {
                   `
                 : html`
                     <div class="-mx-6 -mb-8 mt-4">
-                      <div class="overflow-hidden shadow ring-1 ring-black/5 sm:rounded-lg">
+                      <div class="overflow-hidden">
                         <person-list
                           .persons=${this.persons}
                           .showAdmin=${true}

@@ -31,14 +31,14 @@ const resolveVerificationBaseUrl = () => {
   )
 }
 
-export const buildVerificationLink = (token: string) => {
-  const verificationPath = '/verify-email'
+export const buildVerificationLink = (token: string, type: 'verify-email' | 'verify-email-change' = 'verify-email') => {
+  const verificationPath = type === 'verify-email-change' ? '/verify-email-change' : '/verify-email'
   const url = new URL(verificationPath, resolveVerificationBaseUrl())
   url.searchParams.set('token', token)
   return url.toString()
 }
 
-export const sendVerificationEmail = async (email: string, token: string) => {
+export const sendVerificationEmail = async (email: string, token: string, type: 'verify-email' | 'verify-email-change' = 'verify-email') => {
   const client = getMailerSendClient()
   const fromAddress = resolveFromAddress()
 
@@ -49,25 +49,31 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     return
   }
 
-  const verificationLink = buildVerificationLink(token)
+  const verificationLink = buildVerificationLink(token, type)
   const sender = new Sender(fromAddress, resolveFromName())
   const recipients = [new Recipient(email)]
+
+  const isEmailChange = type === 'verify-email-change'
+  const subject = isEmailChange ? 'Verify your new email address' : 'Verify your IRL account email'
+  const message = isEmailChange
+    ? 'Please confirm your new email address to complete the change.'
+    : 'Please confirm your email address to complete your IRL account setup.'
 
   const params = new EmailParams()
     .setFrom(sender)
     .setTo(recipients)
-    .setSubject('Verify your IRL account email')
+    .setSubject(subject)
     .setText([
       'Hi there!',
-      'Please confirm your email address to complete your IRL account setup.',
+      message,
       `Verification link: ${verificationLink}`,
-      'If you did not request this account, you can ignore this message.'
+      `If you did not request this ${isEmailChange ? 'email change' : 'account'}, you can ignore this message.`
     ].join('\n\n'))
     .setHtml(`
       <p>Hi there!</p>
-      <p>Please confirm your email address to complete your IRL account setup.</p>
+      <p>${message}</p>
       <p><a href="${verificationLink}">Verify your email address</a></p>
-      <p>If you did not request this account, you can ignore this message.</p>
+      <p>If you did not request this ${isEmailChange ? 'email change' : 'account'}, you can ignore this message.</p>
     `)
 
   const response = await client.email.send(params)

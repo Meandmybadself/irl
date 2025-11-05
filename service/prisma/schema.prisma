@@ -26,16 +26,17 @@ model ContactInformation {
 }
 
 model User {
-  id                Int      @id @default(autoincrement())
-  email             String   @unique
-  password          String
-  verificationToken String?
-  isSystemAdmin     Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  deleted           Boolean  @default(false)
-  claims            Claim[]
-  people            Person[]
+  id                 Int                  @id @default(autoincrement())
+  email              String               @unique
+  password           String
+  verificationToken  String?
+  isSystemAdmin      Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  deleted            Boolean              @default(false)
+  claims             Claim[]
+  people             Person[]
+  emailChangeRequests EmailChangeRequest[]
 
   @@map("users")
 }
@@ -174,6 +175,20 @@ enum ContactType {
   PHONE
   ADDRESS
   URL
+}
+
+model EmailChangeRequest {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  newEmail        String
+  verificationToken String @unique
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([verificationToken])
+  @@map("email_change_requests")
 }
 
 enum PrivacyLevel {

@@ -11,7 +11,6 @@ import { apiContext } from './contexts/api-context.js';
 import { createRoutes } from './router.js';
 import { updateDocumentTitle, getPageNameFromPath } from './utilities/title.js';
 import { selectSystemName, selectIsAuthenticated } from './store/selectors.js';
-import { backgroundColors } from './utilities/text-colors.js';
 import './components/ui/notification.js';
 import './components/layout/navigation.js';
 
@@ -140,7 +139,8 @@ export class AppRoot extends LitElement {
     return this.isAuthenticated &&
            path !== '/login' &&
            path !== '/register' &&
-           path !== '/verify-email';
+           path !== '/verify-email' &&
+           path !== '/verify-email-change';
   }
 
   render() {
@@ -155,12 +155,10 @@ export class AppRoot extends LitElement {
     const showNav = this.shouldShowNavigation();
 
     return html`
-      <div class="min-h-screen ${backgroundColors.pageAlt}">
-        <ui-notifications></ui-notifications>
-        ${showNav ? html`<app-navigation></app-navigation>` : ''}
-        ${showNav ? html`<div class="h-16"></div>` : ''}
-        ${this.router.outlet()}
-      </div>
+      <ui-notifications></ui-notifications>
+      ${showNav ? html`<app-navigation></app-navigation>` : ''}
+      ${showNav ? html`<div class="h-16"></div>` : ''}
+      ${this.router.outlet()}
     `;
   }
 }

@@ -48,6 +48,11 @@ export class ContactInfoDisplay extends LitElement {
   }
 
   private renderContactValue(item: ContactInformation) {
+    // Guard against null/undefined values
+    if (!item.value || item.value.trim() === '') {
+      return html`<span class="text-gray-400 italic">No value provided</span>`;
+    }
+
     switch (item.type) {
       case ContactType.EMAIL:
         return html`<a href="mailto:${item.value}" class="text-indigo-600 hover:text-indigo-900">${item.value}</a>`;

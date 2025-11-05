@@ -248,14 +248,14 @@ export class PersonFormPage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+        <div class="flex min-h-full items-center justify-center py-6 pt-16">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
+      <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
           <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary} mb-6">
             ${this.personDisplayId ? 'Edit Person' : 'Create Person'}
