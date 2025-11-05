@@ -225,7 +225,7 @@ router.post('/me/email', requireAuth, validateBody(changeEmailSchema), asyncHand
 }));
 
 // GET /api/users/verify-email-change - Verify email change
-router.get('/verify-email-change', asyncHandler(async (req, res) => {
+router.get('/verify-email-change', requireAuth, asyncHandler(async (req, res) => {
   const { token } = req.query;
 
   if (!token || typeof token !== 'string') {
@@ -239,6 +239,10 @@ router.get('/verify-email-change', asyncHandler(async (req, res) => {
 
   if (!emailChangeRequest) {
     throw createError(404, 'Verification token invalid or expired');
+  }
+
+  if (!req.user || req.user.id !== emailChangeRequest.userId) {
+    throw createError(403, 'Forbidden: You do not have permission to verify this email change');
   }
 
   // Check if token is expired
