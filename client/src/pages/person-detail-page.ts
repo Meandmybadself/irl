@@ -7,6 +7,7 @@ import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import '../components/ui/contact-info-display.js';
 import '../components/ui/group-list.js';
+import { backgroundColors, textColors } from '../utilities/text-colors.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person, ContactInformation, PersonGroupWithRelations, Group } from '@irl/shared';
@@ -157,7 +158,7 @@ export class PersonDetailPage extends LitElement {
     if (!this.person) {
       return html`
         <div class="flex min-h-full items-center justify-center py-6 pt-16">
-          <p class="text-gray-500">Person not found</p>
+          <p class="${textColors.tertiary}">Person not found</p>
         </div>
       `;
     }
@@ -171,24 +172,24 @@ export class PersonDetailPage extends LitElement {
               <li>
                 <button
                   @click=${this.handleBack}
-                  class="text-gray-400 hover:text-gray-500 bg-transparent border-none cursor-pointer text-sm"
+                  class="bg-transparent border-none cursor-pointer text-sm ${textColors.muted} hover:opacity-80"
                 >
                   People
                 </button>
               </li>
               <li>
                 <div class="flex items-center">
-                  <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <svg class="h-5 w-5 ${textColors.muted}" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                   </svg>
-                  <span class="ml-2 text-sm font-medium text-gray-700">${this.person.firstName} ${this.person.lastName}</span>
+                  <span class="ml-2 text-sm font-medium ${textColors.secondary}">${this.person.firstName} ${this.person.lastName}</span>
                 </div>
               </li>
             </ol>
           </nav>
 
           <!-- Header -->
-          <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg mb-6">
+          <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg mb-6">
             <div class="flex items-start justify-between">
               <div class="flex items-start gap-6 flex-1">
                 <div class="shrink-0">
@@ -209,14 +210,14 @@ export class PersonDetailPage extends LitElement {
                       `}
                 </div>
                 <div class="flex-1">
-                  <h1 class="text-3xl font-bold text-gray-900">
+                  <h1 class="text-3xl font-bold ${textColors.primary}">
                     ${this.person.firstName} ${this.person.lastName}
                   </h1>
                   ${this.person.pronouns
-                    ? html`<p class="mt-1 text-lg text-gray-500">${this.person.pronouns}</p>`
+                    ? html`<p class="mt-1 text-lg ${textColors.tertiary}">${this.person.pronouns}</p>`
                     : ''}
                   
-                  <div class="mt-6 pt-6 border-t border-gray-200">
+                  <div class="mt-6 pt-6 border-t ${backgroundColors.border}">
                     <contact-info-display
                       .contactInformations=${this.contactInformations}
                       .showPrivate=${this.canEdit}
@@ -240,11 +241,11 @@ export class PersonDetailPage extends LitElement {
           <div class="space-y-6">
 
             <!-- Groups -->
-            <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Groups</h3>
+            <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg">
+              <h3 class="text-lg font-medium ${textColors.primary} mb-4">Groups</h3>
               ${this.groups.length === 0
                 ? html`
-                    <p class="text-center py-8 text-gray-500 text-sm">
+                    <p class="text-center py-8 text-sm ${textColors.tertiary}">
                       Not a member of any groups yet.
                     </p>
                   `
