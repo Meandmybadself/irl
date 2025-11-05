@@ -108,9 +108,43 @@ router.get('/by-person/:displayId', requireAuth, validateDisplayIdParam, asyncHa
     }
   });
 
+  let filteredItems = items;
+
+  if (!req.user?.isSystemAdmin) {
+    const userId = req.user?.id;
+    const isOwnPerson = userId ? person.userId === userId : false;
+
+    if (!isOwnPerson) {
+      if (!userId) {
+        filteredItems = items.filter(item => item.group?.publiclyVisible);
+      } else {
+        const adminGroups = await prisma.personGroup.findMany({
+          where: {
+            isAdmin: true,
+            person: {
+              userId,
+              deleted: false
+            }
+          },
+          select: { groupId: true }
+        });
+
+        const adminGroupIds = new Set(adminGroups.map(group => group.groupId));
+
+        filteredItems = items.filter(item => {
+          if (item.group?.publiclyVisible) {
+            return true;
+          }
+
+          return adminGroupIds.has(item.groupId);
+        });
+      }
+    }
+  }
+
   const response: ApiResponse<PersonGroup[]> = {
     success: true,
-    data: items as any
+    data: filteredItems as any
   };
 
   res.json(response);
@@ -127,6 +161,25 @@ router.get('/by-group/:displayId', requireAuth, validateDisplayIdParam, asyncHan
 
   if (!group) {
     throw createError(404, 'Group not found');
+  }
+
+  if (!req.user?.isSystemAdmin && !group.publiclyVisible) {
+    const userId = req.user?.id;
+
+    const isAdmin = await prisma.personGroup.findFirst({
+      where: {
+        groupId: group.id,
+        isAdmin: true,
+        person: {
+          userId,
+          deleted: false
+        }
+      }
+    });
+
+    if (!isAdmin) {
+      throw createError(403, 'Forbidden: You do not have permission to view this group');
+    }
   }
 
   // Get all person-group relationships for this group
