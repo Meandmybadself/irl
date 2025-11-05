@@ -71,7 +71,11 @@ export const backgroundColors = {
   
   // Divider colors
   divide: 'divide-gray-200 dark:divide-white/10',
-  divideStrong: 'divide-gray-300 dark:divide-white/15'
+  divideStrong: 'divide-gray-300 dark:divide-white/15',
+
+  // Badge/status backgrounds
+  badgePublic: 'bg-green-100 dark:bg-green-500/20',
+  badgePrivate: 'bg-gray-100 dark:bg-gray-800/60'
 } as const;
 
 /**

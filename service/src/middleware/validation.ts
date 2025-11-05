@@ -100,6 +100,7 @@ export const changePasswordSchema = z.object({
 });
 
 export const changeEmailSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
   newEmail: z.string().email('Invalid email format')
 });
 

@@ -513,10 +513,10 @@ export class ApiClient {
     });
   }
 
-  async changeEmail(newEmail: string): Promise<ApiResponse<null>> {
+  async changeEmail(newEmail: string, currentPassword: string): Promise<ApiResponse<null>> {
     return this.request<ApiResponse<null>>('/users/me/email', {
       method: 'POST',
-      body: JSON.stringify({ newEmail })
+      body: JSON.stringify({ newEmail, currentPassword })
     });
   }
 

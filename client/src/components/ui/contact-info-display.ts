@@ -2,6 +2,7 @@ import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { ContactInformation } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
+import { backgroundColors, textColors } from '../../utilities/text-colors.js';
 
 @customElement('contact-info-display')
 export class ContactInfoDisplay extends LitElement {
@@ -50,18 +51,18 @@ export class ContactInfoDisplay extends LitElement {
   private renderContactValue(item: ContactInformation) {
     // Guard against null/undefined values
     if (!item.value || item.value.trim() === '') {
-      return html`<span class="text-gray-400 italic">No value provided</span>`;
+      return html`<span class="${textColors.muted} italic">No value provided</span>`;
     }
 
     switch (item.type) {
       case ContactType.EMAIL:
-        return html`<a href="mailto:${item.value}" class="text-indigo-600 hover:text-indigo-900">${item.value}</a>`;
+        return html`<a href="mailto:${item.value}" class="${textColors.link} ${textColors.linkHover}">${item.value}</a>`;
       case ContactType.PHONE:
-        return html`<a href="tel:${item.value}" class="text-indigo-600 hover:text-indigo-900">${item.value}</a>`;
+        return html`<a href="tel:${item.value}" class="${textColors.link} ${textColors.linkHover}">${item.value}</a>`;
       case ContactType.URL:
-        return html`<a href="${item.value}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-900">${item.value}</a>`;
+        return html`<a href="${item.value}" target="_blank" rel="noopener noreferrer" class="${textColors.link} ${textColors.linkHover}">${item.value}</a>`;
       default:
-        return html`<span class="text-gray-900">${item.value}</span>`;
+        return html`<span class="${textColors.primary}">${item.value}</span>`;
     }
   }
 
@@ -73,8 +74,8 @@ export class ContactInfoDisplay extends LitElement {
     if (visibleContacts.length === 0) {
       return html`
         <div class="space-y-4">
-          <h3 class="text-lg font-medium text-gray-900">Contact Information</h3>
-          <div class="text-center py-8 text-gray-500 text-sm">
+          <h3 class="text-lg font-medium ${textColors.primary}">Contact Information</h3>
+          <div class="text-center py-8 text-sm ${textColors.tertiary}">
             No contact information available.
           </div>
         </div>
@@ -83,23 +84,23 @@ export class ContactInfoDisplay extends LitElement {
 
     return html`
       <div class="space-y-4">
-        <h3 class="text-lg font-medium text-gray-900">Contact Information</h3>
+        <h3 class="text-lg font-medium ${textColors.primary}">Contact Information</h3>
         <div class="space-y-3">
           ${visibleContacts.map(
             item => html`
-              <div class="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-lg">
-                <div class="text-gray-400 mt-0.5">
+              <div class="flex items-start gap-3 p-4 border rounded-lg ${backgroundColors.content} ${backgroundColors.border}">
+                <div class="${textColors.muted} mt-0.5">
                   ${this.getContactTypeIcon(item.type)}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-gray-900">${item.label}</span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.privacy === PrivacyLevel.PUBLIC ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                    <span class="text-sm font-medium ${textColors.primary}">${item.label}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.privacy === PrivacyLevel.PUBLIC ? `${backgroundColors.badgePublic} ${textColors.success}` : `${backgroundColors.badgePrivate} ${textColors.secondary}`}">
                       ${item.privacy === PrivacyLevel.PUBLIC ? 'Public' : 'Private'}
                     </span>
                   </div>
                   <div class="mt-1 text-sm break-words">${this.renderContactValue(item)}</div>
-                  <div class="mt-1 text-xs text-gray-400">${this.getContactTypeLabel(item.type)}</div>
+                  <div class="mt-1 text-xs ${textColors.muted}">${this.getContactTypeLabel(item.type)}</div>
                 </div>
               </div>
             `

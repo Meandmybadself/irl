@@ -56,6 +56,12 @@ export class ProfilePage extends LitElement {
   private newEmailError = '';
 
   @state()
+  private emailCurrentPassword = '';
+
+  @state()
+  private emailCurrentPasswordError = '';
+
+  @state()
   private isChangingEmail = false;
 
   async connectedCallback() {
@@ -147,8 +153,17 @@ export class ProfilePage extends LitElement {
 
   private handleEmailInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
-    this.newEmail = target.value;
-    this.newEmailError = '';
+    const { name, value } = target;
+
+    if (name === 'newEmail') {
+      this.newEmail = value;
+      this.newEmailError = '';
+    }
+
+    if (name === 'emailCurrentPassword') {
+      this.emailCurrentPassword = value;
+      this.emailCurrentPasswordError = '';
+    }
   }
 
   private async handleEmailSubmit(e: Event) {
@@ -156,15 +171,20 @@ export class ProfilePage extends LitElement {
 
     // Validate
     this.newEmailError = validateEmail(this.newEmail) || '';
+    this.emailCurrentPasswordError = '';
 
-    if (this.newEmailError) {
+    if (!this.emailCurrentPassword) {
+      this.emailCurrentPasswordError = 'Current password is required';
+    }
+
+    if (this.newEmailError || this.emailCurrentPasswordError) {
       return;
     }
 
     this.isChangingEmail = true;
 
     try {
-      await apiClient.changeEmail(this.newEmail);
+      await apiClient.changeEmail(this.newEmail, this.emailCurrentPassword);
       this.store.dispatch(
         addNotification(
           'Verification email sent. Please check your new email address.',
@@ -174,6 +194,9 @@ export class ProfilePage extends LitElement {
 
       // Reset form and reload profile to show pending email
       this.newEmail = '';
+      this.emailCurrentPassword = '';
+      this.newEmailError = '';
+      this.emailCurrentPasswordError = '';
       await this.loadProfile();
     } catch (error) {
       this.store.dispatch(
@@ -241,6 +264,24 @@ export class ProfilePage extends LitElement {
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Change Email</h2>
           <form @submit=${this.handleEmailSubmit} class="space-y-4">
             <div>
+              <label for="emailCurrentPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Current Password
+              </label>
+              <input
+                id="emailCurrentPassword"
+                name="emailCurrentPassword"
+                type="password"
+                .value=${this.emailCurrentPassword}
+                required
+                autocomplete="current-password"
+                class="block w-full rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:focus:outline-indigo-500 sm:text-sm ${this.emailCurrentPasswordError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                @input=${this.handleEmailInputChange}
+              />
+              ${this.emailCurrentPasswordError
+                ? html`<p class="mt-1 text-sm text-red-600 dark:text-red-400">${this.emailCurrentPasswordError}</p>`
+                : ''}
+            </div>
+            <div>
               <label for="newEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 New Email Address
               </label>
@@ -254,7 +295,9 @@ export class ProfilePage extends LitElement {
                 class="block w-full rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-base text-gray-900 dark:text-white outline-1 -outline-offset-1 outline-gray-300 dark:outline-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 dark:focus:outline-indigo-500 sm:text-sm ${this.newEmailError ? 'outline-red-500 focus:outline-red-600' : ''}"
                 @input=${this.handleEmailInputChange}
               />
-              ${this.newEmailError ? html`<p class="mt-1 text-sm text-red-600 dark:text-red-400">${this.newEmailError}</p>` : ''}
+              ${this.newEmailError
+                ? html`<p class="mt-1 text-sm text-red-600 dark:text-red-400">${this.newEmailError}</p>`
+                : ''}
             </div>
             <div>
               <button
@@ -351,4 +394,3 @@ declare global {
     'profile-page': ProfilePage;
   }
 }
-

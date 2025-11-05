@@ -154,7 +154,7 @@ router.post('/me/email', requireAuth, validateBody(changeEmailSchema), asyncHand
     throw createError(401, 'Authentication required');
   }
 
-  const { newEmail } = req.body;
+  const { newEmail, currentPassword } = req.body;
 
   const user = await prisma.user.findUnique({
     where: { 
@@ -165,6 +165,11 @@ router.post('/me/email', requireAuth, validateBody(changeEmailSchema), asyncHand
 
   if (!user) {
     throw createError(404, 'User not found');
+  }
+
+  const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+  if (!isValidPassword) {
+    throw createError(401, 'Current password is incorrect');
   }
 
   // Check if email is already in use
