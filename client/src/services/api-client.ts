@@ -30,7 +30,8 @@ import type {
   PersonContactInformation,
   CreatePersonContactInformationRequest,
   GroupContactInformation,
-  CreateGroupContactInformationRequest
+  CreateGroupContactInformationRequest,
+  PersonGroupWithRelations
 } from '@irl/shared';
 
 export interface PaginationParams {
@@ -418,12 +419,12 @@ export class ApiClient {
     });
   }
 
-  async getPersonGroupsByPerson(displayId: string): Promise<ApiResponse<PersonGroup[] | any>> {
-    return this.request<ApiResponse<PersonGroup[] | any>>(`/person-groups/by-person/${displayId}`);
+  async getPersonGroupsByPerson(displayId: string): Promise<ApiResponse<PersonGroup[] | PersonGroupWithRelations>> {
+    return this.request<ApiResponse<PersonGroup[] | PersonGroupWithRelations>>(`/person-groups/by-person/${displayId}`);
   }
 
-  async getPersonGroupsByGroup(displayId: string): Promise<ApiResponse<PersonGroup[] | any>> {
-    return this.request<ApiResponse<PersonGroup[] | any>>(`/person-groups/by-group/${displayId}`);
+  async getPersonGroupsByGroup(displayId: string): Promise<ApiResponse<PersonGroup[] | PersonGroupWithRelations>> {
+    return this.request<ApiResponse<PersonGroup[] | PersonGroupWithRelations>>(`/person-groups/by-group/${displayId}`);
   }
 
   // Contact mapping endpoints - System
