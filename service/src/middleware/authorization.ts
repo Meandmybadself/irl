@@ -2,6 +2,64 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { createError } from './error-handler.js';
 
+export type PersonGroupViewAccess = {
+  canViewAll: boolean;
+  adminGroupIds: Set<number>;
+};
+
+export const canViewPersonGroups = async (userId: number, personId: number): Promise<PersonGroupViewAccess> => {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deleted: false },
+    select: { isSystemAdmin: true }
+  });
+
+  if (!user) {
+    return {
+      canViewAll: false,
+      adminGroupIds: new Set<number>()
+    };
+  }
+
+  if (user.isSystemAdmin) {
+    return {
+      canViewAll: true,
+      adminGroupIds: new Set<number>()
+    };
+  }
+
+  const person = await prisma.person.findFirst({
+    where: { id: personId, deleted: false },
+    select: { userId: true }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  if (person.userId === userId) {
+    return {
+      canViewAll: true,
+      adminGroupIds: new Set<number>()
+    };
+  }
+
+  const adminGroups = await prisma.personGroup.findMany({
+    where: {
+      isAdmin: true,
+      person: {
+        userId,
+        deleted: false
+      }
+    },
+    select: { groupId: true }
+  });
+
+  return {
+    canViewAll: false,
+    adminGroupIds: new Set(adminGroups.map(group => group.groupId))
+  };
+};
+
 // Middleware to check if user can modify a person
 export const canModifyPerson = async (req: Request, _res: Response, next: NextFunction) => {
   const { displayId } = req.params;

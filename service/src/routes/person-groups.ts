@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, validateDisplayIdParam, personGroupSchema, updatePersonGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
-import { canModifyPersonGroup } from '../middleware/authorization.js';
+import { canModifyPersonGroup, canViewPersonGroups } from '../middleware/authorization.js';
 import type { ApiResponse, PaginatedResponse, PersonGroup } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -108,39 +108,11 @@ router.get('/by-person/:displayId', requireAuth, validateDisplayIdParam, asyncHa
     }
   });
 
-  let filteredItems = items;
+  const { canViewAll, adminGroupIds } = await canViewPersonGroups(req.user!.id, person.id);
 
-  if (!req.user?.isSystemAdmin) {
-    const userId = req.user?.id;
-    const isOwnPerson = userId ? person.userId === userId : false;
-
-    if (!isOwnPerson) {
-      if (!userId) {
-        filteredItems = items.filter(item => item.group?.publiclyVisible);
-      } else {
-        const adminGroups = await prisma.personGroup.findMany({
-          where: {
-            isAdmin: true,
-            person: {
-              userId,
-              deleted: false
-            }
-          },
-          select: { groupId: true }
-        });
-
-        const adminGroupIds = new Set(adminGroups.map(group => group.groupId));
-
-        filteredItems = items.filter(item => {
-          if (item.group?.publiclyVisible) {
-            return true;
-          }
-
-          return adminGroupIds.has(item.groupId);
-        });
-      }
-    }
-  }
+  const filteredItems = canViewAll
+    ? items
+    : items.filter(item => item.group?.publiclyVisible || adminGroupIds.has(item.groupId));
 
   const response: ApiResponse<PersonGroup[]> = {
     success: true,
