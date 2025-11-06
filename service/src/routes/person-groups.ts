@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, validateDisplayIdParam, personGroupSchema, updatePersonGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
-import { canModifyPersonGroup, canViewPersonGroups } from '../middleware/authorization.js';
+import { canModifyPersonGroup, canViewPersonGroups, canViewGroup } from '../middleware/authorization.js';
 import type { ApiResponse, PaginatedResponse, PersonGroup } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -138,23 +138,10 @@ router.get('/by-group/:displayId', requireAuth, validateDisplayIdParam, asyncHan
     throw createError(404, 'Group not found');
   }
 
-  if (!req.user?.isSystemAdmin && !group.publiclyVisible) {
-    const userId = req.user?.id;
-
-    const isAdmin = await prisma.personGroup.findFirst({
-      where: {
-        groupId: group.id,
-        isAdmin: true,
-        person: {
-          userId,
-          deleted: false
-        }
-      }
-    });
-
-    if (!isAdmin) {
-      throw createError(403, 'Forbidden: You do not have permission to view this group');
-    }
+  // Check if user has permission to view this group
+  const hasAccess = await canViewGroup(group.id, req.user!.id, req.user?.isSystemAdmin || false);
+  if (!hasAccess) {
+    throw createError(403, 'Forbidden: You do not have permission to view this group');
   }
 
   // Get all person-group relationships for this group

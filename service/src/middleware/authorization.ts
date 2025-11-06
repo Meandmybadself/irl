@@ -7,6 +7,54 @@ export type PersonGroupViewAccess = {
   adminGroupIds: Set<number>;
 };
 
+/**
+ * Check if a user can view a specific group.
+ *
+ * Authorization rules:
+ * 1. System admins can view any group
+ * 2. Anyone can view publicly visible groups
+ * 3. Only group admins can view private (non-publicly visible) groups
+ *
+ * @param groupId - The ID of the group to check access for
+ * @param userId - The ID of the user attempting to view the group
+ * @param isSystemAdmin - Whether the user is a system administrator
+ * @returns Promise<boolean> - True if the user can view the group, false otherwise
+ */
+export const canViewGroup = async (groupId: number, userId: number, isSystemAdmin: boolean): Promise<boolean> => {
+  // System admins can view any group
+  if (isSystemAdmin) {
+    return true;
+  }
+
+  // Get the group to check its visibility
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, deleted: false }
+  });
+
+  if (!group) {
+    return false;
+  }
+
+  // Anyone can view publicly visible groups
+  if (group.publiclyVisible) {
+    return true;
+  }
+
+  // For private groups, check if user is an admin
+  const isAdmin = await prisma.personGroup.findFirst({
+    where: {
+      groupId,
+      isAdmin: true,
+      person: {
+        userId,
+        deleted: false
+      }
+    }
+  });
+
+  return !!isAdmin;
+};
+
 export const canViewPersonGroups = async (userId: number, personId: number): Promise<PersonGroupViewAccess> => {
   const user = await prisma.user.findFirst({
     where: { id: userId, deleted: false },
