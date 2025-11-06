@@ -11,6 +11,7 @@ import type { ContactInformation, Group } from '@irl/shared';
 import { DEFAULT_PAGE_LIMIT } from '@irl/shared';
 
 import '../components/ui/group-list.js';
+import '../components/ui/bulk-import-modal.js';
 
 @customElement('groups-page')
 export class GroupsPage extends LitElement {
@@ -40,6 +41,9 @@ export class GroupsPage extends LitElement {
 
   @state()
   private totalPages = 1;
+
+  @state()
+  private showBulkImportModal = false;
 
   private limit = DEFAULT_PAGE_LIMIT;
 
@@ -105,6 +109,19 @@ export class GroupsPage extends LitElement {
   private handleCreateGroup() {
     window.history.pushState({}, '', '/groups/create');
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  private handleBulkImport() {
+    this.showBulkImportModal = true;
+  }
+
+  private handleBulkImportClose() {
+    this.showBulkImportModal = false;
+  }
+
+  private async handleImportComplete() {
+    this.showBulkImportModal = false;
+    await this.loadGroups();
   }
 
   private renderPagination() {
@@ -194,11 +211,18 @@ export class GroupsPage extends LitElement {
                 A list of all groups in your directory including their name and settings.
               </p>
             </div>
-            <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-x-3">
+              <button
+                type="button"
+                @click=${this.handleBulkImport}
+                class="rounded-md ${backgroundColors.content} px-3 py-2 text-sm font-semibold ${textColors.primary} shadow-xs ring-1 ring-inset ${backgroundColors.border} ${backgroundColors.contentHover}"
+              >
+                Bulk Import
+              </button>
               <button
                 type="button"
                 @click=${this.handleCreateGroup}
-                class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                class="rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Add group
               </button>
@@ -242,6 +266,13 @@ export class GroupsPage extends LitElement {
                 ${hasGroups ? this.renderPagination() : ''}
               `}
         </div>
+
+        <bulk-import-modal
+          entityType="group"
+          .open=${this.showBulkImportModal}
+          @close=${this.handleBulkImportClose}
+          @import-complete=${this.handleImportComplete}
+        ></bulk-import-modal>
       </div>
     `;
   }

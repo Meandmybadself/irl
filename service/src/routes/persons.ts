@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateDisplayIdParam, validateSearchQuery, personSchema, updatePersonSchema } from '../middleware/validation.js';
+import { validateBody, validateDisplayIdParam, validateSearchQuery, personSchema, updatePersonSchema, bulkPersonsSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { canModifyPerson, canCreatePerson } from '../middleware/authorization.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
@@ -151,6 +151,99 @@ router.patch('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerson
   };
 
   res.json(response);
+}));
+
+// POST /api/persons/bulk - Create multiple persons (auth required)
+router.post('/bulk', requireAuth, canCreatePerson, validateBody(bulkPersonsSchema), asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  const personsData = req.body as Array<{
+    firstName: string;
+    lastName: string;
+    displayId: string;
+    pronouns?: string | null;
+    imageURL?: string | null;
+    userId: number;
+    contactInformations?: Array<{
+      type: 'EMAIL' | 'PHONE' | 'ADDRESS' | 'URL';
+      label: string;
+      value: string;
+      privacy: 'PRIVATE' | 'PUBLIC';
+    }>;
+  }>;
+
+  // Process all persons in a transaction
+  const results = await prisma.$transaction(async (tx) => {
+    const createdPersons: Array<{ success: boolean; data?: Person; error?: string; displayId: string }> = [];
+
+    for (const personData of personsData) {
+      try {
+        // Check if displayId already exists
+        const existing = await tx.person.findFirst({
+          where: { displayId: personData.displayId, deleted: false }
+        });
+
+        if (existing) {
+          createdPersons.push({
+            success: false,
+            error: `Person with displayId '${personData.displayId}' already exists`,
+            displayId: personData.displayId
+          });
+          continue;
+        }
+
+        const { contactInformations, ...personFields } = personData;
+
+        // Create person
+        const person = await tx.person.create({
+          data: personFields
+        });
+
+        // Create contact informations if provided
+        if (contactInformations && contactInformations.length > 0) {
+          for (const contactInfo of contactInformations) {
+            const contact = await tx.contactInformation.create({
+              data: contactInfo
+            });
+
+            await tx.personContactInformation.create({
+              data: {
+                personId: person.id,
+                contactInformationId: contact.id
+              }
+            });
+          }
+        }
+
+        createdPersons.push({
+          success: true,
+          data: formatPerson(person),
+          displayId: personData.displayId
+        });
+      } catch (error) {
+        createdPersons.push({
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          displayId: personData.displayId
+        });
+      }
+    }
+
+    return createdPersons;
+  });
+
+  const successCount = results.filter(r => r.success).length;
+  const failureCount = results.filter(r => !r.success).length;
+
+  res.status(201).json({
+    success: true,
+    data: results,
+    message: `Created ${successCount} person(s). ${failureCount} failed.`
+  });
 }));
 
 // DELETE /api/persons/:displayId - Soft delete person (auth required)

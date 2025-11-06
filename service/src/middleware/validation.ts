@@ -128,6 +128,19 @@ export const personGroupSchema = z.object({
 
 export const updatePersonGroupSchema = personGroupSchema.partial();
 
+// Bulk import schemas
+export const bulkPersonSchema = personSchema.extend({
+  contactInformations: z.array(contactInformationSchema).optional()
+});
+
+export const bulkPersonsSchema = z.array(bulkPersonSchema).min(1, 'At least one person is required');
+
+export const bulkGroupSchema = groupSchema.extend({
+  contactInformations: z.array(contactInformationSchema).optional()
+});
+
+export const bulkGroupsSchema = z.array(bulkGroupSchema).min(1, 'At least one group is required');
+
 // Validation middleware factory
 export const validateBody = (schema: z.ZodSchema) => {
   return (req: Request, _res: Response, next: NextFunction) => {

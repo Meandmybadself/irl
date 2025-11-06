@@ -213,6 +213,13 @@ export class ApiClient {
     });
   }
 
+  async bulkCreatePersons(data: Array<CreatePersonRequest & { contactInformations?: Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>[] }>): Promise<ApiResponse<Array<{ success: boolean; data?: Person; error?: string; displayId: string }>>> {
+    return this.request(`/persons/bulk`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
   // Group endpoints
   async getGroups(page?: number, limit?: number, search?: string): Promise<PaginatedResponse<Group>> {
     const query = new URLSearchParams();
@@ -252,6 +259,13 @@ export class ApiClient {
   async deleteGroup(displayId: string): Promise<ApiResponse<null>> {
     return this.request<ApiResponse<null>>(`/groups/${displayId}`, {
       method: 'DELETE'
+    });
+  }
+
+  async bulkCreateGroups(data: Array<CreateGroupRequest & { contactInformations?: Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>[] }>): Promise<ApiResponse<Array<{ success: boolean; data?: Group; error?: string; displayId: string }>>> {
+    return this.request(`/groups/bulk`, {
+      method: 'POST',
+      body: JSON.stringify(data)
     });
   }
 

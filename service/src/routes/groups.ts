@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateDisplayIdParam, validateSearchQuery, groupSchema, updateGroupSchema } from '../middleware/validation.js';
+import { validateBody, validateDisplayIdParam, validateSearchQuery, groupSchema, updateGroupSchema, bulkGroupsSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { canModifyGroup, canCreateGroup } from '../middleware/authorization.js';
 import { getUserFirstPerson } from '../utils/prisma-helpers.js';
@@ -257,6 +257,131 @@ router.patch('/:displayId', requireAuth, validateDisplayIdParam, canModifyGroup,
   };
 
   res.json(response);
+}));
+
+// POST /api/groups/bulk - Create multiple groups (auth required)
+router.post('/bulk', requireAuth, canCreateGroup, validateBody(bulkGroupsSchema), asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // Get the user's first person to set as group admin for all groups
+  const firstPerson = await getUserFirstPerson(userId);
+
+  if (!firstPerson) {
+    throw createError(400, 'You must create a Person profile before creating Groups');
+  }
+
+  const groupsData = req.body as Array<{
+    name: string;
+    displayId: string;
+    description?: string | null;
+    parentGroupId?: number | null;
+    allowsAnyUserToCreateSubgroup?: boolean;
+    publiclyVisible?: boolean;
+    contactInformations?: Array<{
+      type: 'EMAIL' | 'PHONE' | 'ADDRESS' | 'URL';
+      label: string;
+      value: string;
+      privacy: 'PRIVATE' | 'PUBLIC';
+    }>;
+  }>;
+
+  // Process all groups in a transaction
+  const results = await prisma.$transaction(async (tx) => {
+    const createdGroups: Array<{ success: boolean; data?: Group; error?: string; displayId: string }> = [];
+
+    for (const groupData of groupsData) {
+      try {
+        // Check if displayId already exists
+        const existing = await tx.group.findFirst({
+          where: { displayId: groupData.displayId, deleted: false }
+        });
+
+        if (existing) {
+          createdGroups.push({
+            success: false,
+            error: `Group with displayId '${groupData.displayId}' already exists`,
+            displayId: groupData.displayId
+          });
+          continue;
+        }
+
+        // Check if parent group exists (if parentGroupId is provided)
+        if (groupData.parentGroupId) {
+          const parentExists = await tx.group.findFirst({
+            where: { id: groupData.parentGroupId, deleted: false }
+          });
+
+          if (!parentExists) {
+            createdGroups.push({
+              success: false,
+              error: `Parent group with ID '${groupData.parentGroupId}' does not exist`,
+              displayId: groupData.displayId
+            });
+            continue;
+          }
+        }
+
+        const { contactInformations, ...groupFields } = groupData;
+
+        // Create group
+        const group = await tx.group.create({
+          data: groupFields
+        });
+
+        // Assign creator's first person as admin
+        await tx.personGroup.create({
+          data: {
+            personId: firstPerson.id,
+            groupId: group.id,
+            isAdmin: true
+          }
+        });
+
+        // Create contact informations if provided
+        if (contactInformations && contactInformations.length > 0) {
+          for (const contactInfo of contactInformations) {
+            const contact = await tx.contactInformation.create({
+              data: contactInfo
+            });
+
+            await tx.groupContactInformation.create({
+              data: {
+                groupId: group.id,
+                contactInformationId: contact.id
+              }
+            });
+          }
+        }
+
+        createdGroups.push({
+          success: true,
+          data: formatGroup(group),
+          displayId: groupData.displayId
+        });
+      } catch (error) {
+        createdGroups.push({
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          displayId: groupData.displayId
+        });
+      }
+    }
+
+    return createdGroups;
+  });
+
+  const successCount = results.filter(r => r.success).length;
+  const failureCount = results.filter(r => !r.success).length;
+
+  res.status(201).json({
+    success: true,
+    data: results,
+    message: `Created ${successCount} group(s). ${failureCount} failed.`
+  });
 }));
 
 // DELETE /api/groups/:displayId - Soft delete group (auth required)

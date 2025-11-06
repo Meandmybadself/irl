@@ -7,6 +7,7 @@ import { addNotification } from '../store/slices/ui.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
 
 import '../components/ui/person-list.js';
+import '../components/ui/bulk-import-modal.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person, ContactInformation } from '@irl/shared';
@@ -40,6 +41,9 @@ export class PersonsPage extends LitElement {
 
   @state()
   private totalPages = 1;
+
+  @state()
+  private showBulkImportModal = false;
 
   private limit = DEFAULT_PAGE_LIMIT;
 
@@ -102,6 +106,19 @@ export class PersonsPage extends LitElement {
   private handleCreatePerson() {
     window.history.pushState({}, '', '/persons/create');
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  private handleBulkImport() {
+    this.showBulkImportModal = true;
+  }
+
+  private handleBulkImportClose() {
+    this.showBulkImportModal = false;
+  }
+
+  private async handleImportComplete() {
+    this.showBulkImportModal = false;
+    await this.loadPersons();
   }
 
   private renderPagination() {
@@ -191,11 +208,18 @@ export class PersonsPage extends LitElement {
                 A list of all people in your directory including their name and profile information.
               </p>
             </div>
-            <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-x-3">
+              <button
+                type="button"
+                @click=${this.handleBulkImport}
+                class="rounded-md ${backgroundColors.content} px-3 py-2 text-sm font-semibold ${textColors.primary} shadow-xs ring-1 ring-inset ${backgroundColors.border} ${backgroundColors.contentHover}"
+              >
+                Bulk Import
+              </button>
               <button
                 type="button"
                 @click=${this.handleCreatePerson}
-                class="block rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                class="rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Add person
               </button>
@@ -239,6 +263,13 @@ export class PersonsPage extends LitElement {
                 ${hasPersons ? this.renderPagination() : ''}
               `}
         </div>
+
+        <bulk-import-modal
+          entityType="person"
+          .open=${this.showBulkImportModal}
+          @close=${this.handleBulkImportClose}
+          @import-complete=${this.handleImportComplete}
+        ></bulk-import-modal>
       </div>
     `;
   }
