@@ -39,6 +39,9 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
             displayId: true,
             name: true,
             description: true,
+            publiclyVisible: true,
+            allowsAnyUserToCreateSubgroup: true,
+            parentGroupId: true,
             createdAt: true,
             updatedAt: true
           }
