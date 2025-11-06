@@ -2,7 +2,7 @@ import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { ContactInformation, Person } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
-import { textStyles, backgroundColors } from '../../utilities/text-colors.js';
+import { textStyles, backgroundColors, textColors } from '../../utilities/text-colors.js';
 
 @customElement('person-list')
 export class PersonList extends LitElement {
@@ -80,14 +80,14 @@ export class PersonList extends LitElement {
       case ContactType.EMAIL:
         return html`<a
           href="mailto:${value}"
-          class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+          class="${textColors.link} ${textColors.linkHover}"
         >
           ${value}
         </a>`;
       case ContactType.PHONE:
         return html`<a
           href="tel:${value}"
-          class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+          class="${textColors.link} ${textColors.linkHover}"
         >
           ${value}
         </a>`;
@@ -96,7 +96,7 @@ export class PersonList extends LitElement {
           href="${value}"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+          class="${textColors.link} ${textColors.linkHover}"
         >
           ${value}
         </a>`;
@@ -210,7 +210,7 @@ export class PersonList extends LitElement {
               <td class="py-5 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
                 <button
                   @click=${(e: Event) => this.handleEditPerson(e, person.displayId)}
-                  class="text-indigo-600 hover:text-indigo-500 bg-transparent border-none cursor-pointer dark:text-indigo-400 dark:hover:text-indigo-300"
+                  class="${textColors.link} ${textColors.linkHover} bg-transparent border-none cursor-pointer"
                 >
                   Edit<span class="sr-only">, ${person.firstName} ${person.lastName}</span>
                 </button>
