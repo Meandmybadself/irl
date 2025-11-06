@@ -30,7 +30,8 @@ import type {
   PersonContactInformation,
   CreatePersonContactInformationRequest,
   GroupContactInformation,
-  CreateGroupContactInformationRequest
+  CreateGroupContactInformationRequest,
+  PersonGroupWithRelations
 } from '@irl/shared';
 
 export interface PaginationParams {
@@ -418,6 +419,14 @@ export class ApiClient {
     });
   }
 
+  async getPersonGroupsByPerson(displayId: string): Promise<ApiResponse<PersonGroupWithRelations[]>> {
+    return this.request<ApiResponse<PersonGroupWithRelations[]>>(`/person-groups/by-person/${displayId}`);
+  }
+
+  async getPersonGroupsByGroup(displayId: string): Promise<ApiResponse<PersonGroupWithRelations[]>> {
+    return this.request<ApiResponse<PersonGroupWithRelations[]>>(`/person-groups/by-group/${displayId}`);
+  }
+
   // Contact mapping endpoints - System
   async getSystemContactInformations(): Promise<ApiResponse<ContactInformation[]>> {
     return this.request<ApiResponse<ContactInformation[]>>('/contact-mappings/system');
@@ -491,6 +500,29 @@ export class ApiClient {
     return this.request<ApiResponse<null>>(`/contact-mappings/group/${displayId}/${contactInfoId}`, {
       method: 'DELETE'
     });
+  }
+
+  // Profile endpoints
+  async getProfile(): Promise<ApiResponse<User & { pendingEmail?: string }>> {
+    return this.request<ApiResponse<User & { pendingEmail?: string }>>('/users/me');
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/users/me/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+  }
+
+  async changeEmail(newEmail: string, currentPassword: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/users/me/email', {
+      method: 'POST',
+      body: JSON.stringify({ newEmail, currentPassword })
+    });
+  }
+
+  async verifyEmailChange(token: string): Promise<ApiResponse<User>> {
+    return this.request<ApiResponse<User>>(`/users/verify-email-change?token=${token}`);
   }
 }
 

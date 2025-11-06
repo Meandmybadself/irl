@@ -11,6 +11,18 @@ export const contactInformationSchema = z.object({
 
 export const updateContactInformationSchema = contactInformationSchema.partial();
 
+export const systemContactInformationWithContactSchema = contactInformationSchema.extend({
+  systemId: z.number().int('System ID must be an integer')
+});
+
+export const personContactInformationWithContactSchema = contactInformationSchema.extend({
+  personId: z.number().int('Person ID must be an integer')
+});
+
+export const groupContactInformationWithContactSchema = contactInformationSchema.extend({
+  groupId: z.number().int('Group ID must be an integer')
+});
+
 export const userSchema = z.object({
   email: z.string().email('Invalid email format'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -71,6 +83,25 @@ export const groupInviteSchema = z.object({
 export const updateGroupInviteSchema = groupInviteSchema.partial().extend({
   accepted: z.boolean().optional(),
   acceptedAt: z.string().datetime('Invalid date format for acceptedAt').optional().nullable()
+});
+
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(1, 'Password is required')
+});
+
+export const resendVerificationSchema = z.object({
+  email: z.string().email('Invalid email format')
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters')
+});
+
+export const changeEmailSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newEmail: z.string().email('Invalid email format')
 });
 
 // Junction table schemas

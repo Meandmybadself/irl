@@ -6,6 +6,7 @@ import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectIsAuthenticated } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
+import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/group-search.js';
 import '../components/ui/contact-info-form.js';
 import '../components/ui/group-admin-form.js';
@@ -236,23 +237,23 @@ export class GroupFormPage extends LitElement {
   render() {
     if (this.isLoading) {
       return html`
-        <div class="flex min-h-full items-center justify-center py-12 pt-20">
+        <div class="flex min-h-full items-center justify-center py-6 pt-16">
           <div class="inline-block w-8 h-8 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
         </div>
       `;
     }
 
     return html`
-      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
+      <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
-          <h2 class="text-2xl/9 font-bold tracking-tight text-gray-900 mb-6">
+          <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary} mb-6">
             ${this.groupDisplayId ? 'Edit Group' : 'Create Group'}
           </h2>
 
-          <div class="bg-white px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
+          <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
             <form @submit=${this.handleSubmit} class="space-y-6">
               <div>
-                <label for="name" class="block text-sm/6 font-medium text-gray-900">
+                <label for="name" class="block text-sm/6 font-medium ${textColors.primary}">
                   Group Name
                 </label>
                 <div class="mt-2">
@@ -262,16 +263,16 @@ export class GroupFormPage extends LitElement {
                     name="name"
                     .value=${this.name}
                     required
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.nameError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.nameError ? 'outline-red-500 focus:outline-red-600' : ''}"
                     @input=${this.handleInputChange}
                     @blur=${this.handleNameBlur}
                   />
-                  ${this.nameError ? html`<p class="mt-1 text-sm text-red-600">${this.nameError}</p>` : ''}
+                  ${this.nameError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.nameError}</p>` : ''}
                 </div>
               </div>
 
               <div>
-                <label for="display-id" class="block text-sm/6 font-medium text-gray-900">
+                <label for="display-id" class="block text-sm/6 font-medium ${textColors.primary}">
                   Display ID
                 </label>
                 <div class="mt-2">
@@ -282,18 +283,18 @@ export class GroupFormPage extends LitElement {
                     .value=${this.displayId}
                     required
                     placeholder="my-group"
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.displayIdError ? 'outline-red-500 focus:outline-red-600' : ''}"
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.displayIdError ? 'outline-red-500 focus:outline-red-600' : ''}"
                     @input=${this.handleInputChange}
                   />
-                  <p class="mt-1 text-sm text-gray-500">
+                  <p class="mt-1 text-sm ${textColors.tertiary}">
                     A unique, web-safe identifier for this group
                   </p>
-                  ${this.displayIdError ? html`<p class="mt-1 text-sm text-red-600">${this.displayIdError}</p>` : ''}
+                  ${this.displayIdError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.displayIdError}</p>` : ''}
                 </div>
               </div>
 
               <div>
-                <label for="description" class="block text-sm/6 font-medium text-gray-900">
+                <label for="description" class="block text-sm/6 font-medium ${textColors.primary}">
                   Description (optional)
                 </label>
                 <div class="mt-2">
@@ -303,7 +304,7 @@ export class GroupFormPage extends LitElement {
                     rows="3"
                     .value=${this.description}
                     placeholder="A brief description of this group"
-                    class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
                     @input=${this.handleInputChange}
                   ></textarea>
                 </div>
@@ -323,15 +324,15 @@ export class GroupFormPage extends LitElement {
                     name="publiclyVisible"
                     type="checkbox"
                     .checked=${this.publiclyVisible}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 rounded ${backgroundColors.border} text-indigo-600 focus:ring-indigo-600"
                     @change=${this.handleInputChange}
                   />
                 </div>
                 <div class="ml-3 text-sm/6">
-                  <label for="publiclyVisible" class="font-medium text-gray-900">
+                  <label for="publiclyVisible" class="font-medium ${textColors.primary}">
                     Publicly Visible
                   </label>
-                  <p class="text-gray-500">
+                  <p class="${textColors.tertiary}">
                     Allow this group to be visible to all users
                   </p>
                 </div>
@@ -344,15 +345,15 @@ export class GroupFormPage extends LitElement {
                     name="allowsAnyUserToCreateSubgroup"
                     type="checkbox"
                     .checked=${this.allowsAnyUserToCreateSubgroup}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 rounded ${backgroundColors.border} text-indigo-600 focus:ring-indigo-600"
                     @change=${this.handleInputChange}
                   />
                 </div>
                 <div class="ml-3 text-sm/6">
-                  <label for="allowsAnyUserToCreateSubgroup" class="font-medium text-gray-900">
+                  <label for="allowsAnyUserToCreateSubgroup" class="font-medium ${textColors.primary}">
                     Allow Any User to Create Subgroups
                   </label>
-                  <p class="text-gray-500">
+                  <p class="${textColors.tertiary}">
                     Let any user create subgroups under this group
                   </p>
                 </div>
@@ -390,7 +391,7 @@ export class GroupFormPage extends LitElement {
                 <button
                   type="button"
                   @click=${this.handleCancel}
-                  class="text-sm/6 font-semibold text-gray-900"
+                  class="text-sm/6 font-semibold ${textColors.primary}"
                 >
                   Cancel
                 </button>

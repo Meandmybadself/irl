@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+## Testing
+
+### Client and Service
+After modifying `client` or `service` code, use Chrome DevTools MCP to validate the changes. The site is accessible at http://localhost:3000. Test credentials to login are stored as environment variables (TEST_EMAIL & TEST_PASSWORD), available to this process.  Verify both dark & light modes.
+
+### Service
+After modifying `service` code, run `pnpm test` to ensure all tests pass.

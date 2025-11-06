@@ -1,7 +1,17 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateIdParam, systemContactInformationSchema, personContactInformationSchema, groupContactInformationSchema, validateDisplayIdParam } from '../middleware/validation.js';
+import {
+  validateBody,
+  validateIdParam,
+  systemContactInformationSchema,
+  systemContactInformationWithContactSchema,
+  personContactInformationSchema,
+  personContactInformationWithContactSchema,
+  groupContactInformationSchema,
+  groupContactInformationWithContactSchema,
+  validateDisplayIdParam
+} from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { canViewPersonPrivateContacts, canViewGroupPrivateContacts } from '../middleware/authorization.js';
 import type { ApiResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
@@ -80,13 +90,8 @@ router.post('/system', requireAuth, validateBody(systemContactInformationSchema)
 }));
 
 // POST /api/contact-mappings/system/with-contact - Create contact info and mapping in a transaction
-router.post('/system/with-contact', requireAuth, asyncHandler(async (req, res) => {
+router.post('/system/with-contact', requireAuth, validateBody(systemContactInformationWithContactSchema), asyncHandler(async (req, res) => {
   const { type, label, value, privacy, systemId } = req.body;
-
-  // Validate required fields
-  if (!type || !label || !value || !privacy || !systemId) {
-    throw createError(400, 'Missing required fields: type, label, value, privacy, systemId');
-  }
 
   // Check if system exists
   const systemExists = await prisma.system.findFirst({
@@ -237,13 +242,8 @@ router.post('/person', requireAuth, validateBody(personContactInformationSchema)
 }));
 
 // POST /api/contact-mappings/person/with-contact - Create contact info and mapping in a transaction
-router.post('/person/with-contact', requireAuth, asyncHandler(async (req, res) => {
+router.post('/person/with-contact', requireAuth, validateBody(personContactInformationWithContactSchema), asyncHandler(async (req, res) => {
   const { type, label, value, privacy, personId } = req.body;
-
-  // Validate required fields
-  if (!type || !label || !value || !privacy || !personId) {
-    throw createError(400, 'Missing required fields: type, label, value, privacy, personId');
-  }
 
   // Check if person exists
   const personExists = await prisma.person.findFirst({
@@ -415,13 +415,8 @@ router.post('/group', requireAuth, validateBody(groupContactInformationSchema), 
 }));
 
 // POST /api/contact-mappings/group/with-contact - Create contact info and mapping in a transaction
-router.post('/group/with-contact', requireAuth, asyncHandler(async (req, res) => {
+router.post('/group/with-contact', requireAuth, validateBody(groupContactInformationWithContactSchema), asyncHandler(async (req, res) => {
   const { type, label, value, privacy, groupId } = req.body;
-
-  // Validate required fields
-  if (!type || !label || !value || !privacy || !groupId) {
-    throw createError(400, 'Missing required fields: type, label, value, privacy, groupId');
-  }
 
   // Check if group exists
   const groupExists = await prisma.group.findFirst({

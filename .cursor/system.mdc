@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # IRL
 This is a Node TypeScript service and UI providing a community directory for exchanging contact information.
 
@@ -121,3 +125,4 @@ Properties:
 
 ## Available Tools
 * `gh` - Use for interacting with Github
+

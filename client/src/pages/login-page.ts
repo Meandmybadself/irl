@@ -90,7 +90,7 @@ export class LoginPage extends LitElement {
 
   render() {
     return html`
-      <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 pt-20">
+      <div class="flex min-h-full flex-col justify-center py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-md">
           ${this.systemName ? html`
             <h1 class="text-center text-3xl/10 font-bold tracking-tight text-gray-900 mb-2">

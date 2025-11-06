@@ -139,7 +139,8 @@ export class AppRoot extends LitElement {
     return this.isAuthenticated &&
            path !== '/login' &&
            path !== '/register' &&
-           path !== '/verify-email';
+           path !== '/verify-email' &&
+           path !== '/verify-email-change';
   }
 
   render() {

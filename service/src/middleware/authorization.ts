@@ -2,6 +2,112 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { createError } from './error-handler.js';
 
+export type PersonGroupViewAccess = {
+  canViewAll: boolean;
+  adminGroupIds: Set<number>;
+};
+
+/**
+ * Check if a user can view a specific group.
+ *
+ * Authorization rules:
+ * 1. System admins can view any group
+ * 2. Anyone can view publicly visible groups
+ * 3. Only group admins can view private (non-publicly visible) groups
+ *
+ * @param groupId - The ID of the group to check access for
+ * @param userId - The ID of the user attempting to view the group
+ * @param isSystemAdmin - Whether the user is a system administrator
+ * @returns Promise<boolean> - True if the user can view the group, false otherwise
+ */
+export const canViewGroup = async (groupId: number, userId: number, isSystemAdmin: boolean): Promise<boolean> => {
+  // System admins can view any group
+  if (isSystemAdmin) {
+    return true;
+  }
+
+  // Get the group to check its visibility
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, deleted: false }
+  });
+
+  if (!group) {
+    return false;
+  }
+
+  // Anyone can view publicly visible groups
+  if (group.publiclyVisible) {
+    return true;
+  }
+
+  // For private groups, check if user is an admin
+  const isAdmin = await prisma.personGroup.findFirst({
+    where: {
+      groupId,
+      isAdmin: true,
+      person: {
+        userId,
+        deleted: false
+      }
+    }
+  });
+
+  return !!isAdmin;
+};
+
+export const canViewPersonGroups = async (userId: number, personId: number): Promise<PersonGroupViewAccess> => {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deleted: false },
+    select: { isSystemAdmin: true }
+  });
+
+  if (!user) {
+    return {
+      canViewAll: false,
+      adminGroupIds: new Set<number>()
+    };
+  }
+
+  if (user.isSystemAdmin) {
+    return {
+      canViewAll: true,
+      adminGroupIds: new Set<number>()
+    };
+  }
+
+  const person = await prisma.person.findFirst({
+    where: { id: personId, deleted: false },
+    select: { userId: true }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  if (person.userId === userId) {
+    return {
+      canViewAll: true,
+      adminGroupIds: new Set<number>()
+    };
+  }
+
+  const adminGroups = await prisma.personGroup.findMany({
+    where: {
+      isAdmin: true,
+      person: {
+        userId,
+        deleted: false
+      }
+    },
+    select: { groupId: true }
+  });
+
+  return {
+    canViewAll: false,
+    adminGroupIds: new Set(adminGroups.map(group => group.groupId))
+  };
+};
+
 // Middleware to check if user can modify a person
 export const canModifyPerson = async (req: Request, _res: Response, next: NextFunction) => {
   const { displayId } = req.params;
@@ -229,79 +335,83 @@ export const canCreateGroup = async (req: Request, _res: Response, next: NextFun
  * - Unauthorized privilege escalation
  */
 export const canModifyPersonGroup = async (req: Request, _res: Response, next: NextFunction) => {
-  const userId = req.user?.id;
+  try {
+    const userId = req.user?.id;
 
-  if (!userId) {
-    throw createError(401, 'Authentication required');
-  }
-
-  // System admins can modify any PersonGroup relationship
-  if (req.user?.isSystemAdmin) {
-    next();
-    return;
-  }
-
-  // Get the groupId from the request (either from body for POST/PUT/PATCH or from existing record for DELETE)
-  let groupId: number;
-  let personGroupId: number | undefined;
-
-  if (req.method === 'POST') {
-    // For POST, groupId comes from body
-    groupId = req.body.groupId;
-  } else {
-    // For PUT/PATCH/DELETE, get the PersonGroup record to find the groupId
-    personGroupId = parseInt(req.params.id);
-    const personGroup = await prisma.personGroup.findUnique({
-      where: { id: personGroupId }
-    });
-
-    if (!personGroup) {
-      throw createError(404, 'Person-group relationship not found');
+    if (!userId) {
+      throw createError(401, 'Authentication required');
     }
 
-    groupId = personGroup.groupId;
-  }
+    // System admins can modify any PersonGroup relationship
+    if (req.user?.isSystemAdmin) {
+      next();
+      return;
+    }
 
-  // Check if user has any Person that is an admin of this group
-  const group = await prisma.group.findFirst({
-    where: { id: groupId, deleted: false },
-    include: {
-      people: {
-        where: {
-          person: { userId, deleted: false },
-          isAdmin: true
+    // Get the groupId from the request (either from body for POST/PUT/PATCH or from existing record for DELETE)
+    let groupId: number;
+    let personGroupId: number | undefined;
+
+    if (req.method === 'POST') {
+      // For POST, groupId comes from body
+      groupId = req.body.groupId;
+    } else {
+      // For PUT/PATCH/DELETE, get the PersonGroup record to find the groupId
+      personGroupId = parseInt(req.params.id);
+      const personGroup = await prisma.personGroup.findUnique({
+        where: { id: personGroupId }
+      });
+
+      if (!personGroup) {
+        throw createError(404, 'Person-group relationship not found');
+      }
+
+      groupId = personGroup.groupId;
+    }
+
+    // Check if user has any Person that is an admin of this group
+    const group = await prisma.group.findFirst({
+      where: { id: groupId, deleted: false },
+      include: {
+        people: {
+          where: {
+            person: { userId, deleted: false },
+            isAdmin: true
+          }
+        }
+      }
+    });
+
+    if (!group) {
+      throw createError(404, 'Group not found');
+    }
+
+    if (group.people.length === 0) {
+      throw createError(403, 'Forbidden: Only group administrators can modify group memberships');
+    }
+
+    // Additional check: Prevent users from granting themselves admin privileges
+    // by checking if they're trying to modify their own PersonGroup record
+    if (req.body.isAdmin !== undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+      const targetPersonId = req.body.personId || (personGroupId ? (await prisma.personGroup.findUnique({
+        where: { id: personGroupId },
+        select: { personId: true }
+      }))?.personId : undefined);
+
+      if (targetPersonId) {
+        const targetPerson = await prisma.person.findFirst({
+          where: { id: targetPersonId, deleted: false }
+        });
+
+        // Prevent users from modifying their own admin status
+        if (targetPerson?.userId === userId) {
+          throw createError(403, 'Forbidden: You cannot modify your own admin status');
         }
       }
     }
-  });
 
-  if (!group) {
-    throw createError(404, 'Group not found');
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  if (group.people.length === 0) {
-    throw createError(403, 'Forbidden: Only group administrators can modify group memberships');
-  }
-
-  // Additional check: Prevent users from granting themselves admin privileges
-  // by checking if they're trying to modify their own PersonGroup record
-  if (req.body.isAdmin !== undefined && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
-    const targetPersonId = req.body.personId || (personGroupId ? (await prisma.personGroup.findUnique({
-      where: { id: personGroupId },
-      select: { personId: true }
-    }))?.personId : undefined);
-
-    if (targetPersonId) {
-      const targetPerson = await prisma.person.findFirst({
-        where: { id: targetPersonId, deleted: false }
-      });
-
-      // Prevent users from modifying their own admin status
-      if (targetPerson?.userId === userId) {
-        throw createError(403, 'Forbidden: You cannot modify your own admin status');
-      }
-    }
-  }
-
-  next();
 };

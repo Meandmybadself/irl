@@ -4,10 +4,13 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
+import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
-import type { Group } from '@irl/shared';
+import type { ContactInformation, Group } from '@irl/shared';
 import { DEFAULT_PAGE_LIMIT } from '@irl/shared';
+
+import '../components/ui/group-list.js';
 
 @customElement('groups-page')
 export class GroupsPage extends LitElement {
@@ -27,6 +30,9 @@ export class GroupsPage extends LitElement {
   private groups: Group[] = [];
 
   @state()
+  private groupContacts: Map<number, ContactInformation[]> = new Map();
+
+  @state()
   private isLoading = false;
 
   @state()
@@ -44,6 +50,7 @@ export class GroupsPage extends LitElement {
 
   private async loadGroups() {
     this.isLoading = true;
+    this.groupContacts = new Map();
     try {
       const response = await this.api.getGroups(
         this.currentPage,
@@ -55,6 +62,27 @@ export class GroupsPage extends LitElement {
         if (response.pagination) {
           this.totalPages = response.pagination.totalPages;
         }
+
+        if (this.groups.length > 0) {
+          const contactsMap = new Map<number, ContactInformation[]>();
+          await Promise.all(
+            this.groups.map(async group => {
+              try {
+                const contactsResponse = await this.api.getGroupContactInformations(group.displayId);
+                if (contactsResponse.success && contactsResponse.data) {
+                  contactsMap.set(group.id, contactsResponse.data);
+                } else {
+                  contactsMap.set(group.id, []);
+                }
+              } catch (error) {
+                contactsMap.set(group.id, []);
+              }
+            })
+          );
+          this.groupContacts = contactsMap;
+        }
+      } else {
+        this.groups = [];
       }
     } catch (error) {
       this.store.dispatch(
@@ -79,11 +107,6 @@ export class GroupsPage extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  private handleEditGroup(displayId: string) {
-    window.history.pushState({}, '', `/groups/${displayId}/edit`);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
   private renderPagination() {
     if (this.totalPages <= 1) return '';
 
@@ -105,15 +128,15 @@ export class GroupsPage extends LitElement {
     }
 
     return html`
-      <nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0 mt-8">
+      <nav class="flex items-center justify-between border-t ${backgroundColors.border} px-4 sm:px-0 mt-8">
         <div class="-mt-px flex w-0 flex-1">
           ${this.currentPage > 1
             ? html`
                 <button
                   @click=${() => this.handlePageChange(this.currentPage - 1)}
-                  class="inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 bg-transparent cursor-pointer"
+                  class="inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium ${textColors.tertiary} hover:border-gray-300 dark:hover:border-gray-600 ${textColors.secondary} bg-transparent cursor-pointer"
                 >
-                  <svg class="mr-3 size-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <svg class="mr-3 size-5 ${textColors.muted}" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M18 10a.75.75 0 01-.75.75H4.66l2.1 1.95a.75.75 0 11-1.02 1.1l-3.5-3.25a.75.75 0 010-1.1l3.5-3.25a.75.75 0 111.02 1.1l-2.1 1.95h12.59A.75.75 0 0118 10z" clip-rule="evenodd" />
                   </svg>
                   Previous
@@ -124,14 +147,14 @@ export class GroupsPage extends LitElement {
         <div class="hidden md:-mt-px md:flex">
           ${pages.map(page =>
             page === -1
-              ? html`<span class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500">...</span>`
+              ? html`<span class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium ${textColors.tertiary}">...</span>`
               : html`
                   <button
                     @click=${() => this.handlePageChange(page)}
                     class="inline-flex items-center border-t-2 px-4 pt-4 text-sm font-medium bg-transparent cursor-pointer ${
                       page === this.currentPage
-                        ? 'border-indigo-500 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                        : `border-transparent ${textColors.tertiary} hover:border-gray-300 dark:hover:border-gray-600 ${textColors.secondary}`
                     }"
                   >
                     ${page}
@@ -144,10 +167,10 @@ export class GroupsPage extends LitElement {
             ? html`
                 <button
                   @click=${() => this.handlePageChange(this.currentPage + 1)}
-                  class="inline-flex items-center border-t-2 border-transparent pl-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 bg-transparent cursor-pointer"
+                  class="inline-flex items-center border-t-2 border-transparent pl-1 pt-4 text-sm font-medium ${textColors.tertiary} hover:border-gray-300 dark:hover:border-gray-600 ${textColors.secondary} bg-transparent cursor-pointer"
                 >
                   Next
-                  <svg class="ml-3 size-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <svg class="ml-3 size-5 ${textColors.muted}" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clip-rule="evenodd" />
                   </svg>
                 </button>
@@ -158,90 +181,16 @@ export class GroupsPage extends LitElement {
     `;
   }
 
-  private renderSkeletonRow() {
-    return html`
-      <tr>
-        <td class="py-2 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
-          <div class="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-        </td>
-        <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-          <div class="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
-        </td>
-        <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-          <div class="h-4 bg-gray-200 rounded animate-pulse w-40"></div>
-        </td>
-        <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-          <div class="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
-        </td>
-        <td class="py-2 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
-          <div class="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
-        </td>
-      </tr>
-    `;
-  }
-
-  private renderSkeletonTable() {
-    return html`
-      <div class="mt-8 flow-root">
-        <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <table class="relative min-w-full divide-y divide-gray-300">
-              <thead>
-                <tr>
-                  <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold whitespace-nowrap text-gray-900 sm:pl-0">
-                    Name
-                  </th>
-                  <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                    Display ID
-                  </th>
-                  <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                    Description
-                  </th>
-                  <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                    Visibility
-                  </th>
-                  <th scope="col" class="py-3.5 pr-4 pl-3 whitespace-nowrap sm:pr-0">
-                    <span class="sr-only">Edit</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200 bg-white">
-                ${Array.from({ length: 5 }, () => this.renderSkeletonRow())}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   render() {
-    if (this.isLoading && this.groups.length === 0) {
-      return html`
-        <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
-          <div class="px-4 sm:px-6 lg:px-8">
-            <div class="sm:flex sm:items-center">
-              <div class="sm:flex-auto">
-                <div class="h-6 bg-gray-200 rounded animate-pulse w-20"></div>
-                <div class="mt-2 h-4 bg-gray-200 rounded animate-pulse w-80"></div>
-              </div>
-              <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-                <div class="h-8 bg-gray-200 rounded animate-pulse w-24"></div>
-              </div>
-            </div>
-            ${this.renderSkeletonTable()}
-          </div>
-        </div>
-      `;
-    }
+    const hasGroups = this.groups.length > 0;
 
     return html`
-      <div class="flex min-h-full flex-col py-12 sm:px-6 lg:px-8 pt-20">
+      <div class="flex min-h-full flex-col py-6 pt-16">
         <div class="px-4 sm:px-6 lg:px-8">
           <div class="sm:flex sm:items-center">
             <div class="sm:flex-auto">
-              <h1 class="text-base font-semibold text-gray-900">Groups</h1>
-              <p class="mt-2 text-sm text-gray-700">
+              <h1 class="text-base font-semibold ${textColors.primary}">Groups</h1>
+              <p class="mt-2 text-sm ${textColors.secondary}">
                 A list of all groups in your directory including their name and settings.
               </p>
             </div>
@@ -256,10 +205,10 @@ export class GroupsPage extends LitElement {
             </div>
           </div>
 
-          ${this.groups.length === 0
+          ${!hasGroups && !this.isLoading
             ? html`
                 <div class="mt-8 text-center py-12">
-                  <p class="text-sm text-gray-500">No groups found. Create your first group to get started.</p>
+                  <p class="text-sm ${textColors.tertiary}">No groups found. Create your first group to get started.</p>
                   <button
                     type="button"
                     @click=${this.handleCreateGroup}
@@ -271,70 +220,26 @@ export class GroupsPage extends LitElement {
               `
             : html`
                 <div class="mt-8 flow-root relative">
-                  ${this.isLoading && this.groups.length > 0
+                  ${this.isLoading && hasGroups
                     ? html`
-                        <div class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-                          <div class="inline-block w-6 h-6 border-2 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
+                        <div class="absolute inset-0 ${backgroundColors.overlay} flex items-center justify-center z-10">
+                          <div class="inline-block h-6 w-6 rounded-full border-2 border-indigo-600 border-r-transparent animate-spin"></div>
                         </div>
                       `
                     : ''}
                   <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                      <table class="relative min-w-full divide-y divide-gray-300">
-                        <thead>
-                          <tr>
-                            <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold whitespace-nowrap text-gray-900 sm:pl-0">
-                              Name
-                            </th>
-                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                              Display ID
-                            </th>
-                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                              Description
-                            </th>
-                            <th scope="col" class="px-2 py-3.5 text-left text-sm font-semibold whitespace-nowrap text-gray-900">
-                              Visibility
-                            </th>
-                            <th scope="col" class="py-3.5 pr-4 pl-3 whitespace-nowrap sm:pr-0">
-                              <span class="sr-only">Edit</span>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white">
-                          ${this.groups.map(
-                            group => html`
-                              <tr>
-                                <td class="py-2 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 sm:pl-0">
-                                  ${group.name}
-                                </td>
-                                <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-                                  ${group.displayId}
-                                </td>
-                                <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-                                  ${group.description || html`<span class="text-gray-400">—</span>`}
-                                </td>
-                                <td class="px-2 py-2 text-sm whitespace-nowrap text-gray-500">
-                                  ${group.publiclyVisible
-                                    ? html`<span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-600/20 ring-inset">Public</span>`
-                                    : html`<span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-500/20 ring-inset">Private</span>`}
-                                </td>
-                                <td class="py-2 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
-                                  <button
-                                    @click=${() => this.handleEditGroup(group.displayId)}
-                                    class="text-indigo-600 hover:text-indigo-900 bg-transparent border-none cursor-pointer"
-                                  >
-                                    Edit<span class="sr-only">, ${group.name}</span>
-                                  </button>
-                                </td>
-                              </tr>
-                            `
-                          )}
-                        </tbody>
-                      </table>
+                      <group-list
+                        .groups=${this.groups}
+                        .linkToDetail=${true}
+                        .showEdit=${true}
+                        .isLoading=${this.isLoading}
+                        .groupContacts=${this.groupContacts}
+                      ></group-list>
                     </div>
                   </div>
                 </div>
-                ${this.renderPagination()}
+                ${hasGroups ? this.renderPagination() : ''}
               `}
         </div>
       </div>

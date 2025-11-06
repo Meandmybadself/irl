@@ -197,6 +197,13 @@ export class AppNavigation extends LitElement {
                               <div
                                 class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5"
                               >
+                                <a
+                                  href=${ROUTES.PROFILE}
+                                  @click=${this.createClickHandler()}
+                                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline"
+                                >
+                                  Profile
+                                </a>
                                 ${this.isSystemAdmin
                                   ? html`
                                       <a
@@ -318,6 +325,24 @@ export class AppNavigation extends LitElement {
                       : ''}
                   </div>
                   <div class="mt-3 space-y-1 px-2">
+                    <a
+                      href=${ROUTES.PROFILE}
+                      @click=${this.createClickHandler()}
+                      class="block rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-white/5 hover:text-white no-underline"
+                    >
+                      Profile
+                    </a>
+                    ${this.isSystemAdmin
+                      ? html`
+                          <a
+                            href=${ROUTES.ADMIN_SYSTEM}
+                            @click=${this.createClickHandler()}
+                            class="block rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-white/5 hover:text-white no-underline"
+                          >
+                            System Admin
+                          </a>
+                        `
+                      : ''}
                     <button
                       @click=${this.handleLogout}
                       class="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-white/5 hover:text-white bg-transparent border-none cursor-pointer"

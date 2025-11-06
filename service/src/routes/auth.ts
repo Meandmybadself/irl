@@ -2,6 +2,7 @@ import { Router } from 'express';
 import passport from 'passport';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
+import { validateBody, loginSchema, resendVerificationSchema } from '../middleware/validation.js';
 import type { ApiResponse, User, Person } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -30,7 +31,7 @@ const excludePersonSensitiveFields = (person: any): Person => {
 };
 
 // POST /api/auth/login - Login user
-router.post('/login', (req, res, next) => {
+router.post('/login', validateBody(loginSchema), (req, res, next) => {
   passport.authenticate('local', (err: any, user: any, info: any) => {
     if (err) {
       return next(err);
@@ -122,12 +123,8 @@ router.get('/session', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/auth/resend-verification - Resend verification email
-router.post('/resend-verification', asyncHandler(async (req, res) => {
+router.post('/resend-verification', validateBody(resendVerificationSchema), asyncHandler(async (req, res) => {
   const { email } = req.body;
-
-  if (!email) {
-    throw createError(400, 'Email is required');
-  }
 
   const user = await prisma.user.findFirst({
     where: { email, deleted: false }

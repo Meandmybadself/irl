@@ -7,11 +7,15 @@ import { setAttemptedPath } from './store/slices/auth.js';
 import './pages/register-page.js';
 import './pages/login-page.js';
 import './pages/verify-email-page.js';
+import './pages/verify-email-change-page.js';
+import './pages/profile-page.js';
 import './pages/home-page.js';
 import './pages/system-admin-page.js';
 import './pages/person-form-page.js';
+import './pages/person-detail-page.js';
 import './pages/persons-page.js';
 import './pages/group-form-page.js';
+import './pages/group-detail-page.js';
 import './pages/groups-page.js';
 
 export interface RouteConfig {
@@ -62,6 +66,25 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       path: '/verify-email',
       render: () => {
         return html`<verify-email-page></verify-email-page>`;
+      }
+    },
+    {
+      path: '/verify-email-change',
+      render: () => {
+        return html`<verify-email-change-page></verify-email-change-page>`;
+      }
+    },
+    {
+      path: '/profile',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/profile'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<profile-page></profile-page>`;
       }
     },
     {
@@ -131,6 +154,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
+      path: '/persons/:id',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath(window.location.pathname));
+          return html`<login-page></login-page>`;
+        }
+        return html`<person-detail-page></person-detail-page>`;
+      }
+    },
+    {
       path: '/groups',
       render: () => {
         const state = store.getState();
@@ -167,6 +203,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<group-form-page></group-form-page>`;
+      }
+    },
+    {
+      path: '/groups/:id',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath(window.location.pathname));
+          return html`<login-page></login-page>`;
+        }
+        return html`<group-detail-page></group-detail-page>`;
       }
     },
     {

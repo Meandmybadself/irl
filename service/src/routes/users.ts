@@ -4,8 +4,8 @@ import crypto from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { sendVerificationEmail } from '../lib/email.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, userSchema, updateUserSchema, validateIdParam } from '../middleware/validation.js';
-import { requireSystemAdmin } from '../middleware/auth.js';
+import { validateBody, userSchema, updateUserSchema, validateIdParam, changePasswordSchema, changeEmailSchema } from '../middleware/validation.js';
+import { requireSystemAdmin, requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, User } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -67,6 +67,220 @@ const updateUserRecord = async (id: number, body: any): Promise<UpdatedUserResul
     verificationToken
   };
 };
+
+// GET /api/users/me - Get current user profile
+router.get('/me', requireAuth, asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw createError(401, 'Authentication required');
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { 
+      id: req.user.id,
+      deleted: false 
+    }
+  });
+
+  if (!user) {
+    throw createError(404, 'User not found');
+  }
+
+  // Check for pending email change
+  const pendingEmailChange = await prisma.emailChangeRequest.findFirst({
+    where: {
+      userId: req.user.id,
+      expiresAt: { gte: new Date() }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  const response: ApiResponse<User & { pendingEmail?: string }> = {
+    success: true,
+    data: {
+      ...excludeSensitiveFields(user),
+      pendingEmail: pendingEmailChange?.newEmail
+    }
+  };
+
+  res.json(response);
+}));
+
+// POST /api/users/me/password - Change password
+router.post('/me/password', requireAuth, validateBody(changePasswordSchema), asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw createError(401, 'Authentication required');
+  }
+
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { 
+      id: req.user.id,
+      deleted: false 
+    }
+  });
+
+  if (!user) {
+    throw createError(404, 'User not found');
+  }
+
+  // Verify current password
+  const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+  if (!isValidPassword) {
+    throw createError(401, 'Current password is incorrect');
+  }
+
+  // Hash new password
+  const saltRounds = 12;
+  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+  // Update password
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashedPassword }
+  });
+
+  const response: ApiResponse<null> = {
+    success: true,
+    message: 'Password updated successfully'
+  };
+
+  res.json(response);
+}));
+
+// POST /api/users/me/email - Request email change
+router.post('/me/email', requireAuth, validateBody(changeEmailSchema), asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw createError(401, 'Authentication required');
+  }
+
+  const { newEmail, currentPassword } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { 
+      id: req.user.id,
+      deleted: false 
+    }
+  });
+
+  if (!user) {
+    throw createError(404, 'User not found');
+  }
+
+  const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+  if (!isValidPassword) {
+    throw createError(401, 'Current password is incorrect');
+  }
+
+  // Check if email is already in use
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      email: newEmail,
+      deleted: false
+    }
+  });
+
+  if (existingUser) {
+    throw createError(400, 'Email address is already in use');
+  }
+
+  // Check if user already has the email
+  if (user.email === newEmail) {
+    throw createError(400, 'New email must be different from current email');
+  }
+
+  // Delete any existing email change requests for this user
+  await prisma.emailChangeRequest.deleteMany({
+    where: { userId: user.id }
+  });
+
+  // Create new email change request with verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiry
+
+  await prisma.emailChangeRequest.create({
+    data: {
+      userId: user.id,
+      newEmail,
+      verificationToken,
+      expiresAt
+    }
+  });
+
+  // Send verification email to new address
+  try {
+    await sendVerificationEmail(newEmail, verificationToken, 'verify-email-change');
+  } catch (error) {
+    console.error('Failed to send email change verification:', error);
+    throw createError(500, 'Failed to send verification email');
+  }
+
+  const response: ApiResponse<null> = {
+    success: true,
+    message: 'Verification email sent to new address'
+  };
+
+  res.json(response);
+}));
+
+// GET /api/users/verify-email-change - Verify email change
+router.get('/verify-email-change', requireAuth, asyncHandler(async (req, res) => {
+  const { token } = req.query;
+
+  if (!token || typeof token !== 'string') {
+    throw createError(400, 'Verification token is required');
+  }
+
+  const emailChangeRequest = await prisma.emailChangeRequest.findUnique({
+    where: { verificationToken: token },
+    include: { user: true }
+  });
+
+  if (!emailChangeRequest) {
+    throw createError(404, 'Verification token invalid or expired');
+  }
+
+  if (!req.user || req.user.id !== emailChangeRequest.userId) {
+    throw createError(403, 'Forbidden: You do not have permission to verify this email change');
+  }
+
+  // Check if token is expired
+  if (emailChangeRequest.expiresAt < new Date()) {
+    throw createError(400, 'Verification token has expired');
+  }
+
+  // Check if new email is still available
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      email: emailChangeRequest.newEmail,
+      deleted: false
+    }
+  });
+
+  if (existingUser) {
+    throw createError(400, 'Email address is no longer available');
+  }
+
+  // Update user's email
+  const updatedUser = await prisma.user.update({
+    where: { id: emailChangeRequest.userId },
+    data: { email: emailChangeRequest.newEmail }
+  });
+
+  // Delete the email change request
+  await prisma.emailChangeRequest.delete({
+    where: { id: emailChangeRequest.id }
+  });
+
+  const response: ApiResponse<User> = {
+    success: true,
+    data: excludeSensitiveFields(updatedUser),
+    message: 'Email address updated successfully'
+  };
+
+  res.json(response);
+}));
 
 // GET /api/users - List all users (admin only)
 router.get('/', requireSystemAdmin, asyncHandler(async (req, res) => {

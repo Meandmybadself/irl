@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateIdParam, personGroupSchema, updatePersonGroupSchema } from '../middleware/validation.js';
+import { validateBody, validateIdParam, validateDisplayIdParam, personGroupSchema, updatePersonGroupSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
-import { canModifyPersonGroup } from '../middleware/authorization.js';
+import { canModifyPersonGroup, canViewPersonGroups, canViewGroup } from '../middleware/authorization.js';
 import type { ApiResponse, PaginatedResponse, PersonGroup } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
@@ -39,6 +39,9 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
             displayId: true,
             name: true,
             description: true,
+            publiclyVisible: true,
+            allowsAnyUserToCreateSubgroup: true,
+            parentGroupId: true,
             createdAt: true,
             updatedAt: true
           }
@@ -57,6 +60,127 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
       limit,
       totalPages: Math.ceil(total / limit)
     }
+  };
+
+  res.json(response);
+}));
+
+// GET /api/person-groups/by-person/:displayId - Get all groups for a person
+router.get('/by-person/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+
+  // First find the person
+  const person = await prisma.person.findFirst({
+    where: { displayId, deleted: false }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  // Get all person-group relationships for this person
+  const items = await prisma.personGroup.findMany({
+    where: { personId: person.id },
+    include: {
+      person: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          displayId: true,
+          pronouns: true,
+          imageURL: true,
+          userId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      },
+      group: {
+        select: {
+          id: true,
+          displayId: true,
+          name: true,
+          description: true,
+          publiclyVisible: true,
+          allowsAnyUserToCreateSubgroup: true,
+          parentGroupId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }
+    }
+  });
+
+  const { canViewAll, adminGroupIds } = await canViewPersonGroups(req.user!.id, person.id);
+
+  const filteredItems = canViewAll
+    ? items
+    : items.filter(item => item.group?.publiclyVisible || adminGroupIds.has(item.groupId));
+
+  const response: ApiResponse<PersonGroup[]> = {
+    success: true,
+    data: filteredItems as any
+  };
+
+  res.json(response);
+}));
+
+// GET /api/person-groups/by-group/:displayId - Get all members for a group
+router.get('/by-group/:displayId', requireAuth, validateDisplayIdParam, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+
+  // First find the group
+  const group = await prisma.group.findFirst({
+    where: { displayId, deleted: false }
+  });
+
+  if (!group) {
+    throw createError(404, 'Group not found');
+  }
+
+  // Check if user has permission to view this group
+  const hasAccess = await canViewGroup(group.id, req.user!.id, req.user?.isSystemAdmin || false);
+  if (!hasAccess) {
+    throw createError(403, 'Forbidden: You do not have permission to view this group');
+  }
+
+  // Get all person-group relationships for this group
+  const items = await prisma.personGroup.findMany({
+    where: { groupId: group.id },
+    include: {
+      person: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          displayId: true,
+          pronouns: true,
+          imageURL: true,
+          userId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      },
+      group: {
+        select: {
+          id: true,
+          displayId: true,
+          name: true,
+          description: true,
+          publiclyVisible: true,
+          allowsAnyUserToCreateSubgroup: true,
+          parentGroupId: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      }
+    },
+    orderBy: { isAdmin: 'desc' } // Admins first
+  });
+
+  const response: ApiResponse<PersonGroup[]> = {
+    success: true,
+    data: items as any
   };
 
   res.json(response);
