@@ -1,4 +1,5 @@
 import type { ContactInformation } from '@irl/shared';
+import { validateEmail, validatePhone } from './validation.js';
 
 // Contact info input type (without database fields)
 export type ContactInformationInput = Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>;
@@ -39,9 +40,14 @@ export function parseTSV(text: string): string[][] {
 /**
  * Parse contact information from row starting at a specific column index
  * Contact info pattern: type, label, value, privacy (repeating)
+ * Returns both valid contact infos and validation errors
  */
-function parseContactInformations(row: string[], startIndex: number): ContactInformationInput[] {
+function parseContactInformations(
+  row: string[],
+  startIndex: number
+): { contactInfos: ContactInformationInput[]; errors: string[] } {
   const contactInfos: ContactInformationInput[] = [];
+  const errors: string[] = [];
 
   for (let i = startIndex; i < row.length; i += 4) {
     const type = row[i]?.toUpperCase();
@@ -56,12 +62,29 @@ function parseContactInformations(row: string[], startIndex: number): ContactInf
 
     // Validate type
     if (!['EMAIL', 'PHONE', 'ADDRESS', 'URL'].includes(type)) {
+      errors.push(`Invalid contact type: ${type}`);
       break;
     }
 
     // Validate privacy
     if (!['PRIVATE', 'PUBLIC'].includes(privacy)) {
+      errors.push(`Invalid privacy setting: ${privacy}`);
       break;
+    }
+
+    // Validate value based on type
+    if (type === 'EMAIL') {
+      const emailError = validateEmail(value);
+      if (emailError) {
+        errors.push(`Invalid email '${value}': ${emailError}`);
+        continue;
+      }
+    } else if (type === 'PHONE') {
+      const phoneError = validatePhone(value);
+      if (phoneError) {
+        errors.push(`Invalid phone '${value}': ${phoneError}`);
+        continue;
+      }
     }
 
     contactInfos.push({
@@ -72,7 +95,7 @@ function parseContactInformations(row: string[], startIndex: number): ContactInf
     });
   }
 
-  return contactInfos;
+  return { contactInfos, errors };
 }
 
 /**
@@ -117,7 +140,16 @@ export function parsePersonsFromTSV(text: string, userId: number): ParseResult<P
       }
 
       // Parse contact informations starting at column 5
-      const contactInformations = parseContactInformations(row, 5);
+      const { contactInfos, errors: contactErrors } = parseContactInformations(row, 5);
+
+      // If there are validation errors, add them and skip this row
+      if (contactErrors.length > 0) {
+        errors.push({
+          row: i + 1,
+          error: contactErrors.join('; ')
+        });
+        continue;
+      }
 
       data.push({
         firstName,
@@ -126,7 +158,7 @@ export function parsePersonsFromTSV(text: string, userId: number): ParseResult<P
         pronouns,
         imageURL,
         userId,
-        contactInformations: contactInformations.length > 0 ? contactInformations : undefined
+        contactInformations: contactInfos.length > 0 ? contactInfos : undefined
       });
     } catch (error) {
       errors.push({
@@ -190,7 +222,16 @@ export function parseGroupsFromTSV(text: string): ParseResult<ParsedGroup> {
       }
 
       // Parse contact informations starting at column 6
-      const contactInformations = parseContactInformations(row, 6);
+      const { contactInfos, errors: contactErrors } = parseContactInformations(row, 6);
+
+      // If there are validation errors, add them and skip this row
+      if (contactErrors.length > 0) {
+        errors.push({
+          row: i + 1,
+          error: contactErrors.join('; ')
+        });
+        continue;
+      }
 
       data.push({
         name,
@@ -199,7 +240,7 @@ export function parseGroupsFromTSV(text: string): ParseResult<ParsedGroup> {
         publiclyVisible,
         allowsAnyUserToCreateSubgroup,
         parentGroupId,
-        contactInformations: contactInformations.length > 0 ? contactInformations : undefined
+        contactInformations: contactInfos.length > 0 ? contactInfos : undefined
       });
     } catch (error) {
       errors.push({
