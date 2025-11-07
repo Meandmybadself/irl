@@ -219,9 +219,6 @@ export class GroupAdminForm extends LitElement {
                             ? `${admin.person.firstName} ${admin.person.lastName}`
                             : `Person ID: ${admin.personId}`}
                         </p>
-                        ${admin.person?.displayId
-                          ? html`<p class="text-sm text-gray-500">@${admin.person.displayId}</p>`
-                          : ''}
                       </div>
                       <button
                         type="button"
