@@ -289,98 +289,96 @@ router.post('/bulk', requireAuth, canCreateGroup, validateBody(bulkGroupsSchema)
     }>;
   }>;
 
-  // Process all groups in a transaction
+  // Pre-validation: Check for duplicate displayIds in the request
+  const displayIds = groupsData.map(g => g.displayId);
+  const duplicatesInRequest = displayIds.filter((id, index) => displayIds.indexOf(id) !== index);
+  if (duplicatesInRequest.length > 0) {
+    throw createError(400, `Duplicate displayIds in request: ${[...new Set(duplicatesInRequest)].join(', ')}`);
+  }
+
+  // Pre-validation: Check for existing displayIds in database
+  const existingGroups = await prisma.group.findMany({
+    where: {
+      displayId: { in: displayIds },
+      deleted: false
+    },
+    select: { displayId: true }
+  });
+
+  if (existingGroups.length > 0) {
+    const existingIds = existingGroups.map(g => g.displayId).join(', ');
+    throw createError(400, `Group(s) with displayId(s) already exist: ${existingIds}`);
+  }
+
+  // Pre-validation: Check that all parent groups exist (if parentGroupIds are provided)
+  const parentGroupIds = groupsData
+    .filter(g => g.parentGroupId != null)
+    .map(g => g.parentGroupId as number);
+
+  if (parentGroupIds.length > 0) {
+    const existingParents = await prisma.group.findMany({
+      where: {
+        id: { in: parentGroupIds },
+        deleted: false
+      },
+      select: { id: true }
+    });
+
+    const existingParentIds = existingParents.map(p => p.id);
+    const missingParentIds = parentGroupIds.filter(id => !existingParentIds.includes(id));
+
+    if (missingParentIds.length > 0) {
+      throw createError(400, `Parent group(s) with ID(s) do not exist: ${missingParentIds.join(', ')}`);
+    }
+  }
+
+  // Process all groups in a transaction - all or nothing
   const results = await prisma.$transaction(async (tx) => {
-    const createdGroups: Array<{ success: boolean; data?: Group; error?: string; displayId: string }> = [];
+    const createdGroups: Group[] = [];
 
     for (const groupData of groupsData) {
-      try {
-        // Check if displayId already exists
-        const existing = await tx.group.findFirst({
-          where: { displayId: groupData.displayId, deleted: false }
-        });
+      const { contactInformations, ...groupFields } = groupData;
 
-        if (existing) {
-          createdGroups.push({
-            success: false,
-            error: `Group with displayId '${groupData.displayId}' already exists`,
-            displayId: groupData.displayId
+      // Create group - no try/catch, let errors fail the transaction
+      const group = await tx.group.create({
+        data: groupFields
+      });
+
+      // Assign creator's first person as admin
+      await tx.personGroup.create({
+        data: {
+          personId: firstPerson.id,
+          groupId: group.id,
+          isAdmin: true
+        }
+      });
+
+      // Create contact informations if provided
+      if (contactInformations && contactInformations.length > 0) {
+        for (const contactInfo of contactInformations) {
+          const contact = await tx.contactInformation.create({
+            data: contactInfo
           });
-          continue;
-        }
 
-        // Check if parent group exists (if parentGroupId is provided)
-        if (groupData.parentGroupId) {
-          const parentExists = await tx.group.findFirst({
-            where: { id: groupData.parentGroupId, deleted: false }
+          await tx.groupContactInformation.create({
+            data: {
+              groupId: group.id,
+              contactInformationId: contact.id
+            }
           });
-
-          if (!parentExists) {
-            createdGroups.push({
-              success: false,
-              error: `Parent group with ID '${groupData.parentGroupId}' does not exist`,
-              displayId: groupData.displayId
-            });
-            continue;
-          }
         }
-
-        const { contactInformations, ...groupFields } = groupData;
-
-        // Create group
-        const group = await tx.group.create({
-          data: groupFields
-        });
-
-        // Assign creator's first person as admin
-        await tx.personGroup.create({
-          data: {
-            personId: firstPerson.id,
-            groupId: group.id,
-            isAdmin: true
-          }
-        });
-
-        // Create contact informations if provided
-        if (contactInformations && contactInformations.length > 0) {
-          for (const contactInfo of contactInformations) {
-            const contact = await tx.contactInformation.create({
-              data: contactInfo
-            });
-
-            await tx.groupContactInformation.create({
-              data: {
-                groupId: group.id,
-                contactInformationId: contact.id
-              }
-            });
-          }
-        }
-
-        createdGroups.push({
-          success: true,
-          data: formatGroup(group),
-          displayId: groupData.displayId
-        });
-      } catch (error) {
-        createdGroups.push({
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          displayId: groupData.displayId
-        });
       }
+
+      createdGroups.push(formatGroup(group));
     }
 
     return createdGroups;
   });
 
-  const successCount = results.filter(r => r.success).length;
-  const failureCount = results.filter(r => !r.success).length;
-
   res.status(201).json({
     success: true,
     data: results,
-    message: `Created ${successCount} group(s). ${failureCount} failed.`
+    message: `Successfully created ${results.length} group(s)`
   });
 }));
 

@@ -176,73 +176,65 @@ router.post('/bulk', requireAuth, canCreatePerson, validateBody(bulkPersonsSchem
     }>;
   }>;
 
-  // Process all persons in a transaction
+  // Pre-validation: Check for duplicate displayIds in the request
+  const displayIds = personsData.map(p => p.displayId);
+  const duplicatesInRequest = displayIds.filter((id, index) => displayIds.indexOf(id) !== index);
+  if (duplicatesInRequest.length > 0) {
+    throw createError(400, `Duplicate displayIds in request: ${[...new Set(duplicatesInRequest)].join(', ')}`);
+  }
+
+  // Pre-validation: Check for existing displayIds in database
+  const existingPersons = await prisma.person.findMany({
+    where: {
+      displayId: { in: displayIds },
+      deleted: false
+    },
+    select: { displayId: true }
+  });
+
+  if (existingPersons.length > 0) {
+    const existingIds = existingPersons.map(p => p.displayId).join(', ');
+    throw createError(400, `Person(s) with displayId(s) already exist: ${existingIds}`);
+  }
+
+  // Process all persons in a transaction - all or nothing
   const results = await prisma.$transaction(async (tx) => {
-    const createdPersons: Array<{ success: boolean; data?: Person; error?: string; displayId: string }> = [];
+    const createdPersons: Person[] = [];
 
     for (const personData of personsData) {
-      try {
-        // Check if displayId already exists
-        const existing = await tx.person.findFirst({
-          where: { displayId: personData.displayId, deleted: false }
-        });
+      const { contactInformations, ...personFields } = personData;
 
-        if (existing) {
-          createdPersons.push({
-            success: false,
-            error: `Person with displayId '${personData.displayId}' already exists`,
-            displayId: personData.displayId
+      // Create person - no try/catch, let errors fail the transaction
+      const person = await tx.person.create({
+        data: personFields
+      });
+
+      // Create contact informations if provided
+      if (contactInformations && contactInformations.length > 0) {
+        for (const contactInfo of contactInformations) {
+          const contact = await tx.contactInformation.create({
+            data: contactInfo
           });
-          continue;
+
+          await tx.personContactInformation.create({
+            data: {
+              personId: person.id,
+              contactInformationId: contact.id
+            }
+          });
         }
-
-        const { contactInformations, ...personFields } = personData;
-
-        // Create person
-        const person = await tx.person.create({
-          data: personFields
-        });
-
-        // Create contact informations if provided
-        if (contactInformations && contactInformations.length > 0) {
-          for (const contactInfo of contactInformations) {
-            const contact = await tx.contactInformation.create({
-              data: contactInfo
-            });
-
-            await tx.personContactInformation.create({
-              data: {
-                personId: person.id,
-                contactInformationId: contact.id
-              }
-            });
-          }
-        }
-
-        createdPersons.push({
-          success: true,
-          data: formatPerson(person),
-          displayId: personData.displayId
-        });
-      } catch (error) {
-        createdPersons.push({
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          displayId: personData.displayId
-        });
       }
+
+      createdPersons.push(formatPerson(person));
     }
 
     return createdPersons;
   });
 
-  const successCount = results.filter(r => r.success).length;
-  const failureCount = results.filter(r => !r.success).length;
-
   res.status(201).json({
     success: true,
     data: results,
-    message: `Created ${successCount} person(s). ${failureCount} failed.`
+    message: `Successfully created ${results.length} person(s)`
   });
 }));
 
