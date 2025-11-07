@@ -83,6 +83,7 @@ export const updatePersonSchema = personSchema.partial();
 
 export const systemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  description: z.string().optional().nullable(),
   registrationOpen: z.boolean().optional()
 });
 
@@ -93,6 +94,7 @@ export const groupSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional().nullable(),
   parentGroupId: z.number().int('Parent Group ID must be an integer').optional().nullable(),
+  parentGroupDisplayId: z.string().optional().nullable(),
   allowsAnyUserToCreateSubgroup: z.boolean().optional(),
   publiclyVisible: z.boolean().optional()
 });

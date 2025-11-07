@@ -12,9 +12,10 @@ const SINGLE_SYSTEM_ID = 1;
 
 type PersistedSystem = PrismaSystem;
 
-const formatSystem = ({ id, name, registrationOpen, createdAt, updatedAt }: PersistedSystem): System => ({
+const formatSystem = ({ id, name, description, registrationOpen, createdAt, updatedAt }: PersistedSystem): System => ({
   id,
   name,
+  description,
   registrationOpen,
   createdAt: createdAt.toISOString(),
   updatedAt: updatedAt.toISOString()

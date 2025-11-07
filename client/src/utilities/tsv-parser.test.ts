@@ -117,7 +117,7 @@ describe('TSV Parser', () => {
     });
 
     it('should handle persons with contact information', () => {
-      const tsv = 'FirstName\tLastName\tDisplayID\tPronouns\tImageURL\tEmail\tWork\tjohn@example.com\tPublic';
+      const tsv = 'John\tDoe\tjohn123\the/him\t\tEmail\tWork\tjohn@example.com\tPublic';
       const result = parsePersonsFromTSV(tsv, 1);
       
       expect(result.data).toHaveLength(1);
@@ -132,7 +132,7 @@ describe('TSV Parser', () => {
     });
 
     it('should handle persons with address containing newlines', () => {
-      const tsv = 'FirstName\tLastName\tDisplayID\tPronouns\tImageURL\tAddress\tHome\t"123 Main St\nApt 4B\nNew York, NY"\tPrivate';
+      const tsv = 'John\tDoe\tjohn123\the/him\t\tAddress\tHome\t"123 Main St\nApt 4B\nNew York, NY"\tPrivate';
       const result = parsePersonsFromTSV(tsv, 1);
       
       expect(result.data).toHaveLength(1);
@@ -156,7 +156,7 @@ describe('TSV Parser', () => {
     });
 
     it('should validate email addresses', () => {
-      const tsv = 'FirstName\tLastName\tDisplayID\tPronouns\tImageURL\tEmail\tWork\tinvalid-email\tPublic';
+      const tsv = 'John\tDoe\tjohn123\the/him\t\tEmail\tWork\tinvalid-email\tPublic';
       const result = parsePersonsFromTSV(tsv, 1);
       
       expect(result.data).toHaveLength(0);
@@ -165,7 +165,7 @@ describe('TSV Parser', () => {
     });
 
     it('should validate phone numbers', () => {
-      const tsv = 'FirstName\tLastName\tDisplayID\tPronouns\tImageURL\tPhone\tWork\t123\tPublic';
+      const tsv = 'John\tDoe\tjohn123\the/him\t\tPhone\tWork\t123\tPublic';
       const result = parsePersonsFromTSV(tsv, 1);
       
       expect(result.data).toHaveLength(0);
@@ -176,7 +176,7 @@ describe('TSV Parser', () => {
 
   describe('parseGroupsFromTSV', () => {
     it('should parse valid groups data', () => {
-      const tsv = 'Name\tDisplayID\tDescription\tPubliclyVisible\tAllowsAnyUserToCreateSubgroup\tParentGroupID\nEngineer Team\teng-team\tEngineering group\ttrue\tfalse\t';
+      const tsv = 'Name\tDisplayID\tDescription\tPubliclyVisible\tAllowsAnyUserToCreateSubgroup\tParentGroupDisplayID\nEngineer Team\teng-team\tEngineering group\ttrue\tfalse\t';
       const result = parseGroupsFromTSV(tsv);
       
       expect(result.data).toHaveLength(1);
@@ -187,12 +187,12 @@ describe('TSV Parser', () => {
         description: 'Engineering group',
         publiclyVisible: true,
         allowsAnyUserToCreateSubgroup: false,
-        parentGroupId: null
+        parentGroupDisplayId: null
       });
     });
 
     it('should handle groups with contact information containing tabs', () => {
-      const tsv = 'Name\tDisplayID\tDescription\tPubliclyVisible\tAllowsAnyUserToCreateSubgroup\tParentGroupID\tAddress\tOffice\t"123\tMain St"\tPublic';
+      const tsv = 'Team\tteam1\tTeam description\ttrue\tfalse\t\tAddress\tOffice\t"123\tMain St"\tPublic';
       const result = parseGroupsFromTSV(tsv);
       
       expect(result.data).toHaveLength(1);
@@ -206,17 +206,21 @@ describe('TSV Parser', () => {
       });
     });
 
-    it('should report errors for invalid parentGroupId', () => {
-      const tsv = 'Name\tDisplayID\tDescription\tPubliclyVisible\tAllowsAnyUserToCreateSubgroup\tParentGroupID\nTeam\tteam\tTest\ttrue\tfalse\tinvalid';
+    it('should parse groups with parent group displayId', () => {
+      const tsv = 'Name\tDisplayID\tDescription\tPubliclyVisible\tAllowsAnyUserToCreateSubgroup\tParentGroupDisplayID\nTeam\tteam\tTest\ttrue\tfalse\tparent-group';
       const result = parseGroupsFromTSV(tsv);
       
-      expect(result.data).toHaveLength(0);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error).toContain('Invalid parentGroupId');
+      expect(result.data).toHaveLength(1);
+      expect(result.errors).toHaveLength(0);
+      expect(result.data[0]).toMatchObject({
+        name: 'Team',
+        displayId: 'team',
+        parentGroupDisplayId: 'parent-group'
+      });
     });
 
     it('should handle missing trailing fields gracefully', () => {
-      const tsv = 'Name\tDisplayID\tDescription\tPubliclyVisible\tAllowsAnyUserToCreateSubgroup\tParentGroupID\nTeam 1\tteam1\nTeam 2\tteam2\tDescription\ttrue';
+      const tsv = 'Name\tDisplayID\tDescription\tPubliclyVisible\tAllowsAnyUserToCreateSubgroup\tParentGroupDisplayID\nTeam 1\tteam1\nTeam 2\tteam2\tDescription\ttrue';
       const result = parseGroupsFromTSV(tsv);
       
       expect(result.data).toHaveLength(2);

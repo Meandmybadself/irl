@@ -1,7 +1,8 @@
 import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import type { Group } from '@irl/shared';
-import { textStyles, backgroundColors } from '../../utilities/text-colors.js';
+import type { Group, ContactInformation } from '@irl/shared';
+import { ContactType, PrivacyLevel } from '@irl/shared';
+import { textStyles, backgroundColors, textColors } from '../../utilities/text-colors.js';
 
 @customElement('group-list')
 export class GroupList extends LitElement {
@@ -30,8 +31,20 @@ export class GroupList extends LitElement {
   @property({ type: Boolean })
   isLoading = false;
 
+  @property({ type: Object })
+  groupContacts: Map<number, ContactInformation[]> = new Map();
+
+  @property({ type: Boolean })
+  showPrivateContacts = false;
+
+  @property({ type: Boolean })
+  showContacts = true;
+
   private getColumnCount(): number {
     let count = 1; // Name
+    if (this.showContacts) {
+      count += 1; // Contact Information
+    }
     if (this.showEdit) {
       count += 1;
     }
@@ -57,6 +70,88 @@ export class GroupList extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
+  private getVisibleContacts(groupId: number): ContactInformation[] {
+    const contacts = this.groupContacts.get(groupId) ?? [];
+    return this.showPrivateContacts
+      ? contacts
+      : contacts.filter(contact => contact.privacy === PrivacyLevel.PUBLIC);
+  }
+
+  private getContactTypeLabel(type: ContactType): string {
+    switch (type) {
+      case ContactType.EMAIL:
+        return 'Email';
+      case ContactType.PHONE:
+        return 'Phone';
+      case ContactType.ADDRESS:
+        return 'Address';
+      case ContactType.URL:
+        return 'Website';
+      default:
+        return 'Contact';
+    }
+  }
+
+  private renderContactValue(item: ContactInformation) {
+    const value = item.value ?? '';
+
+    switch (item.type) {
+      case ContactType.EMAIL:
+        return html`<a
+          href="mailto:${value}"
+          class="${textColors.link} ${textColors.linkHover}"
+        >
+          ${value}
+        </a>`;
+      case ContactType.PHONE:
+        return html`<a
+          href="tel:${value}"
+          class="${textColors.link} ${textColors.linkHover}"
+        >
+          ${value}
+        </a>`;
+      case ContactType.URL:
+        return html`<a
+          href="${value}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="${textColors.link} ${textColors.linkHover}"
+        >
+          ${value}
+        </a>`;
+      default:
+        return html`<span class="${textStyles.table.cell}">${value}</span>`;
+    }
+  }
+
+  private renderContactColumn(groupId: number) {
+    const contacts = this.getVisibleContacts(groupId).filter(item => !!item.value);
+
+    if (contacts.length === 0) {
+      return html`<span class="${textStyles.body.xs} opacity-60">No contact info</span>`;
+    }
+
+    return html`
+      <div class="space-y-1">
+        ${contacts.slice(0, 3).map(
+          item => html`
+            <div class="flex flex-col">
+              <span class="font-medium ${textStyles.table.cellPrimary} text-xs">
+                ${item.label || this.getContactTypeLabel(item.type)}
+              </span>
+              <span class="truncate ${textStyles.table.cellSecondary} text-xs">
+                ${this.renderContactValue(item)}
+              </span>
+            </div>
+          `
+        )}
+        ${contacts.length > 3 
+          ? html`<span class="${textStyles.body.xs} opacity-60">+${contacts.length - 3} more</span>`
+          : ''}
+      </div>
+    `;
+  }
+
   private renderRow(group: Group) {
     const isAdmin = this.adminGroupIds.includes(group.id);
     const rowClasses = this.linkToDetail
@@ -66,7 +161,7 @@ export class GroupList extends LitElement {
 
     return html`
       <tr class="${rowClasses}" @click=${onClick}>
-        <td class="py-5 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
+        <td class="py-5 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary} max-w-xs">
           <div class="flex items-center gap-2">
             <span class="font-semibold">${group.name}</span>
             ${this.showAdmin && isAdmin
@@ -77,10 +172,17 @@ export class GroupList extends LitElement {
                 `
               : ''}
           </div>
-          <div class="mt-1 ${textStyles.body.xs} opacity-60">
+          <div class="mt-1 ${textStyles.body.xs} opacity-60 line-clamp-2">
             ${group.description || html`<span class="italic ${textStyles.body.xs} opacity-40">No description</span>`}
           </div>
         </td>
+        ${this.showContacts
+          ? html`
+              <td class="px-8 py-5 text-sm ${textStyles.table.cellSecondary}">
+                ${this.renderContactColumn(group.id)}
+              </td>
+            `
+          : ''}
         ${this.showEdit
           ? html`
               <td class="py-5 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
@@ -105,9 +207,16 @@ export class GroupList extends LitElement {
     return html`
       <thead>
         <tr>
-          <th scope="col" class="py-3.5 pr-8 pl-8 text-left ${textStyles.table.header}">
+          <th scope="col" class="py-3.5 pr-8 pl-8 text-left ${textStyles.table.header} max-w-xs">
             Name
           </th>
+          ${this.showContacts
+            ? html`
+                <th scope="col" class="px-8 py-3.5 text-left ${textStyles.table.header}">
+                  Contact Information
+                </th>
+              `
+            : ''}
           ${this.showEdit
             ? html`
                 <th scope="col" class="py-3.5 pr-8 pl-8 text-right ${textStyles.table.header}">

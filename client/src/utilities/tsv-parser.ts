@@ -20,7 +20,7 @@ export interface ParsedGroup {
   description?: string | null;
   publiclyVisible?: boolean;
   allowsAnyUserToCreateSubgroup?: boolean;
-  parentGroupId?: number | null;
+  parentGroupDisplayId?: string | null;
   contactInformations?: ContactInformationInput[];
 }
 
@@ -62,22 +62,37 @@ const validatePhone = (phone: string): string | null => {
  * - Edge cases in TSV parsing
  */
 export const parseTSV = (text: string): string[][] => {
-  const result = Papa.parse<string[]>(text, {
+  // Normalize line endings to handle mixed \r\n and \n
+  const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  
+  const result = Papa.parse<string[]>(normalizedText, {
     delimiter: '\t',
-    skipEmptyLines: true,
+    skipEmptyLines: 'greedy', // Skip rows with all empty fields
     quoteChar: '"',
     escapeChar: '"',
-    newline: undefined, // Auto-detect line endings
   });
 
   if (result.errors && result.errors.length > 0) {
     console.warn('TSV parsing warnings:', result.errors);
   }
 
-  // Trim whitespace from each cell
-  return result.data.map((row: string[]) => 
-    row.map((cell: string) => (cell || '').trim())
-  );
+  // Filter out any rows that are just a single empty string
+  const filteredData = result.data.filter((row: string[]) => {
+    return !(row.length === 1 && row[0] === '');
+  });
+
+  // Find the maximum column count to handle missing trailing tabs
+  const maxColumns = Math.max(...filteredData.map(row => row.length));
+
+  // Trim whitespace from each cell and pad rows to consistent length
+  return filteredData.map((row: string[]) => {
+    const trimmedRow = row.map((cell: string) => (cell || '').trim());
+    // Pad with empty strings if row is shorter than max
+    while (trimmedRow.length < maxColumns) {
+      trimmedRow.push('');
+    }
+    return trimmedRow;
+  });
 };
 
 /**
@@ -216,7 +231,7 @@ export const parsePersonsFromTSV = (text: string, userId: number): ParseResult<P
 
 /**
  * Parse groups from TSV text
- * Expected format: name, displayId, description, publiclyVisible, allowsAnyUserToCreateSubgroup, parentGroupId, contactType1, contactLabel1, contactValue1, contactPrivacy1, ...
+ * Expected format: name, displayId, description, publiclyVisible, allowsAnyUserToCreateSubgroup, parentGroupDisplayId, contactType1, contactLabel1, contactValue1, contactPrivacy1, ...
  */
 export const parseGroupsFromTSV = (text: string): ParseResult<ParsedGroup> => {
   const rows = parseTSV(text);
@@ -244,22 +259,13 @@ export const parseGroupsFromTSV = (text: string): ParseResult<ParsedGroup> => {
       const description = row[2] || null;
       const publiclyVisible = row[3] ? row[3].toLowerCase() === 'true' : true;
       const allowsAnyUserToCreateSubgroup = row[4] ? row[4].toLowerCase() === 'true' : false;
-      const parentGroupId = row[5] ? parseInt(row[5], 10) : null;
+      const parentGroupDisplayId = row[5] || null;
 
       // Validate required fields
       if (!name || !displayId) {
         errors.push({
           row: i + 1,
           error: 'Missing required fields (name or displayId)'
-        });
-        continue;
-      }
-
-      // Validate parentGroupId if provided
-      if (parentGroupId !== null && isNaN(parentGroupId)) {
-        errors.push({
-          row: i + 1,
-          error: 'Invalid parentGroupId (must be a number)'
         });
         continue;
       }
@@ -282,7 +288,7 @@ export const parseGroupsFromTSV = (text: string): ParseResult<ParsedGroup> => {
         description,
         publiclyVisible,
         allowsAnyUserToCreateSubgroup,
-        parentGroupId,
+        parentGroupDisplayId,
         contactInformations: contactInfos.length > 0 ? contactInfos : undefined
       });
     } catch (error) {
