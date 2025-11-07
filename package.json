@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "build": "pnpm -r build",
-    "dev": "pnpm -r --parallel dev",
+    "dev:client": "pnpm --dir ./client dev",
+    "dev:service": "pnpm --dir ./service dev",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
