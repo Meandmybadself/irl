@@ -149,7 +149,7 @@ describeIfDatabase('Contact Information CRUD API', () => {
       const updateData = {
         type: ContactType.PHONE,
         label: 'Work Phone',
-        value: '+1234567890',
+        value: '+12125551234',
         privacy: PrivacyLevel.PRIVATE
       };
 

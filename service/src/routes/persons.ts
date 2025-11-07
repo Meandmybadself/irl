@@ -255,4 +255,80 @@ router.delete('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerso
   res.json(response);
 }));
 
+// POST /api/persons/bulk - Bulk create persons (auth required)
+router.post('/bulk', requireAuth, canCreatePerson, asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const personsData = req.body.persons;
+
+  // Validate that persons array is provided
+  if (!Array.isArray(personsData) || personsData.length === 0) {
+    throw createError(400, 'Invalid request: persons array is required and cannot be empty');
+  }
+
+  // SECURITY: Validate all persons have userId matching the authenticated user (unless system admin)
+  if (!req.user?.isSystemAdmin) {
+    const invalidUserIds = personsData.filter(p => p.userId !== userId);
+    if (invalidUserIds.length > 0) {
+      throw createError(403, 'Forbidden: You can only create persons for yourself');
+    }
+  }
+
+  // Validate each person meets the schema requirements
+  const validationErrors: Array<{ index: number; error: string }> = [];
+  personsData.forEach((person, index) => {
+    try {
+      personSchema.parse(person);
+    } catch (error: any) {
+      validationErrors.push({
+        index,
+        error: error.message || 'Validation failed'
+      });
+    }
+  });
+
+  if (validationErrors.length > 0) {
+    const errorDetails = validationErrors.map(e => `Row ${e.index}: ${e.error}`).join('; ');
+    throw createError(400, `Validation errors: ${errorDetails}`);
+  }
+
+  // Check for duplicate displayIds in the batch
+  const displayIds = personsData.map(p => p.displayId);
+  const duplicatesInBatch = displayIds.filter((id, index) => displayIds.indexOf(id) !== index);
+  if (duplicatesInBatch.length > 0) {
+    const duplicateList = [...new Set(duplicatesInBatch)].join(', ');
+    throw createError(400, `Duplicate displayIds in batch: ${duplicateList}`);
+  }
+
+  // Check for existing displayIds in database
+  const existingPersons = await prisma.person.findMany({
+    where: {
+      displayId: { in: displayIds },
+      deleted: false
+    },
+    select: { displayId: true }
+  });
+
+  if (existingPersons.length > 0) {
+    const existingList = existingPersons.map(p => p.displayId).join(', ');
+    throw createError(400, `These displayIds already exist: ${existingList}`);
+  }
+
+  // Create all persons in a transaction
+  const createdPersons = await prisma.$transaction(
+    personsData.map((personData) =>
+      prisma.person.create({
+        data: personData
+      })
+    )
+  );
+
+  const response: ApiResponse<Person[]> = {
+    success: true,
+    data: createdPersons.map(formatPerson),
+    message: `${createdPersons.length} persons created successfully`
+  };
+
+  res.status(201).json(response);
+}));
+
 export default router;

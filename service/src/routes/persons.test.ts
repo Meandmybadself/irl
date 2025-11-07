@@ -238,4 +238,244 @@ describeIfDatabase('Persons CRUD API', () => {
       expect((deletedPerson as any)[0]?.deleted).toBe(true)
     })
   })
+
+  describe('POST /api/persons/bulk', () => {
+    it('should create multiple persons successfully for current user', async () => {
+      const persons = [
+        {
+          ...getValidPerson(),
+          userId: testUserId
+        },
+        {
+          ...getValidPerson(),
+          userId: testUserId
+        },
+        {
+          ...getValidPerson(),
+          userId: testUserId
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(201)
+      expect(response.body.success).toBe(true)
+      expect(response.body.data).toHaveLength(3)
+      expect(response.body.message).toBe('3 persons created successfully')
+      expect(response.body.data[0].userId).toBe(testUserId)
+      expect(response.body.data[1].userId).toBe(testUserId)
+      expect(response.body.data[2].userId).toBe(testUserId)
+    })
+
+    it('should reject bulk creation when non-admin tries to create persons for another user', async () => {
+      const otherUserId = testUserId + 999
+
+      const persons = [
+        {
+          ...getValidPerson(),
+          userId: testUserId // correct user
+        },
+        {
+          ...getValidPerson(),
+          userId: otherUserId // wrong user!
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(403)
+      expect(response.body.success).toBe(false)
+      expect(response.body.error).toBe('Forbidden: You can only create persons for yourself')
+    })
+
+    it('should allow system admin to create persons for other users', async () => {
+      const adminUser = createTestUser({ isSystemAdmin: true })
+      const adminAuthHeader = JSON.stringify(adminUser)
+      
+      // Create another user in the database
+      const otherUser = await prisma.user.create({
+        data: {
+          email: `other-${Math.random().toString(36).substring(2, 8)}@example.com`,
+          password: 'hashedpassword',
+          isSystemAdmin: false
+        }
+      })
+
+      const persons = [
+        {
+          ...getValidPerson(),
+          userId: testUserId
+        },
+        {
+          ...getValidPerson(),
+          userId: otherUser.id
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', adminAuthHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(201)
+      expect(response.body.success).toBe(true)
+      expect(response.body.data).toHaveLength(2)
+      expect(response.body.data[0].userId).toBe(testUserId)
+      expect(response.body.data[1].userId).toBe(otherUser.id)
+    })
+
+    it('should reject empty persons array', async () => {
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons: [] })
+
+      expect(response.status).toBe(400)
+      expect(response.body.success).toBe(false)
+      expect(response.body.error).toContain('persons array is required')
+    })
+
+    it('should reject when persons field is not an array', async () => {
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons: 'not-an-array' })
+
+      expect(response.status).toBe(400)
+      expect(response.body.success).toBe(false)
+    })
+
+    it('should detect duplicate displayIds within the batch', async () => {
+      const duplicateDisplayId = `duplicate-${Math.random().toString(36).substring(2, 8)}`
+      
+      const persons = [
+        {
+          firstName: 'John',
+          lastName: 'Doe',
+          displayId: duplicateDisplayId,
+          userId: testUserId
+        },
+        {
+          firstName: 'Jane',
+          lastName: 'Smith',
+          displayId: duplicateDisplayId, // duplicate!
+          userId: testUserId
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(400)
+      expect(response.body.success).toBe(false)
+      expect(response.body.error).toContain('Duplicate displayIds')
+      expect(response.body.error).toContain(duplicateDisplayId)
+    })
+
+    it('should detect existing displayIds in database', async () => {
+      const existingPerson = getValidPerson()
+      await prisma.person.create({
+        data: {
+          ...existingPerson,
+          userId: testUserId
+        }
+      })
+
+      const persons = [
+        {
+          ...getValidPerson(),
+          userId: testUserId
+        },
+        {
+          ...existingPerson, // already exists!
+          userId: testUserId
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(400)
+      expect(response.body.success).toBe(false)
+      expect(response.body.error).toContain('already exist')
+      expect(response.body.error).toContain(existingPerson.displayId)
+    })
+
+    it('should reject persons with validation errors', async () => {
+      const persons = [
+        {
+          ...getValidPerson(),
+          userId: testUserId
+        },
+        {
+          firstName: '', // invalid: empty first name
+          lastName: 'Doe',
+          displayId: `invalid-${Math.random().toString(36).substring(2, 8)}`,
+          userId: testUserId
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(400)
+      expect(response.body.success).toBe(false)
+      expect(response.body.error).toContain('Validation errors')
+    })
+
+    it('should create all persons in a transaction (all or nothing)', async () => {
+      const validDisplayId = `valid-${Math.random().toString(36).substring(2, 8)}`
+      const invalidDisplayId = `invalid-${Math.random().toString(36).substring(2, 8)}`
+
+      // First, create a person with the "invalid" displayId
+      await prisma.person.create({
+        data: {
+          firstName: 'Existing',
+          lastName: 'Person',
+          displayId: invalidDisplayId,
+          userId: testUserId
+        }
+      })
+
+      const persons = [
+        {
+          firstName: 'Valid',
+          lastName: 'Person',
+          displayId: validDisplayId,
+          userId: testUserId
+        },
+        {
+          firstName: 'Invalid',
+          lastName: 'Person',
+          displayId: invalidDisplayId, // this exists, should fail entire batch
+          userId: testUserId
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(400)
+      
+      // Verify the valid person was NOT created (transaction rolled back)
+      const notCreated = await prisma.person.findFirst({
+        where: { displayId: validDisplayId }
+      })
+      expect(notCreated).toBeNull()
+    })
+  })
 })

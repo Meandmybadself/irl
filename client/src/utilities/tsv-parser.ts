@@ -1,7 +1,7 @@
+import Papa from 'papaparse';
+import { validateEmail } from './validation.js';
 import type { ContactInformation } from '@irl/shared';
-import { validateEmail, validatePhone } from './validation.js';
 
-// Contact info input type (without database fields)
 export type ContactInformationInput = Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>;
 
 export interface ParsedPerson {
@@ -26,26 +26,69 @@ export interface ParsedGroup {
 
 export interface ParseResult<T> {
   data: T[];
-  errors: Array<{ row: number; error: string }>;
+  errors: Array<{
+    row: number;
+    error: string;
+  }>;
 }
 
 /**
- * Parse TSV text into rows and columns
+ * Validate phone number
+ * Basic validation - non-empty and reasonable length
  */
-export function parseTSV(text: string): string[][] {
-  const lines = text.trim().split('\n');
-  return lines.map(line => line.split('\t').map(cell => cell.trim()));
-}
+const validatePhone = (phone: string): string | null => {
+  if (!phone) {
+    return 'Phone is required';
+  }
+  // Remove common formatting characters
+  const cleaned = phone.replace(/[\s\-\(\)\+\.]/g, '');
+  // Check if it contains only digits after cleaning
+  if (!/^\d+$/.test(cleaned)) {
+    return 'Phone must contain only numbers and common formatting characters';
+  }
+  // Check reasonable length (between 7 and 15 digits)
+  if (cleaned.length < 7 || cleaned.length > 15) {
+    return 'Phone must be between 7 and 15 digits';
+  }
+  return null;
+};
+
+/**
+ * Parse TSV text into rows and columns using papaparse.
+ * This properly handles:
+ * - Different line endings (Windows \r\n vs Unix \n)
+ * - Quoted fields (data containing tabs or newlines)
+ * - Missing trailing tabs
+ * - Edge cases in TSV parsing
+ */
+export const parseTSV = (text: string): string[][] => {
+  const result = Papa.parse<string[]>(text, {
+    delimiter: '\t',
+    skipEmptyLines: true,
+    quoteChar: '"',
+    escapeChar: '"',
+    newline: undefined, // Auto-detect line endings
+  });
+
+  if (result.errors && result.errors.length > 0) {
+    console.warn('TSV parsing warnings:', result.errors);
+  }
+
+  // Trim whitespace from each cell
+  return result.data.map((row: string[]) => 
+    row.map((cell: string) => (cell || '').trim())
+  );
+};
 
 /**
  * Parse contact information from row starting at a specific column index
  * Contact info pattern: type, label, value, privacy (repeating)
  * Returns both valid contact infos and validation errors
  */
-function parseContactInformations(
-  row: string[],
+const parseContactInformations = (
+  row: string[], 
   startIndex: number
-): { contactInfos: ContactInformationInput[]; errors: string[] } {
+): { contactInfos: ContactInformationInput[]; errors: string[] } => {
   const contactInfos: ContactInformationInput[] = [];
   const errors: string[] = [];
 
@@ -88,27 +131,27 @@ function parseContactInformations(
     }
 
     contactInfos.push({
-      type: type as 'EMAIL' | 'PHONE' | 'ADDRESS' | 'URL',
+      type: type as ContactInformation['type'],
       label,
       value,
-      privacy: privacy as 'PRIVATE' | 'PUBLIC'
+      privacy: privacy as ContactInformation['privacy']
     });
   }
 
   return { contactInfos, errors };
-}
+};
 
 /**
  * Parse persons from TSV text
  * Expected format: firstName, lastName, displayId, pronouns, imageURL, contactType1, contactLabel1, contactValue1, contactPrivacy1, ...
  */
-export function parsePersonsFromTSV(text: string, userId: number): ParseResult<ParsedPerson> {
+export const parsePersonsFromTSV = (text: string, userId: number): ParseResult<ParsedPerson> => {
   const rows = parseTSV(text);
   const data: ParsedPerson[] = [];
   const errors: Array<{ row: number; error: string }> = [];
 
   // Skip header row if present
-  const hasHeader = rows[0]?.some(cell =>
+  const hasHeader = rows[0]?.some(cell => 
     cell.toLowerCase().includes('firstname') ||
     cell.toLowerCase().includes('first') ||
     cell.toLowerCase().includes('name')
@@ -169,13 +212,13 @@ export function parsePersonsFromTSV(text: string, userId: number): ParseResult<P
   }
 
   return { data, errors };
-}
+};
 
 /**
  * Parse groups from TSV text
  * Expected format: name, displayId, description, publiclyVisible, allowsAnyUserToCreateSubgroup, parentGroupId, contactType1, contactLabel1, contactValue1, contactPrivacy1, ...
  */
-export function parseGroupsFromTSV(text: string): ParseResult<ParsedGroup> {
+export const parseGroupsFromTSV = (text: string): ParseResult<ParsedGroup> => {
   const rows = parseTSV(text);
   const data: ParsedGroup[] = [];
   const errors: Array<{ row: number; error: string }> = [];
@@ -251,4 +294,4 @@ export function parseGroupsFromTSV(text: string): ParseResult<ParsedGroup> {
   }
 
   return { data, errors };
-}
+};
