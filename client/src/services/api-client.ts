@@ -213,7 +213,7 @@ export class ApiClient {
     });
   }
 
-  async bulkCreatePersons(data: Array<CreatePersonRequest & { contactInformations?: Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>[] }>): Promise<ApiResponse<Array<{ success: boolean; data?: Person; error?: string; displayId: string }>>> {
+  async bulkCreatePersons(data: Array<CreatePersonRequest & { contactInformations?: Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>[] }>): Promise<ApiResponse<Person[]>> {
     return this.request(`/persons/bulk`, {
       method: 'POST',
       body: JSON.stringify(data)
@@ -262,7 +262,7 @@ export class ApiClient {
     });
   }
 
-  async bulkCreateGroups(data: Array<CreateGroupRequest & { contactInformations?: Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>[] }>): Promise<ApiResponse<Array<{ success: boolean; data?: Group; error?: string; displayId: string }>>> {
+  async bulkCreateGroups(data: Array<CreateGroupRequest & { contactInformations?: Omit<ContactInformation, 'id' | 'createdAt' | 'updatedAt'>[] }>): Promise<ApiResponse<Group[]>> {
     return this.request(`/groups/bulk`, {
       method: 'POST',
       body: JSON.stringify(data)

@@ -49,10 +49,10 @@ export class BulkImportModal extends LitElement {
   private isSubmitting = false;
 
   @state()
-  private results: Array<{ success: boolean; displayId: string; error?: string }> = [];
+  private showResults = false;
 
   @state()
-  private showResults = false;
+  private importedCount = 0;
 
   private handleClose() {
     this.dispatchEvent(new CustomEvent('close'));
@@ -65,8 +65,8 @@ export class BulkImportModal extends LitElement {
     this.parseErrors = [];
     this.isParsed = false;
     this.isSubmitting = false;
-    this.results = [];
     this.showResults = false;
+    this.importedCount = 0;
   }
 
   private handleInputChange(e: Event) {
@@ -112,27 +112,16 @@ export class BulkImportModal extends LitElement {
         response = await this.api.bulkCreateGroups(this.parsedData as ParsedGroup[]);
       }
 
-      if (response.success) {
-        this.results = response.data || [];
+      if (response.success && response.data) {
+        this.importedCount = response.data.length;
         this.showResults = true;
 
-        const successCount = this.results.filter(r => r.success).length;
-        const failureCount = this.results.filter(r => !r.success).length;
+        this.store.dispatch(
+          addNotification(`Successfully imported ${this.importedCount} ${this.entityType}(s)`, 'success')
+        );
 
-        if (failureCount === 0) {
-          this.store.dispatch(
-            addNotification(`Successfully imported ${successCount} ${this.entityType}(s)`, 'success')
-          );
-          // Notify parent to refresh list
-          this.dispatchEvent(new CustomEvent('import-complete'));
-        } else {
-          this.store.dispatch(
-            addNotification(
-              `Imported ${successCount} ${this.entityType}(s). ${failureCount} failed.`,
-              'info'
-            )
-          );
-        }
+        // Notify parent to refresh list
+        this.dispatchEvent(new CustomEvent('import-complete'));
       }
     } catch (error) {
       this.store.dispatch(
@@ -341,32 +330,14 @@ export class BulkImportModal extends LitElement {
   }
 
   private renderResults() {
-    const successCount = this.results.filter(r => r.success).length;
-    const failureCount = this.results.filter(r => !r.success).length;
-    const failures = this.results.filter(r => !r.success);
-
     return html`
       <div class="space-y-4">
-        <div class="rounded-md ${successCount > 0 && failureCount === 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'} p-4">
-          <h4 class="text-sm font-medium ${textColors.primary} mb-2">Import Results</h4>
+        <div class="rounded-md bg-green-50 dark:bg-green-900/20 p-4">
+          <h4 class="text-sm font-medium ${textColors.primary} mb-2">Import Successful</h4>
           <p class="text-sm ${textColors.secondary}">
-            Successfully imported: ${successCount} ${this.entityType}(s)
-            ${failureCount > 0 ? html`<br />Failed: ${failureCount} ${this.entityType}(s)` : ''}
+            Successfully imported ${this.importedCount} ${this.entityType}(s).
           </p>
         </div>
-
-        ${failures.length > 0
-          ? html`
-              <div class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
-                <h4 class="text-sm font-medium ${textColors.error} mb-2">Failures</h4>
-                <ul class="list-disc list-inside text-sm ${textColors.error}">
-                  ${failures.map(
-                    result => html`<li>${result.displayId}: ${result.error}</li>`
-                  )}
-                </ul>
-              </div>
-            `
-          : ''}
       </div>
     `;
   }
