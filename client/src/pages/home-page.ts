@@ -54,7 +54,7 @@ export class HomePage extends LitElement {
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <a href="/persons" class="block bg-white p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 border-transparent hover:shadow-md hover:border-blue-500">
             <div class="text-4xl mb-3">👥</div>
             <h2 class="text-xl font-semibold text-gray-900 mb-2">
@@ -69,14 +69,6 @@ export class HomePage extends LitElement {
               Groups
             </h2>
             <p class="text-sm text-gray-600 leading-relaxed">Browse and manage your groups</p>
-          </a>
-
-          <a href="/contact" class="block bg-white p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 border-transparent hover:shadow-md hover:border-blue-500">
-            <div class="text-4xl mb-3">📞</div>
-            <h2 class="text-xl font-semibold text-gray-900 mb-2">
-              Contact Info <span class="inline-block text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded font-medium ml-2">Coming Soon</span>
-            </h2>
-            <p class="text-sm text-gray-600 leading-relaxed">Manage your contact information</p>
           </a>
         </div>
       </app-layout>

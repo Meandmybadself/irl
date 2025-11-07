@@ -127,15 +127,6 @@ export class AppNavigation extends LitElement {
                     <div class="hidden sm:ml-6 sm:block">
                       <div class="flex space-x-4">
                         <a
-                          href=${ROUTES.HOME}
-                          @click=${this.createClickHandler()}
-                          class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === ROUTES.HOME
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
-                        >
-                          Home
-                        </a>
-                        <a
                           href=${ROUTES.PERSONS}
                           @click=${this.createClickHandler()}
                           class="rounded-md px-3 py-2 text-sm font-medium ${currentPath === ROUTES.PERSONS || currentPath === ROUTES.PERSONS_CREATE
@@ -204,17 +195,6 @@ export class AppNavigation extends LitElement {
                                 >
                                   Profile
                                 </a>
-                                ${this.isSystemAdmin
-                                  ? html`
-                                      <a
-                                        href=${ROUTES.ADMIN_SYSTEM}
-                                        @click=${this.createClickHandler()}
-                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 no-underline"
-                                      >
-                                        System Admin
-                                      </a>
-                                    `
-                                  : ''}
                                 <button
                                   @click=${this.handleLogout}
                                   class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 bg-transparent border-none cursor-pointer"
@@ -265,15 +245,6 @@ export class AppNavigation extends LitElement {
           ? html`
               <div class="sm:hidden">
                 <div class="space-y-1 px-2 pt-2 pb-3">
-                  <a
-                    href=${ROUTES.HOME}
-                    @click=${this.createClickHandler()}
-                    class="block rounded-md px-3 py-2 text-base font-medium ${currentPath === ROUTES.HOME
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
-                  >
-                    Home
-                  </a>
                   <a
                     href=${ROUTES.PERSONS}
                     @click=${this.createClickHandler()}
@@ -332,17 +303,6 @@ export class AppNavigation extends LitElement {
                     >
                       Profile
                     </a>
-                    ${this.isSystemAdmin
-                      ? html`
-                          <a
-                            href=${ROUTES.ADMIN_SYSTEM}
-                            @click=${this.createClickHandler()}
-                            class="block rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-white/5 hover:text-white no-underline"
-                          >
-                            System Admin
-                          </a>
-                        `
-                      : ''}
                     <button
                       @click=${this.handleLogout}
                       class="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-white/5 hover:text-white bg-transparent border-none cursor-pointer"
