@@ -172,9 +172,6 @@ export class GroupList extends LitElement {
                 `
               : ''}
           </div>
-          <div class="mt-1 ${textStyles.body.xs} opacity-60 line-clamp-2">
-            ${group.description || html`<span class="italic ${textStyles.body.xs} opacity-40">No description</span>`}
-          </div>
         </td>
         ${this.showContacts
           ? html`

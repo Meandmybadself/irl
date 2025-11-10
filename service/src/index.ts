@@ -53,7 +53,7 @@ server.use(session({
   store: new (connectPgSimple(session))({
     pool: db,
     tableName: 'sessions',
-    createTableIfMissing: false // Table is managed by migration
+    createTableIfMissing: true
   }),
   secret: process.env.SESSION_SECRET as string,
   resave: false,

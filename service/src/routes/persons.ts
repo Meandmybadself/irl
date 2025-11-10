@@ -1,12 +1,30 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateDisplayIdParam, validateSearchQuery, personSchema, updatePersonSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { canModifyPerson, canCreatePerson } from '../middleware/authorization.js';
+import { uploadImageToCloudinary } from '../utils/cloudinary-upload.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'));
+    }
+  }
+});
 
 // Helper to format person response
 const formatPerson = (person: any): Person => {
@@ -244,6 +262,41 @@ router.post('/bulk', requireAuth, canCreatePerson, asyncHandler(async (req, res)
   };
 
   res.status(201).json(response);
+}));
+
+// POST /api/persons/:displayId/avatar - Upload avatar image (auth required)
+router.post('/:displayId/avatar', requireAuth, validateDisplayIdParam, canModifyPerson, upload.single('avatar'), asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
+  
+  if (!req.file) {
+    throw createError(400, 'No file uploaded');
+  }
+
+  // Check person exists
+  const person = await prisma.person.findFirst({
+    where: { displayId, deleted: false }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  // Upload to Cloudinary
+  const uploadResult = await uploadImageToCloudinary(req.file.buffer);
+
+  // Update person with new image URL
+  const updatedPerson = await prisma.person.update({
+    where: { displayId },
+    data: { imageURL: uploadResult.secureUrl }
+  });
+
+  const response: ApiResponse<Person> = {
+    success: true,
+    data: formatPerson(updatedPerson),
+    message: 'Avatar uploaded successfully'
+  };
+
+  res.json(response);
 }));
 
 export default router;

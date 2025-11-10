@@ -301,3 +301,18 @@ export interface UpdatePersonGroupRequest {
   groupId?: number;
   isAdmin?: boolean;
 }
+
+// System export/import types
+export interface SystemExportData {
+  version: string;
+  exportedAt: string;
+  system: System | null;
+  users: Omit<User, 'password'>[];
+  persons: Person[];
+  groups: Group[];
+  contactInformations: ContactInformation[];
+  systemContactInformations: SystemContactInformation[];
+  personContactInformations: PersonContactInformation[];
+  groupContactInformations: GroupContactInformation[];
+  personGroups: PersonGroup[];
+}

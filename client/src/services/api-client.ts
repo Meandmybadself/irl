@@ -220,6 +220,27 @@ export class ApiClient {
     });
   }
 
+  async uploadPersonAvatar(displayId: string, imageBlob: Blob): Promise<ApiResponse<Person>> {
+    const formData = new FormData();
+    formData.append('avatar', imageBlob, 'avatar.jpg');
+
+    const url = `${this.baseURL}/persons/${displayId}/avatar`;
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        error: response.statusText
+      }));
+      throw new Error(error.error || `Request failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   // Group endpoints
   async getGroups(page?: number, limit?: number, search?: string): Promise<PaginatedResponse<Group>> {
     const query = new URLSearchParams();
@@ -537,6 +558,48 @@ export class ApiClient {
 
   async verifyEmailChange(token: string): Promise<ApiResponse<User>> {
     return this.request<ApiResponse<User>>(`/users/verify-email-change?token=${token}`);
+  }
+
+  // System export/import endpoints
+  async exportSystem(): Promise<void> {
+    const url = `${this.baseURL}/system/export`;
+    const response = await fetch(url, {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        error: response.statusText
+      }));
+      throw new Error(error.error || `Export failed: ${response.status}`);
+    }
+
+    // Trigger download
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    
+    // Extract filename from Content-Disposition header or use default
+    const contentDisposition = response.headers.get('Content-Disposition');
+    const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+    const filename = filenameMatch?.[1] || `system-export-${new Date().toISOString().split('T')[0]}.json`;
+    
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(downloadUrl);
+  }
+
+  async importSystem(file: File): Promise<ApiResponse<null>> {
+    const fileContent = await file.text();
+    const importData = JSON.parse(fileContent);
+
+    return this.request<ApiResponse<null>>('/system/import', {
+      method: 'POST',
+      body: JSON.stringify(importData)
+    });
   }
 }
 

@@ -49,6 +49,12 @@ export class SystemAdminPage extends LitElement {
   @state()
   private contactInformations: ContactInformation[] = [];
 
+  @state()
+  private isExporting = false;
+
+  @state()
+  private isImporting = false;
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -183,6 +189,65 @@ export class SystemAdminPage extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
+  private async handleExport() {
+    this.isExporting = true;
+    try {
+      await this.api.exportSystem();
+      this.store.dispatch(addNotification('System exported successfully', 'success'));
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Failed to export system',
+          'error'
+        )
+      );
+    } finally {
+      this.isExporting = false;
+    }
+  }
+
+  private async handleImport(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    if (!confirm(
+      'WARNING: This will replace ALL existing data in the system. This action cannot be undone. Are you absolutely sure you want to continue?'
+    )) {
+      input.value = '';
+      return;
+    }
+
+    this.isImporting = true;
+
+    try {
+      const response = await this.api.importSystem(file);
+      if (response.success) {
+        this.store.dispatch(
+          addNotification(
+            response.message || 'System imported successfully',
+            'success'
+          )
+        );
+        // Reload the page to reflect the new data
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Failed to import system',
+          'error'
+        )
+      );
+    } finally {
+      this.isImporting = false;
+      input.value = '';
+    }
+  }
+
   render() {
     if (this.isLoading) {
       return html`
@@ -276,6 +341,51 @@ export class SystemAdminPage extends LitElement {
                     this.store.dispatch(addNotification(e.detail.error, 'error'));
                   }}
                 ></contact-info-form>
+
+                <div class="border-t ${backgroundColors.border} pt-6">
+                  <h3 class="text-lg font-semibold ${textColors.primary} mb-4">
+                    Data Management
+                  </h3>
+                  <div class="space-y-4">
+                    <div>
+                      <button
+                        type="button"
+                        @click=${this.handleExport}
+                        ?disabled=${this.isExporting}
+                        class="rounded-md bg-green-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-green-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ${this.isExporting
+                          ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                          : ''}
+                        Export System Data
+                      </button>
+                      <p class="mt-2 text-sm ${textColors.tertiary}">
+                        Download a complete backup of all system data including users, persons, groups, and contact information.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label
+                        class="inline-block rounded-md bg-orange-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-orange-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 cursor-pointer ${this.isImporting ? 'opacity-50 cursor-not-allowed' : ''}"
+                      >
+                        ${this.isImporting
+                          ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                          : ''}
+                        Import System Data
+                        <input
+                          type="file"
+                          accept=".json"
+                          @change=${this.handleImport}
+                          ?disabled=${this.isImporting}
+                          class="hidden"
+                        />
+                      </label>
+                      <p class="mt-2 text-sm ${textColors.error} font-semibold">
+                        WARNING: Importing will replace ALL existing data. This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ` : ''}
 
               <div class="flex items-center justify-between gap-x-4">

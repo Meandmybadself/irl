@@ -8,6 +8,7 @@ import { selectCurrentUser } from '../store/selectors.js';
 import { toDisplayId } from '../utilities/string.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/contact-info-form.js';
+import '../components/ui/image-cropper-modal.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { ContactInformation } from '@irl/shared';
@@ -57,9 +58,6 @@ export class PersonFormPage extends LitElement {
   private displayIdError = '';
 
   @state()
-  private imageURLError = '';
-
-  @state()
   private isSaving = false;
 
   @state()
@@ -67,6 +65,15 @@ export class PersonFormPage extends LitElement {
 
   @state()
   private contactInformations: ContactInformation[] = [];
+
+  @state()
+  private selectedImageUrl = '';
+
+  @state()
+  private showCropperModal = false;
+
+  @state()
+  private isUploadingAvatar = false;
 
   async connectedCallback() {
     super.connectedCallback();
@@ -136,9 +143,6 @@ export class PersonFormPage extends LitElement {
       this.displayIdError = '';
     } else if (name === 'pronouns') {
       this.pronouns = value;
-    } else if (name === 'imageURL') {
-      this.imageURL = value;
-      this.imageURLError = '';
     }
   }
 
@@ -162,7 +166,6 @@ export class PersonFormPage extends LitElement {
     this.firstNameError = '';
     this.lastNameError = '';
     this.displayIdError = '';
-    this.imageURLError = '';
 
     if (!this.firstName.trim()) {
       this.firstNameError = 'First name is required';
@@ -176,11 +179,7 @@ export class PersonFormPage extends LitElement {
       this.displayIdError = 'Display ID is required';
     }
 
-    if (this.imageURL && !this.isValidURL(this.imageURL)) {
-      this.imageURLError = 'Invalid URL format';
-    }
-
-    if (this.firstNameError || this.lastNameError || this.displayIdError || this.imageURLError) {
+    if (this.firstNameError || this.lastNameError || this.displayIdError) {
       return;
     }
 
@@ -198,7 +197,7 @@ export class PersonFormPage extends LitElement {
         lastName: this.lastName.trim(),
         displayId: this.displayId.trim(),
         pronouns: this.pronouns.trim() || null,
-        imageURL: this.imageURL.trim() || null,
+        imageURL: this.imageURL || null,
         ...(currentUser && !this.personDisplayId && { userId: currentUser.id })
       };
 
@@ -236,12 +235,83 @@ export class PersonFormPage extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  private isValidURL(url: string): boolean {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
+  private handleFileSelect(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      this.store.dispatch(addNotification('Please select a valid image file (JPG, PNG, or WebP)', 'error'));
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      this.store.dispatch(addNotification('Image file must be less than 5MB', 'error'));
+      return;
+    }
+
+    // Create object URL for preview
+    this.selectedImageUrl = URL.createObjectURL(file);
+    this.showCropperModal = true;
+
+    // Clear the input so the same file can be selected again
+    input.value = '';
+  }
+
+  private handleCropperCancel() {
+    this.showCropperModal = false;
+    if (this.selectedImageUrl) {
+      URL.revokeObjectURL(this.selectedImageUrl);
+      this.selectedImageUrl = '';
+    }
+  }
+
+  private async handleCropperSave(e: CustomEvent) {
+    const { blob } = e.detail;
+
+    // Close the modal
+    this.showCropperModal = false;
+    if (this.selectedImageUrl) {
+      URL.revokeObjectURL(this.selectedImageUrl);
+      this.selectedImageUrl = '';
+    }
+
+    // If editing an existing person, upload immediately
+    if (this.personDisplayId) {
+      this.isUploadingAvatar = true;
+      try {
+        const response = await this.api.uploadPersonAvatar(this.personDisplayId, blob);
+        if (response.success && response.data) {
+          this.imageURL = response.data.imageURL || '';
+          this.store.dispatch(addNotification('Profile photo updated successfully', 'success'));
+        }
+      } catch (error) {
+        this.store.dispatch(
+          addNotification(`Failed to upload profile photo: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
+        );
+      } finally {
+        this.isUploadingAvatar = false;
+      }
+    } else {
+      // For new persons, store the blob for later upload
+      this.store.dispatch(addNotification('Profile photo will be uploaded after creating the person', 'info'));
+      // Create temporary preview URL
+      this.imageURL = URL.createObjectURL(blob);
+    }
+  }
+
+  private handleCropperError(e: CustomEvent) {
+    this.store.dispatch(addNotification(e.detail.error, 'error'));
+  }
+
+  private handleUploadButtonClick() {
+    const fileInput = this.querySelector('#avatar-upload') as HTMLInputElement;
+    if (fileInput && !this.isUploadingAvatar) {
+      fileInput.click();
     }
   }
 
@@ -344,23 +414,52 @@ export class PersonFormPage extends LitElement {
                 </div>
               </div>
 
-              <div>
-                <label for="image-url" class="block text-sm/6 font-medium ${textColors.primary}">
-                  Image URL (optional)
-                </label>
-                <div class="mt-2">
-                  <input
-                    id="image-url"
-                    type="url"
-                    name="imageURL"
-                    .value=${this.imageURL}
-                    placeholder="https://example.com/avatar.jpg"
-                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 ${this.imageURLError ? 'outline-red-500 focus:outline-red-600' : ''}"
-                    @input=${this.handleInputChange}
-                  />
-                  ${this.imageURLError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.imageURLError}</p>` : ''}
+              ${this.personId ? html`
+                <div>
+                  <label class="block text-sm/6 font-medium ${textColors.primary} mb-2">
+                    Profile Photo
+                  </label>
+                  <div class="flex items-center gap-4">
+                    ${this.imageURL ? html`
+                      <img
+                        src=${this.imageURL}
+                        alt="Profile preview"
+                        class="w-20 h-20 rounded-full object-cover border-2 ${backgroundColors.border}"
+                      />
+                    ` : html`
+                      <div class="w-20 h-20 rounded-full ${backgroundColors.pageAlt} flex items-center justify-center border-2 ${backgroundColors.border}">
+                        <span class="text-2xl ${textColors.tertiary}">?</span>
+                      </div>
+                    `}
+                    <div>
+                      <button
+                        type="button"
+                        @click=${this.handleUploadButtonClick}
+                        ?disabled=${this.isUploadingAvatar}
+                        class="cursor-pointer inline-flex items-center px-4 py-2 rounded-md border ${backgroundColors.border} text-sm font-medium ${textColors.primary} ${backgroundColors.content} ${backgroundColors.contentHover} focus:outline-2 focus:outline-offset-2 focus:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ${this.isUploadingAvatar ? html`
+                          <span class="inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin mr-2"></span>
+                          Uploading...
+                        ` : html`
+                          ${this.imageURL ? 'Change Photo' : 'Upload Photo'}
+                        `}
+                      </button>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        class="hidden"
+                        @change=${this.handleFileSelect}
+                        ?disabled=${this.isUploadingAvatar}
+                      />
+                      <p class="mt-1 text-xs ${textColors.tertiary}">
+                        JPG, PNG, or WebP. Max 5MB.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ` : ''}
 
               ${this.personId ? html`
                 <contact-info-form
@@ -398,6 +497,14 @@ export class PersonFormPage extends LitElement {
             </form>
           </div>
         </div>
+
+        <image-cropper-modal
+          .imageUrl=${this.selectedImageUrl}
+          .open=${this.showCropperModal}
+          @cancel=${this.handleCropperCancel}
+          @save=${this.handleCropperSave}
+          @error=${this.handleCropperError}
+        ></image-cropper-modal>
       </div>
     `;
   }

@@ -16,16 +16,6 @@ export class ContactInfoDisplay extends LitElement {
   @property({ type: Boolean })
   showPrivate = false;
 
-  private getContactTypeLabel(type: ContactType): string {
-    const labels = {
-      [ContactType.EMAIL]: 'Email',
-      [ContactType.PHONE]: 'Phone',
-      [ContactType.ADDRESS]: 'Address',
-      [ContactType.URL]: 'URL'
-    };
-    return labels[type] || type;
-  }
-
   private getContactTypeIcon(type: ContactType) {
     switch (type) {
       case ContactType.EMAIL:
@@ -100,7 +90,6 @@ export class ContactInfoDisplay extends LitElement {
                     </span>
                   </div>
                   <div class="mt-1 text-sm break-words">${this.renderContactValue(item)}</div>
-                  <div class="mt-1 text-xs ${textColors.muted}">${this.getContactTypeLabel(item.type)}</div>
                 </div>
               </div>
             `
