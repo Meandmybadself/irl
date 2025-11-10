@@ -89,7 +89,22 @@ export const systemSchema = z.object({
 
 export const updateSystemSchema = systemSchema.partial();
 
-export const groupSchema = z.object({
+// Helper function for group parent validation
+const validateGroupParents = (data: { parentGroupId?: number | null; parentGroupDisplayId?: string | null }, ctx: z.RefinementCtx) => {
+  const hasParentGroupId = data.parentGroupId !== undefined && data.parentGroupId !== null;
+  const hasParentGroupDisplayId = data.parentGroupDisplayId !== undefined && data.parentGroupDisplayId !== null;
+  
+  if (hasParentGroupId && hasParentGroupDisplayId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Cannot specify both parentGroupId and parentGroupDisplayId. Please provide only one.',
+      path: ['parentGroupDisplayId']
+    });
+  }
+};
+
+// Base group schema without refinements (needed for .partial() and .extend())
+const groupBaseSchema = z.object({
   displayId: z.string().min(1, 'Display ID is required'),
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional().nullable(),
@@ -99,7 +114,9 @@ export const groupSchema = z.object({
   publiclyVisible: z.boolean().optional()
 });
 
-export const updateGroupSchema = groupSchema.partial();
+export const groupSchema = groupBaseSchema.superRefine(validateGroupParents);
+
+export const updateGroupSchema = groupBaseSchema.partial().superRefine(validateGroupParents);
 
 export const claimSchema = z.object({
   personId: z.number().int('Person ID must be an integer'),
@@ -173,9 +190,9 @@ export const bulkPersonSchema = personSchema.extend({
 
 export const bulkPersonsSchema = z.array(bulkPersonSchema).min(1, 'At least one person is required');
 
-export const bulkGroupSchema = groupSchema.extend({
+export const bulkGroupSchema = groupBaseSchema.extend({
   contactInformations: z.array(contactInformationSchema).optional()
-});
+}).superRefine(validateGroupParents);
 
 export const bulkGroupsSchema = z.array(bulkGroupSchema).min(1, 'At least one group is required');
 

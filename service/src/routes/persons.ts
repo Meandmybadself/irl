@@ -246,18 +246,43 @@ router.post('/bulk', requireAuth, canCreatePerson, asyncHandler(async (req, res)
     throw createError(400, `These displayIds already exist: ${existingList}`);
   }
 
-  // Create all persons in a transaction
-  const createdPersons = await prisma.$transaction(
-    personsData.map((personData) =>
-      prisma.person.create({
-        data: personData
-      })
-    )
-  );
+  // Create all persons with contact information in a transaction
+  const createdPersons = await prisma.$transaction(async (tx) => {
+    const results: Person[] = [];
+
+    for (const personData of personsData) {
+      const { contactInformations, ...personFields } = personData;
+
+      // Create person
+      const person = await tx.person.create({
+        data: personFields
+      });
+
+      // Create contact informations if provided
+      if (contactInformations && contactInformations.length > 0) {
+        for (const contactInfo of contactInformations) {
+          const contact = await tx.contactInformation.create({
+            data: contactInfo
+          });
+
+          await tx.personContactInformation.create({
+            data: {
+              personId: person.id,
+              contactInformationId: contact.id
+            }
+          });
+        }
+      }
+
+      results.push(formatPerson(person));
+    }
+
+    return results;
+  });
 
   const response: ApiResponse<Person[]> = {
     success: true,
-    data: createdPersons.map(formatPerson),
+    data: createdPersons,
     message: `${createdPersons.length} persons created successfully`
   };
 

@@ -477,5 +477,107 @@ describeIfDatabase('Persons CRUD API', () => {
       })
       expect(notCreated).toBeNull()
     })
+
+    it('should create persons with contact informations', async () => {
+      const persons = [
+        {
+          firstName: 'John',
+          lastName: 'Doe',
+          displayId: `person-with-contacts-${Math.random().toString(36).substring(2, 8)}`,
+          userId: testUserId,
+          contactInformations: [
+            {
+              type: 'EMAIL' as const,
+              label: 'Work',
+              value: 'john.doe@work.com',
+              privacy: 'PRIVATE' as const
+            },
+            {
+              type: 'PHONE' as const,
+              label: 'Mobile',
+              value: '+1234567890',
+              privacy: 'PUBLIC' as const
+            }
+          ]
+        },
+        {
+          firstName: 'Jane',
+          lastName: 'Smith',
+          displayId: `person-with-contacts-${Math.random().toString(36).substring(2, 8)}`,
+          userId: testUserId,
+          contactInformations: [
+            {
+              type: 'URL' as const,
+              label: 'Website',
+              value: 'https://janesmith.com',
+              privacy: 'PUBLIC' as const
+            }
+          ]
+        }
+      ]
+
+      const response = await request(app)
+        .post('/api/persons/bulk')
+        .set('X-Test-User', authHeader)
+        .send({ persons })
+
+      expect(response.status).toBe(201)
+      expect(response.body.success).toBe(true)
+      expect(response.body.data).toHaveLength(2)
+
+      // Verify contact informations were created
+      const firstPerson = await prisma.person.findFirst({
+        where: { displayId: persons[0].displayId },
+        include: {
+          contactInformation: {
+            include: {
+              contactInformation: true
+            }
+          }
+        }
+      })
+
+      expect(firstPerson).toBeDefined()
+      expect(firstPerson!.contactInformation).toHaveLength(2)
+      
+      const contactInfos = firstPerson!.contactInformation.map(pci => pci.contactInformation)
+      expect(contactInfos).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'EMAIL',
+            label: 'Work',
+            value: 'john.doe@work.com',
+            privacy: 'PRIVATE'
+          }),
+          expect.objectContaining({
+            type: 'PHONE',
+            label: 'Mobile',
+            value: '+1234567890',
+            privacy: 'PUBLIC'
+          })
+        ])
+      )
+
+      // Verify second person's contact information
+      const secondPerson = await prisma.person.findFirst({
+        where: { displayId: persons[1].displayId },
+        include: {
+          contactInformation: {
+            include: {
+              contactInformation: true
+            }
+          }
+        }
+      })
+
+      expect(secondPerson).toBeDefined()
+      expect(secondPerson!.contactInformation).toHaveLength(1)
+      expect(secondPerson!.contactInformation[0].contactInformation).toMatchObject({
+        type: 'URL',
+        label: 'Website',
+        value: 'https://janesmith.com',
+        privacy: 'PUBLIC'
+      })
+    })
   })
 })
