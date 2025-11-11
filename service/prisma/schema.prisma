@@ -12,6 +12,8 @@ model ContactInformation {
   type           ContactType
   label          String
   value          String
+  latitude       Decimal?
+  longitude      Decimal?
   privacy        PrivacyLevel
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt

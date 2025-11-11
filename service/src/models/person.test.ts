@@ -255,6 +255,8 @@ describe('Person Management Tests', () => {
           type: 'ADDRESS',
           label: 'Home',
           value: '123 Main St, City, ST 12345',
+          latitude: 40.7128,
+          longitude: -74.0060,
           privacy: 'PRIVATE'
         }
       })

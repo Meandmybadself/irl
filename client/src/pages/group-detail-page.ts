@@ -258,22 +258,48 @@ export class GroupDetailPage extends LitElement {
 
           <div class="space-y-6">
 
-            <!-- Members -->
+            <!-- Administrators -->
             <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg">
-              <h3 class="text-lg font-medium ${textColors.primary} mb-4">Members</h3>
-              ${this.persons.length === 0
+              <h3 class="text-lg font-medium ${textColors.primary} mb-4">Administrators</h3>
+              ${this.adminPersonIds.length === 0
                 ? html`
                     <p class="text-center py-8 text-sm ${textColors.tertiary}">
-                      No members yet.
+                      No administrators assigned yet.
                     </p>
                   `
                 : html`
                     <div class="-mx-6 -mb-8 mt-4">
                       <div class="overflow-hidden">
                         <person-list
-                          .persons=${this.persons}
-                          .showAdmin=${true}
-                          .adminPersonIds=${this.adminPersonIds}
+                          .persons=${this.persons.filter(p => this.adminPersonIds.includes(p.id))}
+                          .showAdmin=${false}
+                          .adminPersonIds=${[]}
+                          .linkToDetail=${true}
+                          .showEdit=${false}
+                          .isLoading=${this.isLoading}
+                          .personContacts=${this.personContacts}
+                        ></person-list>
+                      </div>
+                    </div>
+                  `}
+            </div>
+
+            <!-- Members -->
+            <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg">
+              <h3 class="text-lg font-medium ${textColors.primary} mb-4">Members</h3>
+              ${this.persons.filter(p => !this.adminPersonIds.includes(p.id)).length === 0
+                ? html`
+                    <p class="text-center py-8 text-sm ${textColors.tertiary}">
+                      No members assigned yet.
+                    </p>
+                  `
+                : html`
+                    <div class="-mx-6 -mb-8 mt-4">
+                      <div class="overflow-hidden">
+                        <person-list
+                          .persons=${this.persons.filter(p => !this.adminPersonIds.includes(p.id))}
+                          .showAdmin=${false}
+                          .adminPersonIds=${[]}
                           .linkToDetail=${true}
                           .showEdit=${false}
                           .isLoading=${this.isLoading}

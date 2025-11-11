@@ -6,8 +6,8 @@ import type { ApiClient } from '../../services/api-client.js';
 import type { Person, PersonGroupWithRelations } from '@irl/shared';
 import './person-search.js';
 
-@customElement('group-admin-form')
-export class GroupAdminForm extends LitElement {
+@customElement('group-member-form')
+export class GroupMemberForm extends LitElement {
   createRenderRoot() {
     return this;
   }
@@ -26,7 +26,7 @@ export class GroupAdminForm extends LitElement {
   excludePersonIds: number[] = [];
 
   @state()
-  private admins: PersonGroupWithRelations[] = [];
+  private members: PersonGroupWithRelations[] = [];
 
   @state()
   private isLoading = false;
@@ -42,26 +42,24 @@ export class GroupAdminForm extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
-    await this.loadAdmins();
+    await this.loadMembers();
   }
 
-  private async loadAdmins() {
-    if (!this.groupId) return;
+  private async loadMembers() {
+    if (!this.groupDisplayId || !this.groupId) return;
 
     this.isLoading = true;
     try {
-      const response = await this.api.getPersonGroups();
+      const response = await this.api.getPersonGroupsByGroup(this.groupDisplayId);
       if (response.success && response.data) {
-        // Filter for this group's admins - API now includes person and group details
-        this.admins = response.data.filter(
-          pg => pg.groupId === this.groupId && pg.isAdmin
-        ) as PersonGroupWithRelations[];
+        // Filter for non-admin members
+        this.members = response.data.filter(pg => !pg.isAdmin) as PersonGroupWithRelations[];
       }
     } catch (error) {
-      console.error('Failed to load admins:', error);
+      console.error('Failed to load members:', error);
       this.dispatchEvent(
-        new CustomEvent('admin-error', {
-          detail: { error: 'Failed to load administrators' },
+        new CustomEvent('member-error', {
+          detail: { error: 'Failed to load members' },
           bubbles: true,
           composed: true
         })
@@ -79,12 +77,12 @@ export class GroupAdminForm extends LitElement {
     this.selectedPerson = null;
   }
 
-  private async handleAddAdmin(e: Event) {
+  private async handleAddMember(e: Event) {
     e.preventDefault();
 
     if (!this.selectedPerson) {
       this.dispatchEvent(
-        new CustomEvent('admin-error', {
+        new CustomEvent('member-error', {
           detail: { error: 'Please select a person' },
           bubbles: true,
           composed: true
@@ -98,13 +96,13 @@ export class GroupAdminForm extends LitElement {
       const response = await this.api.createPersonGroup({
         personId: this.selectedPerson.id,
         groupId: this.groupId,
-        isAdmin: true
+        isAdmin: false
       });
 
       if (response.success) {
         this.dispatchEvent(
-          new CustomEvent('admin-added', {
-            detail: { admin: response.data },
+          new CustomEvent('member-added', {
+            detail: { member: response.data },
             bubbles: true,
             composed: true
           })
@@ -114,14 +112,14 @@ export class GroupAdminForm extends LitElement {
         this.selectedPerson = null;
         this.showAddForm = false;
 
-        // Reload admins
-        await this.loadAdmins();
+        // Reload members
+        await this.loadMembers();
       }
     } catch (error) {
       this.dispatchEvent(
-        new CustomEvent('admin-error', {
+        new CustomEvent('member-error', {
           detail: {
-            error: `Failed to add administrator: ${error instanceof Error ? error.message : 'Unknown error'}`
+            error: `Failed to add member: ${error instanceof Error ? error.message : 'Unknown error'}`
           },
           bubbles: true,
           composed: true
@@ -132,30 +130,30 @@ export class GroupAdminForm extends LitElement {
     }
   }
 
-  private async handleRemoveAdmin(admin: PersonGroupWithRelations) {
-    if (!confirm('Are you sure you want to remove this administrator?')) {
+  private async handleRemoveMember(member: PersonGroupWithRelations) {
+    if (!confirm('Are you sure you want to remove this member from the group?')) {
       return;
     }
 
     try {
-      const response = await this.api.deletePersonGroup(admin.id);
+      const response = await this.api.deletePersonGroup(member.id);
       if (response.success) {
         this.dispatchEvent(
-          new CustomEvent('admin-removed', {
-            detail: { adminId: admin.id },
+          new CustomEvent('member-removed', {
+            detail: { memberId: member.id },
             bubbles: true,
             composed: true
           })
         );
 
-        // Reload admins
-        await this.loadAdmins();
+        // Reload members
+        await this.loadMembers();
       }
     } catch (error) {
       this.dispatchEvent(
-        new CustomEvent('admin-error', {
+        new CustomEvent('member-error', {
           detail: {
-            error: `Failed to remove administrator: ${error instanceof Error ? error.message : 'Unknown error'}`
+            error: `Failed to remove member: ${error instanceof Error ? error.message : 'Unknown error'}`
           },
           bubbles: true,
           composed: true
@@ -175,7 +173,7 @@ export class GroupAdminForm extends LitElement {
     if (this.isLoading) {
       return html`
         <div class="border-t border-gray-200 pt-6 mt-6">
-          <h3 class="text-base font-semibold text-gray-900 mb-4">Group Administrators</h3>
+          <h3 class="text-base font-semibold text-gray-900 mb-4">Group Members</h3>
           <div class="flex items-center justify-center py-8">
             <div class="inline-block w-6 h-6 border-4 border-indigo-600 border-r-transparent rounded-full animate-spin"></div>
           </div>
@@ -186,7 +184,7 @@ export class GroupAdminForm extends LitElement {
     return html`
       <div class="border-t border-gray-200 pt-6 mt-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-base font-semibold text-gray-900">Group Administrators</h3>
+          <h3 class="text-base font-semibold text-gray-900">Group Members</h3>
           <button
             type="button"
             @click=${this.toggleAddForm}
@@ -200,45 +198,44 @@ export class GroupAdminForm extends LitElement {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            Add Administrator
+            Add Member
           </button>
         </div>
 
-        ${this.admins.length === 0
+        ${this.members.length === 0
           ? html`
               <p class="text-sm text-gray-500 italic py-4">
-                No administrators assigned yet. The group creator is automatically assigned as the first
-                administrator.
+                No members assigned yet.
               </p>
             `
           : html`
               <ul class="divide-y divide-gray-200 border border-gray-200 rounded-md">
-                ${this.admins.map(
-                  admin => html`
+                ${this.members.map(
+                  member => html`
                     <li class="flex items-center justify-between py-3 px-4">
                       <div class="flex-1">
-                        ${admin.person && admin.person.displayId
+                        ${member.person && member.person.displayId
                           ? html`
                               <a
-                                href="/persons/${admin.person.displayId}"
+                                href="/persons/${member.person.displayId}"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="text-sm font-medium text-indigo-600 hover:text-indigo-500"
                               >
-                                ${admin.person.firstName} ${admin.person.lastName}
+                                ${member.person.firstName} ${member.person.lastName}
                               </a>
                             `
                           : html`
                               <p class="text-sm font-medium text-gray-900">
-                                ${admin.person
-                                  ? `${admin.person.firstName} ${admin.person.lastName}`
-                                  : `Person ID: ${admin.personId}`}
+                                ${member.person
+                                  ? `${member.person.firstName} ${member.person.lastName}`
+                                  : `Person ID: ${member.personId}`}
                               </p>
                             `}
                       </div>
                       <button
                         type="button"
-                        @click=${() => this.handleRemoveAdmin(admin)}
+                        @click=${() => this.handleRemoveMember(member)}
                         class="ml-4 text-sm text-red-600 hover:text-red-500"
                       >
                         Remove
@@ -252,13 +249,13 @@ export class GroupAdminForm extends LitElement {
         ${this.showAddForm
           ? html`
               <div class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
-                <h4 class="text-sm font-medium text-gray-900 mb-3">Add New Administrator</h4>
-                <form @submit=${this.handleAddAdmin} class="space-y-4">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Add New Member</h4>
+                <form @submit=${this.handleAddMember} class="space-y-4">
                   <person-search
                     label="Select Person"
-                    placeholder="Search for a person to add as admin..."
+                    placeholder="Search for a person to add as member..."
                     .selectedPerson=${this.selectedPerson}
-                    .excludePersonIds=${[...this.admins.map(a => a.personId), ...this.excludePersonIds]}
+                    .excludePersonIds=${[...this.members.map(m => m.personId), ...this.excludePersonIds]}
                     @person-selected=${this.handlePersonSelected}
                     @person-cleared=${this.handlePersonCleared}
                   ></person-search>
@@ -274,7 +271,7 @@ export class GroupAdminForm extends LitElement {
                             class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"
                           ></span>`
                         : ''}
-                      Add Administrator
+                      Add Member
                     </button>
                     <button
                       type="button"
@@ -295,6 +292,6 @@ export class GroupAdminForm extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'group-admin-form': GroupAdminForm;
+    'group-member-form': GroupMemberForm;
   }
 }

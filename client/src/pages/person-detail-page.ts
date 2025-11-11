@@ -12,6 +12,8 @@ import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person, ContactInformation, PersonGroupWithRelations, Group } from '@irl/shared';
 
+const GROUPS_EXPANDED_STORAGE_KEY = 'person-detail-page-groups-expanded';
+
 @customElement('person-detail-page')
 export class PersonDetailPage extends LitElement {
   createRenderRoot() {
@@ -50,8 +52,17 @@ export class PersonDetailPage extends LitElement {
   @state()
   private canEdit = false;
 
+  @state()
+  private groupsExpanded = true;
+
   async connectedCallback() {
     super.connectedCallback();
+
+    // Load saved groups expanded state from localStorage
+    const savedState = localStorage.getItem(GROUPS_EXPANDED_STORAGE_KEY);
+    if (savedState !== null) {
+      this.groupsExpanded = savedState === 'true';
+    }
 
     // Check if user is authenticated
     const currentUser = selectCurrentUser(this.store.getState());
@@ -144,6 +155,12 @@ export class PersonDetailPage extends LitElement {
   private handleBack() {
     window.history.pushState({}, '', '/persons');
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  private toggleGroups() {
+    this.groupsExpanded = !this.groupsExpanded;
+    // Save state to localStorage
+    localStorage.setItem(GROUPS_EXPANDED_STORAGE_KEY, String(this.groupsExpanded));
   }
 
   render() {
@@ -242,28 +259,45 @@ export class PersonDetailPage extends LitElement {
 
             <!-- Groups -->
             <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg">
-              <h3 class="text-lg font-medium ${textColors.primary} mb-4">Groups</h3>
-              ${this.groups.length === 0
+              <button
+                @click=${this.toggleGroups}
+                class="flex items-center justify-between w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 rounded-md"
+              >
+                <h3 class="text-lg font-medium ${textColors.primary}">Groups</h3>
+                <svg
+                  class="h-5 w-5 ${textColors.secondary} transition-transform duration-200 ${this.groupsExpanded ? 'rotate-180' : ''}"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              ${this.groupsExpanded
                 ? html`
-                    <p class="text-center py-8 text-sm ${textColors.tertiary}">
-                      Not a member of any groups yet.
-                    </p>
+                    ${this.groups.length === 0
+                      ? html`
+                          <p class="text-center py-8 text-sm ${textColors.tertiary} mt-4">
+                            Not a member of any groups yet.
+                          </p>
+                        `
+                      : html`
+                          <div class="-mx-6 -mb-8 mt-4">
+                            <div class="overflow-hidden">
+                              <group-list
+                                .groups=${this.groups}
+                                .showAdmin=${true}
+                                .adminGroupIds=${this.adminGroupIds}
+                                .linkToDetail=${true}
+                                .showEdit=${false}
+                                .isLoading=${this.isLoading}
+                                .groupContacts=${this.groupContacts}
+                              ></group-list>
+                            </div>
+                          </div>
+                        `}
                   `
-                : html`
-                    <div class="-mx-6 -mb-8 mt-4">
-                      <div class="overflow-hidden">
-                        <group-list
-                          .groups=${this.groups}
-                          .showAdmin=${true}
-                          .adminGroupIds=${this.adminGroupIds}
-                          .linkToDetail=${true}
-                          .showEdit=${false}
-                          .isLoading=${this.isLoading}
-                          .groupContacts=${this.groupContacts}
-                        ></group-list>
-                      </div>
-                    </div>
-                  `}
+                : ''}
             </div>
           </div>
         </div>

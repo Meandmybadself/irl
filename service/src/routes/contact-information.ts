@@ -4,6 +4,8 @@ import { asyncHandler, createError } from '../middleware/error-handler.js';
 import { validateBody, validateIdParam, contactInformationSchema, updateContactInformationSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { ApiResponse, PaginatedResponse, ContactInformation } from '@irl/shared';
+import { geocodeAddress } from '../lib/geocoding.js';
+import { Prisma } from '@prisma/client';
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -27,6 +29,8 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     success: true,
     data: items.map(item => ({
       ...item,
+      latitude: item.latitude != null ? parseFloat(item.latitude.toString()) : null,
+      longitude: item.longitude != null ? parseFloat(item.longitude.toString()) : null,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString()
     })),
@@ -57,6 +61,8 @@ router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) =
     success: true,
     data: {
       ...item,
+      latitude: item.latitude != null ? parseFloat(item.latitude.toString()) : null,
+      longitude: item.longitude != null ? parseFloat(item.longitude.toString()) : null,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString()
     }
@@ -67,14 +73,34 @@ router.get('/:id', requireAuth, validateIdParam, asyncHandler(async (req, res) =
 
 // POST /api/contact-information - Create new contact information
 router.post('/', requireAuth, validateBody(contactInformationSchema), asyncHandler(async (req, res) => {
+  const { type, value, ...rest } = req.body;
+  
+  // Geocode address if type is ADDRESS
+  let latitude: Prisma.Decimal | undefined;
+  let longitude: Prisma.Decimal | undefined;
+  
+  if (type === 'ADDRESS') {
+    const coords = await geocodeAddress(value);
+    latitude = new Prisma.Decimal(coords.latitude);
+    longitude = new Prisma.Decimal(coords.longitude);
+  }
+  
   const item = await prisma.contactInformation.create({
-    data: req.body
+    data: {
+      type,
+      value,
+      ...rest,
+      ...(latitude !== undefined && { latitude }),
+      ...(longitude !== undefined && { longitude })
+    }
   });
 
   const response: ApiResponse<ContactInformation> = {
     success: true,
     data: {
       ...item,
+      latitude: item.latitude != null ? parseFloat(item.latitude.toString()) : null,
+      longitude: item.longitude != null ? parseFloat(item.longitude.toString()) : null,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString()
     },
@@ -87,16 +113,35 @@ router.post('/', requireAuth, validateBody(contactInformationSchema), asyncHandl
 // PUT /api/contact-information/:id - Update entire contact information
 router.put('/:id', requireAuth, validateIdParam, validateBody(contactInformationSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
+  const { type, value, ...rest } = req.body;
+  
+  // Geocode address if type is ADDRESS
+  let latitude: Prisma.Decimal | undefined;
+  let longitude: Prisma.Decimal | undefined;
+  
+  if (type === 'ADDRESS') {
+    const coords = await geocodeAddress(value);
+    latitude = new Prisma.Decimal(coords.latitude);
+    longitude = new Prisma.Decimal(coords.longitude);
+  }
 
   const item = await prisma.contactInformation.update({
     where: { id },
-    data: req.body
+    data: {
+      type,
+      value,
+      ...rest,
+      ...(latitude !== undefined && { latitude }),
+      ...(longitude !== undefined && { longitude })
+    }
   });
 
   const response: ApiResponse<ContactInformation> = {
     success: true,
     data: {
       ...item,
+      latitude: item.latitude != null ? parseFloat(item.latitude.toString()) : null,
+      longitude: item.longitude != null ? parseFloat(item.longitude.toString()) : null,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString()
     },
@@ -109,16 +154,45 @@ router.put('/:id', requireAuth, validateIdParam, validateBody(contactInformation
 // PATCH /api/contact-information/:id - Partial update contact information
 router.patch('/:id', requireAuth, validateIdParam, validateBody(updateContactInformationSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
+  const { type, value, ...rest } = req.body;
+  
+  // Get existing contact information to check type
+  const existing = await prisma.contactInformation.findUnique({ where: { id } });
+  if (!existing) {
+    throw createError(404, 'Contact information not found');
+  }
+  
+  // Determine if we need to geocode
+  const finalType = type || existing.type;
+  const finalValue = value || existing.value;
+  
+  let latitude: Prisma.Decimal | undefined;
+  let longitude: Prisma.Decimal | undefined;
+  
+  // Geocode if type is ADDRESS and value is being updated
+  if (finalType === 'ADDRESS' && value) {
+    const coords = await geocodeAddress(finalValue);
+    latitude = new Prisma.Decimal(coords.latitude);
+    longitude = new Prisma.Decimal(coords.longitude);
+  }
 
   const item = await prisma.contactInformation.update({
     where: { id },
-    data: req.body
+    data: {
+      ...(type && { type }),
+      ...(value && { value }),
+      ...rest,
+      ...(latitude !== undefined && { latitude }),
+      ...(longitude !== undefined && { longitude })
+    }
   });
 
   const response: ApiResponse<ContactInformation> = {
     success: true,
     data: {
       ...item,
+      latitude: item.latitude != null ? parseFloat(item.latitude.toString()) : null,
+      longitude: item.longitude != null ? parseFloat(item.longitude.toString()) : null,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString()
     },

@@ -6,6 +6,8 @@ import { requireAuth } from '../middleware/auth.js';
 import { canModifyGroup, canCreateGroup } from '../middleware/authorization.js';
 import { getUserFirstPerson } from '../utils/prisma-helpers.js';
 import type { ApiResponse, PaginatedResponse, Group } from '@irl/shared';
+import { geocodeAddress } from '../lib/geocoding.js';
+import { Prisma } from '@prisma/client';
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -391,8 +393,22 @@ router.post('/bulk', requireAuth, canCreateGroup, validateBody(bulkGroupsSchema)
       // Create contact informations if provided
       if (contactInformations && contactInformations.length > 0) {
         for (const contactInfo of contactInformations) {
+          // Geocode address if type is ADDRESS
+          let latitude: Prisma.Decimal | undefined;
+          let longitude: Prisma.Decimal | undefined;
+          
+          if (contactInfo.type === 'ADDRESS') {
+            const coords = await geocodeAddress(contactInfo.value);
+            latitude = new Prisma.Decimal(coords.latitude);
+            longitude = new Prisma.Decimal(coords.longitude);
+          }
+          
           const contact = await tx.contactInformation.create({
-            data: contactInfo
+            data: {
+              ...contactInfo,
+              ...(latitude !== undefined && { latitude }),
+              ...(longitude !== undefined && { longitude })
+            }
           });
 
           await tx.groupContactInformation.create({

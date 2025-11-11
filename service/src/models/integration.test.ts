@@ -323,6 +323,8 @@ describe('Integration Tests - Model Relationships and Validation', () => {
           type: 'ADDRESS',
           label: 'Office Address',
           value: '123 Main St, City, ST 12345',
+          latitude: 40.7128,
+          longitude: -74.0060,
           privacy: 'PUBLIC'
         }
       })

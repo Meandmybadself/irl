@@ -64,7 +64,7 @@ export class ApiClient {
       const error = await response.json().catch(() => ({
         error: response.statusText
       }));
-      throw new Error(error.error || `Request failed: ${response.status}`);
+      throw new Error(error.message || error.error || `Request failed: ${response.status}`);
     }
 
     return response.json();
@@ -235,7 +235,7 @@ export class ApiClient {
       const error = await response.json().catch(() => ({
         error: response.statusText
       }));
-      throw new Error(error.error || `Request failed: ${response.status}`);
+      throw new Error(error.message || error.error || `Request failed: ${response.status}`);
     }
 
     return response.json();
@@ -571,7 +571,7 @@ export class ApiClient {
       const error = await response.json().catch(() => ({
         error: response.statusText
       }));
-      throw new Error(error.error || `Export failed: ${response.status}`);
+      throw new Error(error.message || error.error || `Export failed: ${response.status}`);
     }
 
     // Trigger download

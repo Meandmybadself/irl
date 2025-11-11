@@ -37,6 +37,8 @@ export interface ContactInformation {
   type: ContactType;
   label: string;
   value: string;
+  latitude?: number | null;
+  longitude?: number | null;
   privacy: PrivacyLevel;
   createdAt: string;
   updatedAt: string;

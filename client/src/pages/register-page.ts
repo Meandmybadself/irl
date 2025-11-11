@@ -101,24 +101,28 @@ export class RegisterPage extends LitElement {
   render() {
     return html`
       <div class="flex min-h-full flex-col justify-center py-6 sm:px-6 lg:px-8 pt-16">
-        <div class="sm:mx-auto sm:w-full sm:max-w-md">
-          ${this.systemName ? html`
-            <h1 class="text-center text-3xl/10 font-bold tracking-tight text-gray-900 mb-2">
-              ${this.systemName}
-            </h1>
-          ` : ''}
-          ${this.systemDescription ? html`
-            <p class="text-center text-sm text-gray-600 mb-4">
-              ${this.systemDescription}
-            </p>
-          ` : ''}
-          <h2 class="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
-            Create your account
-          </h2>
-        </div>
+        <div class="mx-auto w-full max-w-6xl">
+          <div class="flex flex-col md:flex-row md:gap-12 lg:gap-16 items-center md:items-center">
+            <!-- Left Column: System Description -->
+            <div class="w-full md:w-1/2 md:flex md:flex-col md:justify-center">
+              ${this.systemName ? html`
+                <h1 class="text-center md:text-left text-3xl/10 font-bold tracking-tight text-gray-900 mb-2">
+                  ${this.systemName}
+                </h1>
+              ` : ''}
+              ${this.systemDescription ? html`
+                <p class="text-center md:text-left text-base text-gray-600 mt-4">
+                  ${this.systemDescription}
+                </p>
+              ` : ''}
+            </div>
 
-        <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
-          <div class="bg-white px-6 py-12 shadow-sm sm:rounded-lg sm:px-12">
+            <!-- Right Column: Form -->
+            <div class="w-full md:w-1/2 mt-10 md:mt-0">
+              <div class="bg-white px-6 py-12 shadow-sm sm:rounded-lg sm:px-12">
+                <h2 class="text-center text-2xl/9 font-bold tracking-tight text-gray-900 mb-6">
+                  Create your account
+                </h2>
             <form @submit=${this.handleSubmit} class="space-y-6">
               <div>
                 <label for="email" class="block text-sm/6 font-medium text-gray-900">
@@ -187,6 +191,8 @@ export class RegisterPage extends LitElement {
                 >
                   Sign in to existing account
                 </a>
+              </div>
+            </div>
               </div>
             </div>
           </div>

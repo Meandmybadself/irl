@@ -15,6 +15,8 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { canViewPersonPrivateContacts, canViewGroupPrivateContacts } from '../middleware/authorization.js';
 import type { ApiResponse, SystemContactInformation, PersonContactInformation, GroupContactInformation } from '@irl/shared';
+import { geocodeAddress } from '../lib/geocoding.js';
+import { Prisma } from '@prisma/client';
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -102,10 +104,27 @@ router.post('/system/with-contact', requireAuth, validateBody(systemContactInfor
     throw createError(400, 'Referenced system does not exist');
   }
 
+  // Geocode address if type is ADDRESS
+  let latitude: Prisma.Decimal | undefined;
+  let longitude: Prisma.Decimal | undefined;
+  
+  if (type === 'ADDRESS') {
+    const coords = await geocodeAddress(value);
+    latitude = new Prisma.Decimal(coords.latitude);
+    longitude = new Prisma.Decimal(coords.longitude);
+  }
+
   // Use transaction to create both contact info and mapping atomically
   const result = await prisma.$transaction(async (tx) => {
     const contact = await tx.contactInformation.create({
-      data: { type, label, value, privacy }
+      data: { 
+        type, 
+        label, 
+        value, 
+        privacy,
+        ...(latitude !== undefined && { latitude }),
+        ...(longitude !== undefined && { longitude })
+      }
     });
 
     const mapping = await tx.systemContactInformation.create({
@@ -122,6 +141,8 @@ router.post('/system/with-contact', requireAuth, validateBody(systemContactInfor
     success: true,
     data: {
       ...result.contact,
+      latitude: result.contact.latitude != null ? parseFloat(result.contact.latitude.toString()) : null,
+      longitude: result.contact.longitude != null ? parseFloat(result.contact.longitude.toString()) : null,
       createdAt: result.contact.createdAt.toISOString(),
       updatedAt: result.contact.updatedAt.toISOString()
     },
@@ -259,10 +280,27 @@ router.post('/person/with-contact', requireAuth, validateBody(personContactInfor
     throw createError(403, 'Forbidden: You do not have permission to add contact information to this person');
   }
 
+  // Geocode address if type is ADDRESS
+  let latitude: Prisma.Decimal | undefined;
+  let longitude: Prisma.Decimal | undefined;
+  
+  if (type === 'ADDRESS') {
+    const coords = await geocodeAddress(value);
+    latitude = new Prisma.Decimal(coords.latitude);
+    longitude = new Prisma.Decimal(coords.longitude);
+  }
+
   // Use transaction to create both contact info and mapping atomically
   const result = await prisma.$transaction(async (tx) => {
     const contact = await tx.contactInformation.create({
-      data: { type, label, value, privacy }
+      data: { 
+        type, 
+        label, 
+        value, 
+        privacy,
+        ...(latitude !== undefined && { latitude }),
+        ...(longitude !== undefined && { longitude })
+      }
     });
 
     const mapping = await tx.personContactInformation.create({
@@ -279,6 +317,8 @@ router.post('/person/with-contact', requireAuth, validateBody(personContactInfor
     success: true,
     data: {
       ...result.contact,
+      latitude: result.contact.latitude != null ? parseFloat(result.contact.latitude.toString()) : null,
+      longitude: result.contact.longitude != null ? parseFloat(result.contact.longitude.toString()) : null,
       createdAt: result.contact.createdAt.toISOString(),
       updatedAt: result.contact.updatedAt.toISOString()
     },
@@ -440,10 +480,27 @@ router.post('/group/with-contact', requireAuth, validateBody(groupContactInforma
     throw createError(403, 'Forbidden: You do not have permission to add contact information to this group');
   }
 
+  // Geocode address if type is ADDRESS
+  let latitude: Prisma.Decimal | undefined;
+  let longitude: Prisma.Decimal | undefined;
+  
+  if (type === 'ADDRESS') {
+    const coords = await geocodeAddress(value);
+    latitude = new Prisma.Decimal(coords.latitude);
+    longitude = new Prisma.Decimal(coords.longitude);
+  }
+
   // Use transaction to create both contact info and mapping atomically
   const result = await prisma.$transaction(async (tx) => {
     const contact = await tx.contactInformation.create({
-      data: { type, label, value, privacy }
+      data: { 
+        type, 
+        label, 
+        value, 
+        privacy,
+        ...(latitude !== undefined && { latitude }),
+        ...(longitude !== undefined && { longitude })
+      }
     });
 
     const mapping = await tx.groupContactInformation.create({
@@ -460,6 +517,8 @@ router.post('/group/with-contact', requireAuth, validateBody(groupContactInforma
     success: true,
     data: {
       ...result.contact,
+      latitude: result.contact.latitude != null ? parseFloat(result.contact.latitude.toString()) : null,
+      longitude: result.contact.longitude != null ? parseFloat(result.contact.longitude.toString()) : null,
       createdAt: result.contact.createdAt.toISOString(),
       updatedAt: result.contact.updatedAt.toISOString()
     },

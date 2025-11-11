@@ -129,6 +129,9 @@ importers:
       multer:
         specifier: ^2.0.2
         version: 2.0.2
+      nominatim-client:
+        specifier: ^3.2.1
+        version: 3.2.1
       passport:
         specifier: 0.7.0
         version: 0.7.0
@@ -2447,6 +2450,9 @@ packages:
 
   node-releases@2.0.19:
     resolution: {integrity: sha512-xxOWJsBKtzAq7DY0J+DTzuz58K8e7sJbdgwkbMWQe8UYB6ekmsQ45q0M/tJDsGaZmbC+l7n57UV8Hl5tHxO9uw==}
+
+  nominatim-client@3.2.1:
+    resolution: {integrity: sha512-i7kGGMvXU37nUhDhlTuj0JhoWntT69BUFeEOHxw40Wf5J++dUCGnPgMCE+6KAJZCOVeK6lqjMAxP2+zyg0CbKw==}
 
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
@@ -5616,6 +5622,8 @@ snapshots:
   node-gyp-build@4.8.4: {}
 
   node-releases@2.0.19: {}
+
+  nominatim-client@3.2.1: {}
 
   normalize-path@3.0.0: {}
 

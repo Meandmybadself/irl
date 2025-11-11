@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { isValidPhoneNumber } from 'libphonenumber-js';
+import { geocodeAddress } from '../lib/geocoding.js';
 
 // Base schema for contact information (without validation refinements)
 const contactInformationBaseSchema = z.object({
@@ -11,7 +12,7 @@ const contactInformationBaseSchema = z.object({
 });
 
 // Helper function to validate contact information value based on type
-const validateContactValue = (data: z.infer<typeof contactInformationBaseSchema>, ctx: z.RefinementCtx) => {
+const validateContactValue = async (data: z.infer<typeof contactInformationBaseSchema>, ctx: z.RefinementCtx) => {
   if (data.type === 'EMAIL') {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(data.value)) {
@@ -37,30 +38,49 @@ const validateContactValue = (data: z.infer<typeof contactInformationBaseSchema>
         path: ['value']
       });
     }
+  } else if (data.type === 'ADDRESS') {
+    try {
+      // Validate that the address can be geocoded
+      await geocodeAddress(data.value);
+    } catch (error) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: error instanceof Error ? error.message : 'Invalid address format',
+        path: ['value']
+      });
+    }
   }
 };
 
 // Zod schemas for validation
-export const contactInformationSchema = contactInformationBaseSchema.superRefine(validateContactValue);
+export const contactInformationSchema = contactInformationBaseSchema.superRefine(async (data, ctx) => {
+  await validateContactValue(data, ctx);
+});
 
-export const updateContactInformationSchema = contactInformationBaseSchema.partial().superRefine((data, ctx) => {
+export const updateContactInformationSchema = contactInformationBaseSchema.partial().superRefine(async (data, ctx) => {
   // Only validate if the required fields are present
   if (data.type && data.value) {
-    validateContactValue(data as z.infer<typeof contactInformationBaseSchema>, ctx);
+    await validateContactValue(data as z.infer<typeof contactInformationBaseSchema>, ctx);
   }
 });
 
 export const systemContactInformationWithContactSchema = contactInformationBaseSchema.extend({
   systemId: z.number().int('System ID must be an integer')
-}).superRefine(validateContactValue);
+}).superRefine(async (data, ctx) => {
+  await validateContactValue(data, ctx);
+});
 
 export const personContactInformationWithContactSchema = contactInformationBaseSchema.extend({
   personId: z.number().int('Person ID must be an integer')
-}).superRefine(validateContactValue);
+}).superRefine(async (data, ctx) => {
+  await validateContactValue(data, ctx);
+});
 
 export const groupContactInformationWithContactSchema = contactInformationBaseSchema.extend({
   groupId: z.number().int('Group ID must be an integer')
-}).superRefine(validateContactValue);
+}).superRefine(async (data, ctx) => {
+  await validateContactValue(data, ctx);
+});
 
 export const userSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -198,9 +218,9 @@ export const bulkGroupsSchema = z.array(bulkGroupSchema).min(1, 'At least one gr
 
 // Validation middleware factory
 export const validateBody = (schema: z.ZodSchema) => {
-  return (req: Request, _res: Response, next: NextFunction) => {
+  return async (req: Request, _res: Response, next: NextFunction) => {
     try {
-      req.body = schema.parse(req.body);
+      req.body = await schema.parseAsync(req.body);
       next();
     } catch (error) {
       next(error);
@@ -245,10 +265,10 @@ export const validateDisplayIdParam = (req: Request, res: Response, next: NextFu
 };
 
 // Search query validation middleware
-export const validateSearchQuery = (req: Request, res: Response, next: NextFunction) => {
+export const validateSearchQuery = async (req: Request, res: Response, next: NextFunction) => {
   if (req.query.search) {
     try {
-      const validated = searchQuerySchema.parse(req.query.search);
+      const validated = await searchQuerySchema.parseAsync(req.query.search);
       req.query.search = validated;
       next();
     } catch (error) {

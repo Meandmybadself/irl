@@ -10,6 +10,7 @@ import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/group-search.js';
 import '../components/ui/contact-info-form.js';
 import '../components/ui/group-admin-form.js';
+import '../components/ui/group-member-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Group, ContactInformation } from '@irl/shared';
@@ -67,6 +68,12 @@ export class GroupFormPage extends LitElement {
   @state()
   private contactInformations: ContactInformation[] = [];
 
+  @state()
+  private adminPersonIds: number[] = [];
+
+  @state()
+  private memberPersonIds: number[] = [];
+
   async connectedCallback() {
     super.connectedCallback();
 
@@ -117,6 +124,9 @@ export class GroupFormPage extends LitElement {
         if (contactsResponse.success && contactsResponse.data) {
           this.contactInformations = contactsResponse.data;
         }
+
+        // Load person IDs
+        await this.loadPersonIds();
       }
     } catch (error) {
       this.store.dispatch(
@@ -232,6 +242,25 @@ export class GroupFormPage extends LitElement {
   private handleCancel() {
     window.history.pushState({}, '', '/groups');
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  private async loadPersonIds() {
+    if (!this.groupId) return;
+
+    try {
+      const response = await this.api.getPersonGroups();
+      if (response.success && response.data) {
+        const groupPersonGroups = response.data.filter(pg => pg.groupId === this.groupId);
+        this.adminPersonIds = groupPersonGroups
+          .filter(pg => pg.isAdmin)
+          .map(pg => pg.personId);
+        this.memberPersonIds = groupPersonGroups
+          .filter(pg => !pg.isAdmin)
+          .map(pg => pg.personId);
+      }
+    } catch (error) {
+      console.error('Failed to load person IDs:', error);
+    }
   }
 
   render() {
@@ -375,16 +404,40 @@ export class GroupFormPage extends LitElement {
                 <group-admin-form
                   .groupId=${this.groupId}
                   .groupDisplayId=${this.groupDisplayId}
-                  @admin-added=${() => {
+                  .excludePersonIds=${this.memberPersonIds}
+                  @admin-added=${async (e: CustomEvent) => {
                     this.store.dispatch(addNotification('Administrator added successfully', 'success'));
+                    // Reload person IDs
+                    await this.loadPersonIds();
                   }}
-                  @admin-removed=${() => {
+                  @admin-removed=${async () => {
                     this.store.dispatch(addNotification('Administrator removed successfully', 'success'));
+                    // Reload person IDs
+                    await this.loadPersonIds();
                   }}
                   @admin-error=${(e: CustomEvent) => {
                     this.store.dispatch(addNotification(e.detail.error, 'error'));
                   }}
                 ></group-admin-form>
+
+                <group-member-form
+                  .groupId=${this.groupId}
+                  .groupDisplayId=${this.groupDisplayId}
+                  .excludePersonIds=${this.adminPersonIds}
+                  @member-added=${async () => {
+                    this.store.dispatch(addNotification('Member added successfully', 'success'));
+                    // Reload person IDs
+                    await this.loadPersonIds();
+                  }}
+                  @member-removed=${async () => {
+                    this.store.dispatch(addNotification('Member removed successfully', 'success'));
+                    // Reload person IDs
+                    await this.loadPersonIds();
+                  }}
+                  @member-error=${(e: CustomEvent) => {
+                    this.store.dispatch(addNotification(e.detail.error, 'error'));
+                  }}
+                ></group-member-form>
               ` : ''}
 
               <div class="flex items-center justify-between gap-x-4">
