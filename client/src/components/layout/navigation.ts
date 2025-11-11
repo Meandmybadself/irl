@@ -111,6 +111,24 @@ export class AppNavigation extends LitElement {
     e.preventDefault();
   };
 
+  private renderAvatar(size: 'small' | 'medium' = 'small') {
+    const sizeClass = size === 'small' ? 'h-8 w-8' : 'h-10 w-10';
+    
+    return this.currentPerson?.imageURL
+      ? html`
+          <img
+            src="${this.currentPerson.imageURL}"
+            alt="${this.currentPerson.firstName} ${this.currentPerson.lastName}"
+            class="${sizeClass} rounded-full"
+          />
+        `
+      : html`
+          <div class="${sizeClass} rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
+            ${this.currentPerson ? this.currentPerson.firstName[0] : 'U'}
+          </div>
+        `;
+  }
+
   render() {
     const currentPath = window.location.pathname;
 
@@ -173,19 +191,7 @@ export class AppNavigation extends LitElement {
                           class="relative flex items-center gap-3 rounded-full bg-gray-800 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
                         >
                           <span class="sr-only">Open user menu</span>
-                          ${this.currentPerson?.imageURL
-                            ? html`
-                                <img
-                                  src="${this.currentPerson.imageURL}"
-                                  alt="${this.currentPerson.firstName} ${this.currentPerson.lastName}"
-                                  class="h-8 w-8 rounded-full"
-                                />
-                              `
-                            : html`
-                                <div class="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                                  ${this.currentPerson ? this.currentPerson.firstName[0] : 'U'}
-                                </div>
-                              `}
+                          ${this.renderAvatar('small')}
                           ${this.currentPerson
                             ? html`<span class="text-sm text-gray-300"
                                 >${this.currentPerson.firstName} ${this.currentPerson.lastName}</span
@@ -290,19 +296,7 @@ export class AppNavigation extends LitElement {
                 <div class="border-t border-gray-700 pt-4 pb-3">
                   <div class="flex items-center px-5">
                     <div class="shrink-0">
-                      ${this.currentPerson?.imageURL
-                        ? html`
-                            <img
-                              src="${this.currentPerson.imageURL}"
-                              alt="${this.currentPerson.firstName} ${this.currentPerson.lastName}"
-                              class="h-10 w-10 rounded-full"
-                            />
-                          `
-                        : html`
-                            <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                              ${this.currentPerson ? this.currentPerson.firstName[0] : 'U'}
-                            </div>
-                          `}
+                      ${this.renderAvatar('medium')}
                     </div>
                     ${this.currentPerson
                       ? html`
