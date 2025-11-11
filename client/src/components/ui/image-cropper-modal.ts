@@ -21,6 +21,7 @@ export class ImageCropperModal extends LitElement {
   private isSaving = false;
 
   private cropper: Cropper | null = null;
+  private currentImageUrl: string | null = null;
 
   updated(changedProperties: Map<string, unknown>) {
     if (changedProperties.has('open')) {
@@ -30,11 +31,27 @@ export class ImageCropperModal extends LitElement {
         this.destroyCropper();
       }
     }
+
+    // Track image URL changes and clean up old object URLs
+    if (changedProperties.has('imageUrl')) {
+      this.cleanupImageUrl();
+      if (this.imageUrl && this.imageUrl.startsWith('blob:')) {
+        this.currentImageUrl = this.imageUrl;
+      }
+    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.destroyCropper();
+    this.cleanupImageUrl();
+  }
+
+  private cleanupImageUrl() {
+    if (this.currentImageUrl && this.currentImageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(this.currentImageUrl);
+      this.currentImageUrl = null;
+    }
   }
 
   private initializeCropper() {

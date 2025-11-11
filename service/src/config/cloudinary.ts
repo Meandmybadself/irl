@@ -14,7 +14,13 @@ const validateConfig = () => {
   const missing = requiredVars.filter(varName => !process.env[varName]);
   
   if (missing.length > 0) {
-    console.warn(`Warning: Missing Cloudinary environment variables: ${missing.join(', ')}`);
+    const message = `Missing Cloudinary environment variables: ${missing.join(', ')}`;
+    
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(message);
+    }
+    
+    console.warn(`Warning: ${message}`);
   }
 };
 
