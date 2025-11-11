@@ -279,6 +279,7 @@ router.post('/bulk', requireAuth, canCreateGroup, validateBody(bulkGroupsSchema)
     displayId: string;
     description?: string | null;
     parentGroupId?: number | null;
+    parentGroupDisplayId?: string | null;
     allowsAnyUserToCreateSubgroup?: boolean;
     publiclyVisible?: boolean;
     contactInformations?: Array<{
@@ -310,7 +311,36 @@ router.post('/bulk', requireAuth, canCreateGroup, validateBody(bulkGroupsSchema)
     throw createError(400, `Group(s) with displayId(s) already exist: ${existingIds}`);
   }
 
-  // Pre-validation: Check that all parent groups exist (if parentGroupIds are provided)
+  // Resolve parentGroupDisplayId to parentGroupId
+  const parentGroupDisplayIds = groupsData
+    .filter(g => g.parentGroupDisplayId != null)
+    .map(g => g.parentGroupDisplayId as string);
+
+  const parentDisplayIdToIdMap = new Map<string, number>();
+
+  if (parentGroupDisplayIds.length > 0) {
+    const existingParents = await prisma.group.findMany({
+      where: {
+        displayId: { in: parentGroupDisplayIds },
+        deleted: false
+      },
+      select: { id: true, displayId: true }
+    });
+
+    const existingParentDisplayIds = existingParents.map(p => p.displayId);
+    const missingParentDisplayIds = parentGroupDisplayIds.filter(id => !existingParentDisplayIds.includes(id));
+
+    if (missingParentDisplayIds.length > 0) {
+      throw createError(400, `Parent group(s) with displayId(s) do not exist: ${missingParentDisplayIds.join(', ')}`);
+    }
+
+    // Build the map
+    existingParents.forEach(p => {
+      parentDisplayIdToIdMap.set(p.displayId, p.id);
+    });
+  }
+
+  // Pre-validation: Check that all parent groups exist (if numeric parentGroupIds are provided)
   const parentGroupIds = groupsData
     .filter(g => g.parentGroupId != null)
     .map(g => g.parentGroupId as number);
@@ -337,7 +367,12 @@ router.post('/bulk', requireAuth, canCreateGroup, validateBody(bulkGroupsSchema)
     const createdGroups: Group[] = [];
 
     for (const groupData of groupsData) {
-      const { contactInformations, ...groupFields } = groupData;
+      const { contactInformations, parentGroupDisplayId, ...groupFields } = groupData;
+
+      // Resolve parentGroupDisplayId to parentGroupId if provided
+      if (parentGroupDisplayId) {
+        groupFields.parentGroupId = parentDisplayIdToIdMap.get(parentGroupDisplayId) || null;
+      }
 
       // Create group - no try/catch, let errors fail the transaction
       const group = await tx.group.create({

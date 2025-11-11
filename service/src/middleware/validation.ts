@@ -1,27 +1,66 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 
-// Zod schemas for validation
-export const contactInformationSchema = z.object({
+// Base schema for contact information (without validation refinements)
+const contactInformationBaseSchema = z.object({
   type: z.enum(['EMAIL', 'PHONE', 'ADDRESS', 'URL'] as const),
   label: z.string().min(1, 'Label is required'),
   value: z.string().min(1, 'Value is required'),
   privacy: z.enum(['PRIVATE', 'PUBLIC'] as const)
 });
 
-export const updateContactInformationSchema = contactInformationSchema.partial();
+// Helper function to validate contact information value based on type
+const validateContactValue = (data: z.infer<typeof contactInformationBaseSchema>, ctx: z.RefinementCtx) => {
+  if (data.type === 'EMAIL') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.value)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Invalid email format',
+        path: ['value']
+      });
+    }
+  } else if (data.type === 'PHONE') {
+    try {
+      if (!isValidPhoneNumber(data.value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid phone number format',
+          path: ['value']
+        });
+      }
+    } catch (error) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Invalid phone number format',
+        path: ['value']
+      });
+    }
+  }
+};
 
-export const systemContactInformationWithContactSchema = contactInformationSchema.extend({
+// Zod schemas for validation
+export const contactInformationSchema = contactInformationBaseSchema.superRefine(validateContactValue);
+
+export const updateContactInformationSchema = contactInformationBaseSchema.partial().superRefine((data, ctx) => {
+  // Only validate if the required fields are present
+  if (data.type && data.value) {
+    validateContactValue(data as z.infer<typeof contactInformationBaseSchema>, ctx);
+  }
+});
+
+export const systemContactInformationWithContactSchema = contactInformationBaseSchema.extend({
   systemId: z.number().int('System ID must be an integer')
-});
+}).superRefine(validateContactValue);
 
-export const personContactInformationWithContactSchema = contactInformationSchema.extend({
+export const personContactInformationWithContactSchema = contactInformationBaseSchema.extend({
   personId: z.number().int('Person ID must be an integer')
-});
+}).superRefine(validateContactValue);
 
-export const groupContactInformationWithContactSchema = contactInformationSchema.extend({
+export const groupContactInformationWithContactSchema = contactInformationBaseSchema.extend({
   groupId: z.number().int('Group ID must be an integer')
-});
+}).superRefine(validateContactValue);
 
 export const userSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -36,10 +75,7 @@ export const personSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   displayId: z.string().min(1, 'Display ID is required'),
   pronouns: z.string().optional().nullable(),
-  imageURL: z.string().url().refine(
-    url => url.startsWith('http://') || url.startsWith('https://'),
-    'URL must use HTTP or HTTPS protocol'
-  ).optional().nullable(),
+  imageURL: z.string().url('Invalid URL format').optional().nullable(),
   userId: z.number().int('User ID must be an integer')
 });
 
@@ -47,21 +83,40 @@ export const updatePersonSchema = personSchema.partial();
 
 export const systemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  description: z.string().optional().nullable(),
   registrationOpen: z.boolean().optional()
 });
 
 export const updateSystemSchema = systemSchema.partial();
 
-export const groupSchema = z.object({
+// Helper function for group parent validation
+const validateGroupParents = (data: { parentGroupId?: number | null; parentGroupDisplayId?: string | null }, ctx: z.RefinementCtx) => {
+  const hasParentGroupId = data.parentGroupId !== undefined && data.parentGroupId !== null;
+  const hasParentGroupDisplayId = data.parentGroupDisplayId !== undefined && data.parentGroupDisplayId !== null;
+  
+  if (hasParentGroupId && hasParentGroupDisplayId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Cannot specify both parentGroupId and parentGroupDisplayId. Please provide only one.',
+      path: ['parentGroupDisplayId']
+    });
+  }
+};
+
+// Base group schema without refinements (needed for .partial() and .extend())
+const groupBaseSchema = z.object({
   displayId: z.string().min(1, 'Display ID is required'),
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional().nullable(),
   parentGroupId: z.number().int('Parent Group ID must be an integer').optional().nullable(),
+  parentGroupDisplayId: z.string().optional().nullable(),
   allowsAnyUserToCreateSubgroup: z.boolean().optional(),
   publiclyVisible: z.boolean().optional()
 });
 
-export const updateGroupSchema = groupSchema.partial();
+export const groupSchema = groupBaseSchema.superRefine(validateGroupParents);
+
+export const updateGroupSchema = groupBaseSchema.partial().superRefine(validateGroupParents);
 
 export const claimSchema = z.object({
   personId: z.number().int('Person ID must be an integer'),
@@ -135,9 +190,9 @@ export const bulkPersonSchema = personSchema.extend({
 
 export const bulkPersonsSchema = z.array(bulkPersonSchema).min(1, 'At least one person is required');
 
-export const bulkGroupSchema = groupSchema.extend({
+export const bulkGroupSchema = groupBaseSchema.extend({
   contactInformations: z.array(contactInformationSchema).optional()
-});
+}).superRefine(validateGroupParents);
 
 export const bulkGroupsSchema = z.array(bulkGroupSchema).min(1, 'At least one group is required');
 

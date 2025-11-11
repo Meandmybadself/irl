@@ -64,6 +64,7 @@ model Person {
 model System {
   id                 Int                        @id @default(1)
   name               String
+  description        String?
   registrationOpen   Boolean                    @default(true)
   createdAt          DateTime                   @default(now())
   updatedAt          DateTime                   @updatedAt

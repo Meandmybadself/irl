@@ -68,6 +68,11 @@ export const selectSystemName = createSelector(
   system => system?.name || null
 );
 
+export const selectSystemDescription = createSelector(
+  [selectSystem],
+  system => system?.description || null
+);
+
 // UI selectors
 export const selectNotifications = createSelector(
   [selectUI],

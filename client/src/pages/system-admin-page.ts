@@ -32,6 +32,9 @@ export class SystemAdminPage extends LitElement {
   private name = '';
 
   @state()
+  private description = '';
+
+  @state()
   private registrationOpen = false;
 
   @state()
@@ -45,6 +48,12 @@ export class SystemAdminPage extends LitElement {
 
   @state()
   private contactInformations: ContactInformation[] = [];
+
+  @state()
+  private isExporting = false;
+
+  @state()
+  private isImporting = false;
 
   async connectedCallback() {
     super.connectedCallback();
@@ -71,6 +80,7 @@ export class SystemAdminPage extends LitElement {
       if (systemResponse.success && systemResponse.data) {
         this.system = systemResponse.data;
         this.name = systemResponse.data.name;
+        this.description = systemResponse.data.description || '';
         this.registrationOpen = systemResponse.data.registrationOpen;
       }
 
@@ -85,14 +95,16 @@ export class SystemAdminPage extends LitElement {
   }
 
   private handleInputChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const { name, value, type, checked } = target;
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement;
+    const { name, value } = target;
 
     if (name === 'name') {
       this.name = value;
       this.nameError = '';
+    } else if (name === 'description') {
+      this.description = value;
     } else if (name === 'registrationOpen') {
-      this.registrationOpen = type === 'checkbox' ? checked : value === 'true';
+      this.registrationOpen = (target as HTMLInputElement).checked;
     }
   }
 
@@ -110,6 +122,7 @@ export class SystemAdminPage extends LitElement {
     try {
       const data = {
         name: this.name,
+        description: this.description || null,
         registrationOpen: this.registrationOpen
       };
 
@@ -156,6 +169,7 @@ export class SystemAdminPage extends LitElement {
       await this.api.deleteSystem();
       this.system = null;
       this.name = '';
+      this.description = '';
       this.registrationOpen = false;
       this.store.dispatch(addNotification('System deleted successfully', 'success'));
     } catch (error) {
@@ -173,6 +187,65 @@ export class SystemAdminPage extends LitElement {
   private handleBack() {
     window.history.pushState({}, '', '/home');
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  private async handleExport() {
+    this.isExporting = true;
+    try {
+      await this.api.exportSystem();
+      this.store.dispatch(addNotification('System exported successfully', 'success'));
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Failed to export system',
+          'error'
+        )
+      );
+    } finally {
+      this.isExporting = false;
+    }
+  }
+
+  private async handleImport(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    if (!confirm(
+      'WARNING: This will replace ALL existing data in the system. This action cannot be undone. Are you absolutely sure you want to continue?'
+    )) {
+      input.value = '';
+      return;
+    }
+
+    this.isImporting = true;
+
+    try {
+      const response = await this.api.importSystem(file);
+      if (response.success) {
+        this.store.dispatch(
+          addNotification(
+            response.message || 'System imported successfully',
+            'success'
+          )
+        );
+        // Reload the page to reflect the new data
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Failed to import system',
+          'error'
+        )
+      );
+    } finally {
+      this.isImporting = false;
+      input.value = '';
+    }
   }
 
   render() {
@@ -200,25 +273,6 @@ export class SystemAdminPage extends LitElement {
           </div>
 
           <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
-            ${this.system
-              ? html`
-                  <div class="mb-6 rounded-md bg-blue-50 p-4">
-                    <div class="flex">
-                      <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
-                        </svg>
-                      </div>
-                      <div class="ml-3 flex-1">
-                        <p class="text-sm text-blue-700">
-                          System ID: ${this.system.id} | Created: ${new Date(this.system.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                `
-              : ''}
-
             <form @submit=${this.handleSubmit} class="space-y-6">
               <div>
                 <label for="name" class="block text-sm/6 font-medium ${textColors.primary}">
@@ -235,6 +289,22 @@ export class SystemAdminPage extends LitElement {
                     @input=${this.handleInputChange}
                   />
                   ${this.nameError ? html`<p class="mt-1 text-sm ${textColors.error}">${this.nameError}</p>` : ''}
+                </div>
+              </div>
+
+              <div>
+                <label for="description" class="block text-sm/6 font-medium ${textColors.primary}">
+                  Description
+                </label>
+                <div class="mt-2">
+                  <textarea
+                    id="description"
+                    name="description"
+                    rows="3"
+                    .value=${this.description}
+                    class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                    @input=${this.handleInputChange}
+                  ></textarea>
                 </div>
               </div>
 
@@ -271,6 +341,51 @@ export class SystemAdminPage extends LitElement {
                     this.store.dispatch(addNotification(e.detail.error, 'error'));
                   }}
                 ></contact-info-form>
+
+                <div class="border-t ${backgroundColors.border} pt-6">
+                  <h3 class="text-lg font-semibold ${textColors.primary} mb-4">
+                    Data Management
+                  </h3>
+                  <div class="space-y-4">
+                    <div>
+                      <button
+                        type="button"
+                        @click=${this.handleExport}
+                        ?disabled=${this.isExporting}
+                        class="rounded-md bg-green-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-green-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ${this.isExporting
+                          ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                          : ''}
+                        Export System Data
+                      </button>
+                      <p class="mt-2 text-sm ${textColors.tertiary}">
+                        Download a complete backup of all system data including users, persons, groups, and contact information.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label
+                        class="inline-block rounded-md bg-orange-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-orange-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 cursor-pointer ${this.isImporting ? 'opacity-50 cursor-not-allowed' : ''}"
+                      >
+                        ${this.isImporting
+                          ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                          : ''}
+                        Import System Data
+                        <input
+                          type="file"
+                          accept=".json"
+                          @change=${this.handleImport}
+                          ?disabled=${this.isImporting}
+                          class="hidden"
+                        />
+                      </label>
+                      <p class="mt-2 text-sm ${textColors.error} font-semibold">
+                        WARNING: Importing will replace ALL existing data. This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ` : ''}
 
               <div class="flex items-center justify-between gap-x-4">

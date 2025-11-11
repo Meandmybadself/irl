@@ -4,7 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { login } from '../store/slices/auth.js';
 import { addNotification } from '../store/slices/ui.js';
-import { selectAttemptedPath, selectSystemName } from '../store/selectors.js';
+import { selectAttemptedPath, selectSystemName, selectSystemDescription } from '../store/selectors.js';
 import { validateEmail } from '../utilities/validation.js';
 import type { AppStore } from '../store/index.js';
 import '../components/ui/input.js';
@@ -38,6 +38,10 @@ export class LoginPage extends LitElement {
 
   private get systemName(): string | null {
     return selectSystemName(this.store.getState());
+  }
+
+  private get systemDescription(): string | null {
+    return selectSystemDescription(this.store.getState());
   }
 
   private handleInputChange(e: Event) {
@@ -96,6 +100,11 @@ export class LoginPage extends LitElement {
             <h1 class="text-center text-3xl/10 font-bold tracking-tight text-gray-900 mb-2">
               ${this.systemName}
             </h1>
+          ` : ''}
+          ${this.systemDescription ? html`
+            <p class="text-center text-sm text-gray-600 mb-4">
+              ${this.systemDescription}
+            </p>
           ` : ''}
           <h2 class="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">
             Sign in to your account

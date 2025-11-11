@@ -1,0 +1,12 @@
+name	displayId	description	publiclyVisible	allowsAnyUserToCreateSubgroup	parentGroupDisplayId
+Classrooms	classrooms	Student classroom groups	true	false	eisenhower
+Staff	staff	School staff members (teachers, administrators, support staff)	true	false	eisenhower
+Households	households	Family groups of students	true	false	eisenhower
+Pre-K	pre-k	Pre-Kindergarten students	true	false	classrooms
+Kindergarten	kindergarten	Kindergarten students	true	false	classrooms
+Grade 1	grade-1	First grade students	true	false	classrooms
+Grade 2	grade-2	Second grade students	true	false	classrooms
+Grade 3	grade-3	Third grade students	true	false	classrooms
+Grade 4	grade-4	Fourth grade students	true	false	classrooms
+Grade 5	grade-5	Fifth grade students	true	false	classrooms
+

@@ -65,6 +65,7 @@ export interface Person {
 export interface System {
   id: number;
   name: string;
+  description: string | null;
   registrationOpen: boolean;
   createdAt: string;
   updatedAt: string;
@@ -216,11 +217,13 @@ export interface UpdatePersonRequest {
 
 export interface CreateSystemRequest {
   name: string;
+  description?: string | null;
   registrationOpen?: boolean;
 }
 
 export interface UpdateSystemRequest {
   name?: string;
+  description?: string | null;
   registrationOpen?: boolean;
 }
 
@@ -229,6 +232,7 @@ export interface CreateGroupRequest {
   name: string;
   description?: string | null;
   parentGroupId?: number | null;
+  parentGroupDisplayId?: string | null;
   allowsAnyUserToCreateSubgroup?: boolean;
   publiclyVisible?: boolean;
 }
@@ -296,4 +300,19 @@ export interface UpdatePersonGroupRequest {
   personId?: number;
   groupId?: number;
   isAdmin?: boolean;
+}
+
+// System export/import types
+export interface SystemExportData {
+  version: string;
+  exportedAt: string;
+  system: System | null;
+  users: Omit<User, 'password'>[];
+  persons: Person[];
+  groups: Group[];
+  contactInformations: ContactInformation[];
+  systemContactInformations: SystemContactInformation[];
+  personContactInformations: PersonContactInformation[];
+  groupContactInformations: GroupContactInformation[];
+  personGroups: PersonGroup[];
 }

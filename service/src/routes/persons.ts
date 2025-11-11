@@ -1,12 +1,30 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, createError } from '../middleware/error-handler.js';
-import { validateBody, validateDisplayIdParam, validateSearchQuery, personSchema, updatePersonSchema, bulkPersonsSchema } from '../middleware/validation.js';
+import { validateBody, validateDisplayIdParam, validateSearchQuery, personSchema, updatePersonSchema } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { canModifyPerson, canCreatePerson } from '../middleware/authorization.js';
+import { uploadImageToCloudinary } from '../utils/cloudinary-upload.js';
 import type { ApiResponse, PaginatedResponse, Person } from '@irl/shared';
 
 const router: ReturnType<typeof Router> = Router();
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'));
+    }
+  }
+});
 
 // Helper to format person response
 const formatPerson = (person: any): Person => {
@@ -153,37 +171,68 @@ router.patch('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerson
   res.json(response);
 }));
 
-// POST /api/persons/bulk - Create multiple persons (auth required)
-router.post('/bulk', requireAuth, canCreatePerson, validateBody(bulkPersonsSchema), asyncHandler(async (req, res) => {
-  const userId = req.user?.id;
+// DELETE /api/persons/:displayId - Soft delete person (auth required)
+router.delete('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerson, asyncHandler(async (req, res) => {
+  const displayId = req.params.displayId;
 
-  if (!userId) {
-    throw createError(401, 'Authentication required');
+  await prisma.person.update({
+    where: { displayId },
+    data: { deleted: true }
+  });
+
+  const response: ApiResponse<null> = {
+    success: true,
+    message: 'Person deleted successfully'
+  };
+
+  res.json(response);
+}));
+
+// POST /api/persons/bulk - Bulk create persons (auth required)
+router.post('/bulk', requireAuth, canCreatePerson, asyncHandler(async (req, res) => {
+  const userId = req.user!.id;
+  const personsData = req.body.persons;
+
+  // Validate that persons array is provided
+  if (!Array.isArray(personsData) || personsData.length === 0) {
+    throw createError(400, 'Invalid request: persons array is required and cannot be empty');
   }
 
-  const personsData = req.body as Array<{
-    firstName: string;
-    lastName: string;
-    displayId: string;
-    pronouns?: string | null;
-    imageURL?: string | null;
-    userId: number;
-    contactInformations?: Array<{
-      type: 'EMAIL' | 'PHONE' | 'ADDRESS' | 'URL';
-      label: string;
-      value: string;
-      privacy: 'PRIVATE' | 'PUBLIC';
-    }>;
-  }>;
+  // SECURITY: Validate all persons have userId matching the authenticated user (unless system admin)
+  if (!req.user?.isSystemAdmin) {
+    const invalidUserIds = personsData.filter(p => p.userId !== userId);
+    if (invalidUserIds.length > 0) {
+      throw createError(403, 'Forbidden: You can only create persons for yourself');
+    }
+  }
 
-  // Pre-validation: Check for duplicate displayIds in the request
+  // Validate each person meets the schema requirements
+  const validationErrors: Array<{ index: number; error: string }> = [];
+  personsData.forEach((person, index) => {
+    try {
+      personSchema.parse(person);
+    } catch (error: any) {
+      validationErrors.push({
+        index,
+        error: error.message || 'Validation failed'
+      });
+    }
+  });
+
+  if (validationErrors.length > 0) {
+    const errorDetails = validationErrors.map(e => `Row ${e.index}: ${e.error}`).join('; ');
+    throw createError(400, `Validation errors: ${errorDetails}`);
+  }
+
+  // Check for duplicate displayIds in the batch
   const displayIds = personsData.map(p => p.displayId);
-  const duplicatesInRequest = displayIds.filter((id, index) => displayIds.indexOf(id) !== index);
-  if (duplicatesInRequest.length > 0) {
-    throw createError(400, `Duplicate displayIds in request: ${[...new Set(duplicatesInRequest)].join(', ')}`);
+  const duplicatesInBatch = displayIds.filter((id, index) => displayIds.indexOf(id) !== index);
+  if (duplicatesInBatch.length > 0) {
+    const duplicateList = [...new Set(duplicatesInBatch)].join(', ');
+    throw createError(400, `Duplicate displayIds in batch: ${duplicateList}`);
   }
 
-  // Pre-validation: Check for existing displayIds in database
+  // Check for existing displayIds in database
   const existingPersons = await prisma.person.findMany({
     where: {
       displayId: { in: displayIds },
@@ -193,18 +242,18 @@ router.post('/bulk', requireAuth, canCreatePerson, validateBody(bulkPersonsSchem
   });
 
   if (existingPersons.length > 0) {
-    const existingIds = existingPersons.map(p => p.displayId).join(', ');
-    throw createError(400, `Person(s) with displayId(s) already exist: ${existingIds}`);
+    const existingList = existingPersons.map(p => p.displayId).join(', ');
+    throw createError(400, `These displayIds already exist: ${existingList}`);
   }
 
-  // Process all persons in a transaction - all or nothing
-  const results = await prisma.$transaction(async (tx) => {
-    const createdPersons: Person[] = [];
+  // Create all persons with contact information in a transaction
+  const createdPersons = await prisma.$transaction(async (tx) => {
+    const results: Person[] = [];
 
     for (const personData of personsData) {
       const { contactInformations, ...personFields } = personData;
 
-      // Create person - no try/catch, let errors fail the transaction
+      // Create person
       const person = await tx.person.create({
         data: personFields
       });
@@ -225,31 +274,51 @@ router.post('/bulk', requireAuth, canCreatePerson, validateBody(bulkPersonsSchem
         }
       }
 
-      createdPersons.push(formatPerson(person));
+      results.push(formatPerson(person));
     }
 
-    return createdPersons;
+    return results;
   });
 
-  res.status(201).json({
+  const response: ApiResponse<Person[]> = {
     success: true,
-    data: results,
-    message: `Successfully created ${results.length} person(s)`
-  });
+    data: createdPersons,
+    message: `${createdPersons.length} persons created successfully`
+  };
+
+  res.status(201).json(response);
 }));
 
-// DELETE /api/persons/:displayId - Soft delete person (auth required)
-router.delete('/:displayId', requireAuth, validateDisplayIdParam, canModifyPerson, asyncHandler(async (req, res) => {
+// POST /api/persons/:displayId/avatar - Upload avatar image (auth required)
+router.post('/:displayId/avatar', requireAuth, validateDisplayIdParam, canModifyPerson, upload.single('avatar'), asyncHandler(async (req, res) => {
   const displayId = req.params.displayId;
+  
+  if (!req.file) {
+    throw createError(400, 'No file uploaded');
+  }
 
-  await prisma.person.update({
-    where: { displayId },
-    data: { deleted: true }
+  // Check person exists
+  const person = await prisma.person.findFirst({
+    where: { displayId, deleted: false }
   });
 
-  const response: ApiResponse<null> = {
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  // Upload to Cloudinary
+  const uploadResult = await uploadImageToCloudinary(req.file.buffer);
+
+  // Update person with new image URL
+  const updatedPerson = await prisma.person.update({
+    where: { displayId },
+    data: { imageURL: uploadResult.secureUrl }
+  });
+
+  const response: ApiResponse<Person> = {
     success: true,
-    message: 'Person deleted successfully'
+    data: formatPerson(updatedPerson),
+    message: 'Avatar uploaded successfully'
   };
 
   res.json(response);

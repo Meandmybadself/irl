@@ -223,7 +223,7 @@ export class BulkImportModal extends LitElement {
           <p class="text-sm ${textColors.tertiary} mb-2">
             ${this.entityType === 'person'
               ? 'Format: firstName, lastName, displayId, pronouns, imageURL, contactType1, contactLabel1, contactValue1, contactPrivacy1, ...'
-              : 'Format: name, displayId, description, publiclyVisible, allowsAnyUserToCreateSubgroup, parentGroupId, contactType1, contactLabel1, contactValue1, contactPrivacy1, ...'}
+              : 'Format: name, displayId, description, publiclyVisible, allowsAnyUserToCreateSubgroup, parentGroupDisplayId, contactType1, contactLabel1, contactValue1, contactPrivacy1, ...'}
           </p>
           <textarea
             .value=${this.tsvInput}
