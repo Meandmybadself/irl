@@ -1,23 +1,22 @@
-import { LitElement, html } from 'lit';
+import { html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { Group, ContactInformation } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
 import { textStyles, backgroundColors, textColors } from '../../utilities/text-colors.js';
+import { BaseList, SortableColumn } from './base-list.js';
 
 @customElement('group-list')
-export class GroupList extends LitElement {
-  createRenderRoot() {
-    return this;
-  }
-
+export class GroupList extends BaseList<Group> {
   @property({ type: Array })
   groups: Group[] = [];
 
-  @property({ type: Boolean })
-  showAdmin = false;
+  // Map groups to items for base class
+  get items(): Group[] {
+    return this.groups;
+  }
 
   @property({ type: Boolean })
-  showHeader = true;
+  showAdmin = false;
 
   @property({ type: Array })
   adminGroupIds: number[] = [];
@@ -28,9 +27,6 @@ export class GroupList extends LitElement {
   @property({ type: Boolean })
   showEdit = true;
 
-  @property({ type: Boolean })
-  isLoading = false;
-
   @property({ type: Object })
   groupContacts: Map<number, ContactInformation[]> = new Map();
 
@@ -40,7 +36,7 @@ export class GroupList extends LitElement {
   @property({ type: Boolean })
   showContacts = true;
 
-  private getColumnCount(): number {
+  protected getColumnCount(): number {
     let count = 1; // Name
     if (this.showContacts) {
       count += 1; // Contact Information
@@ -49,6 +45,51 @@ export class GroupList extends LitElement {
       count += 1;
     }
     return count;
+  }
+
+  protected getColumns(): SortableColumn<Group>[] {
+    return [
+      {
+        id: 'name',
+        label: 'Name',
+        sortable: true,
+        getSortValue: (group) => group.name.toLowerCase(),
+      },
+      {
+        id: 'contact',
+        label: 'Contact Information',
+        sortable: false,
+      },
+      {
+        id: 'edit',
+        label: 'Edit',
+        sortable: false,
+      },
+    ];
+  }
+
+  protected getSearchableText(group: Group): string {
+    const contactTexts: string[] = [];
+    const contacts = this.getVisibleContacts(group.id);
+    contacts.forEach(contact => {
+      if (contact.value) {
+        contactTexts.push(contact.value);
+        if (contact.label) {
+          contactTexts.push(contact.label);
+        }
+      }
+    });
+
+    return [
+      group.name,
+      group.displayId,
+      group.description || '',
+      ...contactTexts,
+    ].filter(Boolean).join(' ');
+  }
+
+  protected getEmptyStateMessage(): string {
+    return 'No groups found.';
   }
 
   private handleGroupClick(group: Group) {
@@ -152,7 +193,7 @@ export class GroupList extends LitElement {
     `;
   }
 
-  private renderRow(group: Group) {
+  protected renderRow(group: Group): TemplateResult {
     const isAdmin = this.adminGroupIds.includes(group.id);
     const rowClasses = this.linkToDetail
       ? `cursor-pointer ${backgroundColors.contentHover} transition-colors`
@@ -161,7 +202,7 @@ export class GroupList extends LitElement {
 
     return html`
       <tr class="${rowClasses}" @click=${onClick}>
-        <td class="py-5 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary} max-w-xs">
+        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary} max-w-xs">
           <div class="flex items-center gap-2">
             <span class="font-semibold">${group.name}</span>
             ${this.showAdmin && isAdmin
@@ -175,14 +216,14 @@ export class GroupList extends LitElement {
         </td>
         ${this.showContacts
           ? html`
-              <td class="px-8 py-5 text-sm ${textStyles.table.cellSecondary}">
+              <td class="px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
                 ${this.renderContactColumn(group.id)}
               </td>
             `
           : ''}
         ${this.showEdit
           ? html`
-              <td class="py-5 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
+              <td class="py-3 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
                 <button
                   @click=${(e: Event) => this.handleEditGroup(e, group.displayId)}
                   class="text-indigo-600 hover:text-indigo-500 bg-transparent border-none cursor-pointer dark:text-indigo-400 dark:hover:text-indigo-300"
@@ -196,22 +237,18 @@ export class GroupList extends LitElement {
     `;
   }
 
-  private renderHeader() {
+  protected renderHeader(): TemplateResult {
     if (!this.showHeader) {
-      return '';
+      return html``;
     }
 
     return html`
       <thead>
         <tr>
-          <th scope="col" class="py-3.5 pr-8 pl-8 text-left ${textStyles.table.header} max-w-xs">
-            Name
-          </th>
+          ${this.renderSortableHeader('name', 'Name', true)}
           ${this.showContacts
             ? html`
-                <th scope="col" class="px-8 py-3.5 text-left ${textStyles.table.header}">
-                  Contact Information
-                </th>
+                ${this.renderSortableHeader('contact', 'Contact Information', false)}
               `
             : ''}
           ${this.showEdit
@@ -223,31 +260,6 @@ export class GroupList extends LitElement {
             : ''}
         </tr>
       </thead>
-    `;
-  }
-
-  private renderBody() {
-    if (this.groups.length === 0) {
-      return html`
-        <tr>
-          <td colspan="${this.getColumnCount()}" class="px-3 py-8 text-center ${textStyles.table.cellSecondary}">
-            ${this.isLoading ? 'Loading groups...' : 'No groups found.'}
-          </td>
-        </tr>
-      `;
-    }
-
-    return html`${this.groups.map(group => this.renderRow(group))}`;
-  }
-
-  render() {
-    return html`
-      <table class="relative min-w-full divide-y ${backgroundColors.divideStrong}">
-        ${this.renderHeader()}
-        <tbody class="divide-y ${backgroundColors.divide}">
-          ${this.renderBody()}
-        </tbody>
-      </table>
     `;
   }
 }

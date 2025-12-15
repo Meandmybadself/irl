@@ -1,23 +1,22 @@
-import { LitElement, html } from 'lit';
+import { html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { ContactInformation, Person } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
 import { textStyles, backgroundColors, textColors } from '../../utilities/text-colors.js';
+import { BaseList, SortableColumn } from './base-list.js';
 
 @customElement('person-list')
-export class PersonList extends LitElement {
-  createRenderRoot() {
-    return this;
-  }
-
+export class PersonList extends BaseList<Person> {
   @property({ type: Array })
   persons: Person[] = [];
 
-  @property({ type: Boolean })
-  showAdmin = false;
+  // Map persons to items for base class
+  get items(): Person[] {
+    return this.persons;
+  }
 
   @property({ type: Boolean })
-  showHeader = true;
+  showAdmin = false;
 
   @property({ type: Array })
   adminPersonIds: number[] = [];
@@ -28,9 +27,6 @@ export class PersonList extends LitElement {
   @property({ type: Boolean })
   showEdit = true;
 
-  @property({ type: Boolean })
-  isLoading = false;
-
   @property({ attribute: false })
   personContacts: Map<number, ContactInformation[]> = new Map();
 
@@ -40,7 +36,7 @@ export class PersonList extends LitElement {
   @property({ type: Boolean })
   showContacts = true;
 
-  private getColumnCount(): number {
+  protected getColumnCount(): number {
     let count = 1; // Name
     if (this.showContacts) {
       count += 1; // Contact Information
@@ -49,6 +45,51 @@ export class PersonList extends LitElement {
       count += 1;
     }
     return count;
+  }
+
+  protected getColumns(): SortableColumn<Person>[] {
+    return [
+      {
+        id: 'name',
+        label: 'Name',
+        sortable: true,
+        getSortValue: (person) => `${person.firstName} ${person.lastName}`.toLowerCase(),
+      },
+      {
+        id: 'contact',
+        label: 'Contact Information',
+        sortable: false,
+      },
+      {
+        id: 'edit',
+        label: 'Edit',
+        sortable: false,
+      },
+    ];
+  }
+
+  protected getSearchableText(person: Person): string {
+    const contactTexts: string[] = [];
+    const contacts = this.getVisibleContacts(person.id);
+    contacts.forEach(contact => {
+      if (contact.value) {
+        contactTexts.push(contact.value);
+        if (contact.label) {
+          contactTexts.push(contact.label);
+        }
+      }
+    });
+
+    return [
+      person.firstName,
+      person.lastName,
+      person.displayId,
+      ...contactTexts,
+    ].filter(Boolean).join(' ');
+  }
+
+  protected getEmptyStateMessage(): string {
+    return 'No people found.';
   }
 
   private getVisibleContacts(personId: number): ContactInformation[] {
@@ -156,7 +197,7 @@ export class PersonList extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  private renderRow(person: Person) {
+  protected renderRow(person: Person): TemplateResult {
     const isAdmin = this.adminPersonIds.includes(person.id);
     const rowClasses = this.linkToDetail
       ? `cursor-pointer ${backgroundColors.contentHover} transition-colors`
@@ -165,20 +206,20 @@ export class PersonList extends LitElement {
 
     return html`
       <tr class="${rowClasses}" @click=${onClick}>
-        <td class="py-5 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
+        <td class="py-3 pr-8 pl-8 text-sm ${textStyles.table.cellPrimary}">
           <div class="flex items-center">
-            <div class="size-11 shrink-0">
+            <div class="size-8 shrink-0">
               ${person.imageURL
                 ? html`
                     <img
                       src="${person.imageURL}"
                       alt="${person.firstName} ${person.lastName}"
-                      class="size-11 rounded-full dark:outline dark:outline-white/10"
+                      class="size-8 rounded-full dark:outline dark:outline-white/10"
                     />
                   `
                 : html`
                     <div
-                      class="size-11 rounded-full bg-indigo-600 flex items-center justify-center ${textStyles.button.primary} font-medium text-sm"
+                      class="size-8 rounded-full bg-indigo-600 flex items-center justify-center ${textStyles.button.primary} font-medium text-xs"
                     >
                       ${this.getInitials(person.firstName, person.lastName)}
                     </div>
@@ -200,14 +241,14 @@ export class PersonList extends LitElement {
         </td>
         ${this.showContacts
           ? html`
-              <td class="px-8 py-5 text-sm ${textStyles.table.cellSecondary}">
+              <td class="px-8 py-3 text-sm ${textStyles.table.cellSecondary}">
                 ${this.renderContactColumn(person.id)}
               </td>
             `
           : ''}
         ${this.showEdit
           ? html`
-              <td class="py-5 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
+              <td class="py-3 pr-8 pl-8 text-right text-sm font-medium whitespace-nowrap">
                 <button
                   @click=${(e: Event) => this.handleEditPerson(e, person.displayId)}
                   class="${textColors.link} ${textColors.linkHover} bg-transparent border-none cursor-pointer"
@@ -221,22 +262,18 @@ export class PersonList extends LitElement {
     `;
   }
 
-  private renderHeader() {
+  protected renderHeader(): TemplateResult {
     if (!this.showHeader) {
-      return '';
+      return html``;
     }
 
     return html`
       <thead>
         <tr>
-          <th scope="col" class="py-3.5 pr-8 pl-8 text-left ${textStyles.table.header}">
-            Name
-          </th>
+          ${this.renderSortableHeader('name', 'Name', true)}
           ${this.showContacts
             ? html`
-                <th scope="col" class="px-8 py-3.5 text-left ${textStyles.table.header}">
-                  Contact Information
-                </th>
+                ${this.renderSortableHeader('contact', 'Contact Information', false)}
               `
             : ''}
           ${this.showEdit
@@ -248,31 +285,6 @@ export class PersonList extends LitElement {
             : ''}
         </tr>
       </thead>
-    `;
-  }
-
-  private renderBody() {
-    if (this.persons.length === 0) {
-      return html`
-        <tr>
-          <td colspan="${this.getColumnCount()}" class="px-3 py-8 text-center ${textStyles.table.cellSecondary}">
-            ${this.isLoading ? 'Loading people...' : 'No people found.'}
-          </td>
-        </tr>
-      `;
-    }
-
-    return html`${this.persons.map(person => this.renderRow(person))}`;
-  }
-
-  render() {
-    return html`
-      <table class="relative min-w-full divide-y ${backgroundColors.divideStrong}">
-        ${this.renderHeader()}
-        <tbody class="divide-y ${backgroundColors.divide}">
-          ${this.renderBody()}
-        </tbody>
-      </table>
     `;
   }
 }
