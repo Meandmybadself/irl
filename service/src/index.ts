@@ -23,6 +23,9 @@ import claimRoutes from './routes/claims.js';
 import groupInviteRoutes from './routes/group-invites.js';
 import personGroupRoutes from './routes/person-groups.js';
 import contactMappingRoutes from './routes/contact-mappings.js';
+import interestsRoutes from './routes/interests.js';
+import personInterestsRoutes from './routes/person-interests.js';
+import personRecommendationsRoutes from './routes/person-recommendations.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error-handler.js';
@@ -80,6 +83,9 @@ server.use('/api/claims', claimRoutes);
 server.use('/api/group-invites', groupInviteRoutes);
 server.use('/api/person-groups', personGroupRoutes);
 server.use('/api/contact-mappings', contactMappingRoutes);
+server.use('/api/interests', interestsRoutes);
+server.use('/api/persons', personInterestsRoutes);
+server.use('/api/persons', personRecommendationsRoutes);
 
 server.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Hello World from IRL Service!' });

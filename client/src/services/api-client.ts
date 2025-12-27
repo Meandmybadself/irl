@@ -31,7 +31,10 @@ import type {
   CreatePersonContactInformationRequest,
   GroupContactInformation,
   CreateGroupContactInformationRequest,
-  PersonGroupWithRelations
+  PersonGroupWithRelations,
+  Interest,
+  PersonInterest,
+  SetPersonInterestsRequest
 } from '@irl/shared';
 
 export interface PaginationParams {
@@ -599,6 +602,45 @@ export class ApiClient {
     return this.request<ApiResponse<null>>('/system/import', {
       method: 'POST',
       body: JSON.stringify(importData)
+    });
+  }
+
+  // Interests endpoints
+  async getInterests(category?: string, params?: PaginationParams): Promise<PaginatedResponse<Interest>> {
+    const queryParams = new URLSearchParams();
+    if (category) queryParams.append('category', category);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    const query = queryParams.toString();
+    return this.request<PaginatedResponse<Interest>>(`/interests${query ? `?${query}` : ''}`);
+  }
+
+  async getInterestCategories(): Promise<ApiResponse<string[]>> {
+    return this.request<ApiResponse<string[]>>('/interests/categories');
+  }
+
+  async renameInterestCategory(oldName: string, newName: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/interests/categories/${encodeURIComponent(oldName)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ newName })
+    });
+  }
+
+  async deleteInterestCategory(name: string): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/interests/categories/${encodeURIComponent(name)}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Person Interests endpoints
+  async getPersonInterests(displayId: string): Promise<ApiResponse<(PersonInterest & { interest?: Interest })[]>> {
+    return this.request<ApiResponse<(PersonInterest & { interest?: Interest })[]>>(`/persons/${displayId}/interests`);
+  }
+
+  async setPersonInterests(displayId: string, data: SetPersonInterestsRequest): Promise<ApiResponse<(PersonInterest & { interest?: Interest })[]>> {
+    return this.request<ApiResponse<(PersonInterest & { interest?: Interest })[]>>(`/persons/${displayId}/interests`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
     });
   }
 }

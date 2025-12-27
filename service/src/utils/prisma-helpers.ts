@@ -310,3 +310,29 @@ export const claimPerson = async (claimCode: string, newUserId: number) => {
 
   return updatedClaim;
 };
+
+export const findPersonWithInterests = async (personId: number) => {
+  return prisma.person.findUnique({
+    where: { id: personId },
+    include: {
+      interests: {
+        include: {
+          interest: true
+        }
+      }
+    }
+  });
+};
+
+export const findPersonByDisplayIdWithInterests = async (displayId: string) => {
+  return prisma.person.findUnique({
+    where: { displayId },
+    include: {
+      interests: {
+        include: {
+          interest: true
+        }
+      }
+    }
+  });
+};

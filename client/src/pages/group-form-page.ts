@@ -405,7 +405,7 @@ export class GroupFormPage extends LitElement {
                   .groupId=${this.groupId}
                   .groupDisplayId=${this.groupDisplayId}
                   .excludePersonIds=${this.memberPersonIds}
-                  @admin-added=${async (e: CustomEvent) => {
+                  @admin-added=${async () => {
                     this.store.dispatch(addNotification('Administrator added successfully', 'success'));
                     // Reload person IDs
                     await this.loadPersonIds();

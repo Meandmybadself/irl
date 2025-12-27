@@ -58,6 +58,7 @@ model Person {
   user               User                       @relation(fields: [userId], references: [id])
   contactInformation PersonContactInformation[]
   groupMemberships   PersonGroup[]
+  interests         PersonInterest[]
 
   @@index([userId])
   @@map("people")
@@ -197,4 +198,34 @@ model EmailChangeRequest {
 enum PrivacyLevel {
   PRIVATE
   PUBLIC
+}
+
+model Interest {
+  id        Int              @id @default(autoincrement())
+  name      String
+  category  String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deleted   Boolean          @default(false)
+  personInterests PersonInterest[]
+
+  @@index([category])
+  @@index([deleted])
+  @@map("interests")
+}
+
+model PersonInterest {
+  id         Int      @id @default(autoincrement())
+  personId   Int
+  interestId Int
+  level      Decimal  @db.Decimal(3, 2) // 0.00 to 1.00
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  person     Person   @relation(fields: [personId], references: [id])
+  interest   Interest @relation(fields: [interestId], references: [id])
+
+  @@unique([personId, interestId])
+  @@index([personId])
+  @@index([interestId])
+  @@map("person_interests")
 }

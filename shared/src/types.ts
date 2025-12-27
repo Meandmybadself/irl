@@ -133,10 +133,32 @@ export interface PersonGroup {
   isAdmin: boolean;
 }
 
+export interface Interest {
+  id: number;
+  name: string;
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PersonInterest {
+  id: number;
+  personId: number;
+  interestId: number;
+  level: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Extended types with relations for API responses
 export interface PersonGroupWithRelations extends PersonGroup {
   person?: Person;
   group?: Group;
+}
+
+export interface PersonInterestWithRelations extends PersonInterest {
+  person?: Person;
+  interest?: Interest;
 }
 
 export interface PersonWithRelations extends Person {
@@ -144,6 +166,7 @@ export interface PersonWithRelations extends Person {
   contactInformation?: ContactInformation[];
   groupMemberships?: PersonGroup[];
   claims?: Claim[];
+  interests?: PersonInterest[];
 }
 
 export interface GroupWithRelations extends Group {
@@ -302,6 +325,20 @@ export interface UpdatePersonGroupRequest {
   personId?: number;
   groupId?: number;
   isAdmin?: boolean;
+}
+
+export interface CreateInterestRequest {
+  name: string;
+  category: string;
+}
+
+export interface PersonInterestItem {
+  interestId: number;
+  level: number;
+}
+
+export interface SetPersonInterestsRequest {
+  interests: PersonInterestItem[];
 }
 
 // System export/import types

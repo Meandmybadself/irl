@@ -415,3 +415,81 @@ export const canModifyPersonGroup = async (req: Request, _res: Response, next: N
     next(error);
   }
 };
+
+// Middleware to check if user can manage interests (create/delete)
+// Only system admins can manage interests
+export const canManageInterests = async (req: Request, _res: Response, next: NextFunction) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  if (!req.user?.isSystemAdmin) {
+    throw createError(403, 'Forbidden: Only system administrators can manage interests');
+  }
+
+  next();
+};
+
+// Middleware to check if user can view a person's interests
+// User owns person OR system admin
+export const canViewPersonInterests = async (req: Request, _res: Response, next: NextFunction) => {
+  const { displayId } = req.params;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can view any person's interests
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  const person = await prisma.person.findFirst({
+    where: { displayId, deleted: false }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  if (person.userId !== userId) {
+    throw createError(403, 'Forbidden: You do not have permission to view this person\'s interests');
+  }
+
+  next();
+};
+
+// Middleware to check if user can modify a person's interests
+// User owns person OR system admin
+export const canModifyPersonInterests = async (req: Request, _res: Response, next: NextFunction) => {
+  const { displayId } = req.params;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  // System admins can modify any person's interests
+  if (req.user?.isSystemAdmin) {
+    next();
+    return;
+  }
+
+  const person = await prisma.person.findFirst({
+    where: { displayId, deleted: false }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found');
+  }
+
+  if (person.userId !== userId) {
+    throw createError(403, 'Forbidden: You do not have permission to modify this person\'s interests');
+  }
+
+  next();
+};

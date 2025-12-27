@@ -286,3 +286,18 @@ export const validateSearchQuery = async (req: Request, res: Response, next: Nex
     next();
   }
 };
+
+// Interest schemas
+export const interestSchema = z.object({
+  name: z.string().min(1, 'Interest name is required'),
+  category: z.string().min(1, 'Category is required')
+});
+
+export const personInterestItemSchema = z.object({
+  interestId: z.number().int('Interest ID must be an integer'),
+  level: z.number().min(0, 'Level must be at least 0').max(1, 'Level must be at most 1')
+});
+
+export const personInterestsSchema = z.object({
+  interests: z.array(personInterestItemSchema).min(0, 'Interests array is required')
+});

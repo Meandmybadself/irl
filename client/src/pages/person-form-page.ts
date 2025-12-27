@@ -9,6 +9,7 @@ import { toDisplayId } from '../utilities/string.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/contact-info-form.js';
 import '../components/ui/image-cropper-modal.js';
+import '../components/ui/interests-form.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { ContactInformation } from '@irl/shared';
@@ -473,6 +474,20 @@ export class PersonFormPage extends LitElement {
                     this.store.dispatch(addNotification(e.detail.error, 'error'));
                   }}
                 ></contact-info-form>
+              ` : ''}
+
+              ${this.personDisplayId ? html`
+                <div class="pt-6 border-t ${backgroundColors.border}">
+                  <interests-form
+                    .personDisplayId=${this.personDisplayId}
+                    @interests-saved=${() => {
+                      this.store.dispatch(addNotification('Interests saved successfully', 'success'));
+                    }}
+                    @interest-error=${(e: CustomEvent) => {
+                      this.store.dispatch(addNotification(e.detail.error, 'error'));
+                    }}
+                  ></interests-form>
+                </div>
               ` : ''}
 
               <div class="flex items-center justify-between gap-x-4">

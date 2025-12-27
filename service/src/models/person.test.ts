@@ -523,6 +523,96 @@ describe('Person Management Tests', () => {
     })
   })
 
+  describe('Person Interests', () => {
+    it('should associate Person with Interests', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const person = await prisma.person.create({
+        data: generateTestData.person(user.id)
+      })
+
+      const interest = await prisma.interest.create({
+        data: {
+          name: 'Photography',
+          category: 'outdoor_hobbies'
+        }
+      })
+
+      const personInterest = await prisma.personInterest.create({
+        data: {
+          personId: person.id,
+          interestId: interest.id,
+          level: 0.75
+        }
+      })
+
+      expect(personInterest.personId).toBe(person.id)
+      expect(personInterest.interestId).toBe(interest.id)
+      expect(Number(personInterest.level)).toBe(0.75)
+    })
+
+    it('should retrieve Person with Interests', async () => {
+      if (!dbAvailable) {
+        console.warn('Skipping database test - no test database available')
+        expect(true).toBe(true)
+        return
+      }
+
+      const user = await prisma.user.create({
+        data: generateTestData.user()
+      })
+
+      const person = await prisma.person.create({
+        data: generateTestData.person(user.id)
+      })
+
+      const interest1 = await prisma.interest.create({
+        data: {
+          name: 'Photography',
+          category: 'outdoor_hobbies'
+        }
+      })
+
+      const interest2 = await prisma.interest.create({
+        data: {
+          name: 'Reading',
+          category: 'observation_and_other'
+        }
+      })
+
+      await prisma.personInterest.createMany({
+        data: [
+          { personId: person.id, interestId: interest1.id, level: 0.8 },
+          { personId: person.id, interestId: interest2.id, level: 0.6 }
+        ]
+      })
+
+      const personWithInterests = await prisma.person.findUnique({
+        where: { id: person.id },
+        include: {
+          interests: {
+            include: {
+              interest: true
+            }
+          }
+        }
+      })
+
+      expect(personWithInterests?.interests).toHaveLength(2)
+      const interestNames = personWithInterests?.interests.map(pi => pi.interest.name)
+      expect(interestNames).toContain('Photography')
+      expect(interestNames).toContain('Reading')
+    })
+  })
+
   describe('Person Validation', () => {
     it('should validate Person model structure', () => {
       const personData = {
