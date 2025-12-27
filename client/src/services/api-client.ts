@@ -33,6 +33,8 @@ import type {
   CreateGroupContactInformationRequest,
   PersonGroupWithRelations,
   Interest,
+  CreateInterestRequest,
+  UpdateInterestRequest,
   PersonInterest,
   SetPersonInterestsRequest
 } from '@irl/shared';
@@ -613,6 +615,26 @@ export class ApiClient {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     const query = queryParams.toString();
     return this.request<PaginatedResponse<Interest>>(`/interests${query ? `?${query}` : ''}`);
+  }
+
+  async createInterest(data: CreateInterestRequest): Promise<ApiResponse<Interest>> {
+    return this.request<ApiResponse<Interest>>('/interests', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async updateInterest(id: number, data: UpdateInterestRequest): Promise<ApiResponse<Interest>> {
+    return this.request<ApiResponse<Interest>>(`/interests/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteInterest(id: number): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`/interests/${id}`, {
+      method: 'DELETE'
+    });
   }
 
   async getInterestCategories(): Promise<ApiResponse<string[]>> {

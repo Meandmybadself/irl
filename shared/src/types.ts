@@ -332,6 +332,11 @@ export interface CreateInterestRequest {
   category: string;
 }
 
+export interface UpdateInterestRequest {
+  name?: string;
+  category?: string;
+}
+
 export interface PersonInterestItem {
   interestId: number;
   level: number;

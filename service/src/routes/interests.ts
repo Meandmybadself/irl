@@ -83,6 +83,50 @@ router.post('/', requireAuth, canManageInterests, validateBody(interestSchema), 
   res.status(201).json(response);
 }));
 
+// PUT /api/interests/:id - Update interest (admin only)
+router.put('/:id', requireAuth, canManageInterests, validateIdParam, validateBody(interestSchema), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  const interest = await prisma.interest.findUnique({
+    where: { id }
+  });
+
+  if (!interest) {
+    throw createError(404, 'Interest not found');
+  }
+
+  if (interest.deleted) {
+    throw createError(400, 'Cannot update a deleted interest');
+  }
+
+  // Check if another interest with same name and category already exists
+  const existing = await prisma.interest.findFirst({
+    where: {
+      name: req.body.name,
+      category: req.body.category,
+      deleted: false,
+      id: { not: id }
+    }
+  });
+
+  if (existing) {
+    throw createError(400, 'An interest with this name and category already exists');
+  }
+
+  const updated = await prisma.interest.update({
+    where: { id },
+    data: req.body
+  });
+
+  const response: ApiResponse<Interest> = {
+    success: true,
+    data: formatInterest(updated),
+    message: 'Interest updated successfully'
+  };
+
+  res.json(response);
+}));
+
 // DELETE /api/interests/:id - Soft delete interest (admin only)
 router.delete('/:id', requireAuth, canManageInterests, validateIdParam, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
