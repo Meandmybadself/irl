@@ -231,15 +231,16 @@ export class InterestsForm extends LitElement {
                         min="0"
                         max="4"
                         step="1"
-                        .value=${level.toString()}
+                        .value=${(level * 4).toString()}
                         @input=${(e: Event) => {
-                          const value = parseFloat((e.target as HTMLInputElement).value);
-                          this.updateInterestLevel(interest.id, value);
+                          const displayValue = parseInt((e.target as HTMLInputElement).value);
+                          const apiValue = displayValue / 4;
+                          this.updateInterestLevel(interest.id, apiValue);
                         }}
                         class="w-32"
                       />
                       <span class="text-sm font-medium ${textColors.primary} w-12 text-right">
-                        ${level.toFixed(0)}
+                        ${(level * 4).toFixed(0)}
                       </span>
                     </div>
                   </div>
