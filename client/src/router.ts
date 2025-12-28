@@ -12,6 +12,7 @@ import './pages/profile-page.js';
 import './pages/home-page.js';
 import './pages/system-admin-page.js';
 import './pages/category-admin-page.js';
+import './pages/audit-logs-page.js';
 import './pages/person-form-page.js';
 import './pages/person-detail-page.js';
 import './pages/persons-page.js';
@@ -126,6 +127,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<category-admin-page></category-admin-page>`;
+      }
+    },
+    {
+      path: '/admin/logs',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/admin/logs'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<audit-logs-page></audit-logs-page>`;
       }
     },
     {

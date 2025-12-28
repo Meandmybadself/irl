@@ -26,9 +26,11 @@ import contactMappingRoutes from './routes/contact-mappings.js';
 import interestsRoutes from './routes/interests.js';
 import personInterestsRoutes from './routes/person-interests.js';
 import personRecommendationsRoutes from './routes/person-recommendations.js';
+import auditLogsRoutes from './routes/audit-logs.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error-handler.js';
+import { auditLogger } from './middleware/audit-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,6 +74,9 @@ server.use(session({
 server.use(passport.initialize());
 server.use(passport.session());
 
+// Audit logging middleware (must be after passport but before routes)
+server.use(auditLogger);
+
 // API Routes
 server.use('/api/auth', authRoutes);
 server.use('/api/contact-information', contactInformationRoutes);
@@ -86,6 +91,7 @@ server.use('/api/contact-mappings', contactMappingRoutes);
 server.use('/api/interests', interestsRoutes);
 server.use('/api/persons', personInterestsRoutes);
 server.use('/api/persons', personRecommendationsRoutes);
+server.use('/api/audit-logs', auditLogsRoutes);
 
 server.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Hello World from IRL Service!' });

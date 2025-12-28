@@ -493,3 +493,18 @@ export const canModifyPersonInterests = async (req: Request, _res: Response, nex
 
   next();
 };
+
+// Middleware to check if user is a system admin
+export const requireSystemAdmin = async (req: Request, _res: Response, next: NextFunction) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw createError(401, 'Authentication required');
+  }
+
+  if (!req.user?.isSystemAdmin) {
+    throw createError(403, 'Forbidden: Only system administrators can access this resource');
+  }
+
+  next();
+};

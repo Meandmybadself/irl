@@ -346,6 +346,19 @@ export interface SetPersonInterestsRequest {
   interests: PersonInterestItem[];
 }
 
+// Audit Log types
+export interface AuditLog {
+  id: number;
+  userId: number | null;
+  method: string;
+  path: string;
+  statusCode: number;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  user?: User;
+}
+
 // System export/import types
 export interface SystemExportData {
   version: string;

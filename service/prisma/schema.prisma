@@ -39,6 +39,7 @@ model User {
   claims             Claim[]
   people             Person[]
   emailChangeRequests EmailChangeRequest[]
+  auditLogs          AuditLog[]
 
   @@map("users")
 }
@@ -228,4 +229,21 @@ model PersonInterest {
   @@index([personId])
   @@index([interestId])
   @@map("person_interests")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  method     String   // GET, POST, PUT, PATCH, DELETE
+  path       String   // API endpoint path
+  statusCode Int      // HTTP status code
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([method])
+  @@map("audit_logs")
 }

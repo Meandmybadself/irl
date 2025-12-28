@@ -36,7 +36,8 @@ import type {
   CreateInterestRequest,
   UpdateInterestRequest,
   PersonInterest,
-  SetPersonInterestsRequest
+  SetPersonInterestsRequest,
+  AuditLog
 } from '@irl/shared';
 
 export interface PaginationParams {
@@ -664,6 +665,18 @@ export class ApiClient {
       method: 'PUT',
       body: JSON.stringify(data)
     });
+  }
+
+  // Audit Logs endpoints
+  async getAuditLogs(params?: PaginationParams & { userId?: number; method?: string; path?: string }): Promise<PaginatedResponse<AuditLog>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.userId) queryParams.append('userId', params.userId.toString());
+    if (params?.method) queryParams.append('method', params.method);
+    if (params?.path) queryParams.append('path', params.path);
+    const query = queryParams.toString();
+    return this.request<PaginatedResponse<AuditLog>>(`/audit-logs${query ? `?${query}` : ''}`);
   }
 }
 
