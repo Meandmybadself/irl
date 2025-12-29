@@ -132,39 +132,7 @@ export class HomePage extends LitElement {
               `}
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <a
-            href="/persons"
-            @click=${(e: Event) => {
-              e.preventDefault();
-              window.history.pushState({}, '', '/persons');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            class="block ${backgroundColors.content} p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 ${backgroundColors.border} hover:shadow-md hover:border-blue-500"
-          >
-            <div class="text-4xl mb-3">👥</div>
-            <h2 class="text-xl font-semibold ${textColors.primary} mb-2">
-              People
-            </h2>
-            <p class="text-sm ${textColors.tertiary} leading-relaxed">Browse and manage people in your directory</p>
-          </a>
 
-          <a
-            href="/groups"
-            @click=${(e: Event) => {
-              e.preventDefault();
-              window.history.pushState({}, '', '/groups');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            class="block ${backgroundColors.content} p-6 rounded-lg shadow-sm no-underline text-inherit transition-all border-2 ${backgroundColors.border} hover:shadow-md hover:border-blue-500"
-          >
-            <div class="text-4xl mb-3">📂</div>
-            <h2 class="text-xl font-semibold ${textColors.primary} mb-2">
-              Groups
-            </h2>
-            <p class="text-sm ${textColors.tertiary} leading-relaxed">Browse and manage your groups</p>
-          </a>
-        </div>
       </app-layout>
     `;
   }
