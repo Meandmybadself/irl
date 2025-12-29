@@ -3,7 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
-import { selectCurrentPerson, selectCurrentUser } from '../store/selectors.js';
+import { selectCurrentUser } from '../store/selectors.js';
 import { addNotification } from '../store/slices/ui.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import type { AppStore } from '../store/index.js';
@@ -28,9 +28,6 @@ export class HomePage extends LitElement {
   private api!: ApiClient;
 
   @state()
-  private currentPerson: any = null;
-
-  @state()
   private persons: Person[] = [];
 
   @state()
@@ -45,27 +42,9 @@ export class HomePage extends LitElement {
   @state()
   private isLoading = false;
 
-  private unsubscribe?: () => void;
-
   async connectedCallback() {
     super.connectedCallback();
-    if (this.store) {
-      this.updateState();
-      this.unsubscribe = this.store.subscribe(() => {
-        this.updateState();
-      });
-    }
     await this.loadData();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.unsubscribe?.();
-  }
-
-  private updateState() {
-    const state = this.store.getState();
-    this.currentPerson = selectCurrentPerson(state);
   }
 
   private async loadData() {
@@ -130,27 +109,12 @@ export class HomePage extends LitElement {
   }
 
   render() {
-    const firstName = this.currentPerson?.firstName || 'there';
     const currentUser = selectCurrentUser(this.store.getState());
     const canViewPrivateContacts = currentUser?.isSystemAdmin || false;
 
     return html`
       <app-layout>
-        <div class="${backgroundColors.content} p-8 rounded-lg shadow-sm mb-8">
-          <h1 class="text-3xl font-bold ${textColors.primary} mb-4">Welcome, ${firstName}! 👋</h1>
-          <p class="text-base ${textColors.secondary} leading-relaxed">
-            Your community directory for exchanging contact information and staying connected.
-          </p>
-        </div>
-
         <div class="${backgroundColors.content} rounded-lg shadow-sm p-6 mb-6">
-          <h2 class="text-xl font-semibold ${textColors.primary} mb-4">
-            Search Everyone
-          </h2>
-          <p class="text-sm ${textColors.tertiary} mb-4">
-            Search across all people and groups in your directory
-          </p>
-
           ${this.isLoading
             ? html`
                 <div class="flex items-center justify-center py-12">

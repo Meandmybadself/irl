@@ -161,7 +161,7 @@ export class GroupList extends BaseList<Group> {
           ${value}
         </a>`;
       default:
-        return html`<span class="${textStyles.table.cell}">${value}</span>`;
+        return html`${value}`;
     }
   }
 
