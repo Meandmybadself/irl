@@ -6,6 +6,7 @@ import { apiClient } from './services/api-client.js';
 import { createAppStore, type AppStore } from './store/index.js';
 import { checkSession } from './store/slices/auth.js';
 import { loadSystem } from './store/slices/system.js';
+import { checkMasqueradeStatus } from './store/slices/masquerade.js';
 import { storeContext } from './contexts/store-context.js';
 import { apiContext } from './contexts/api-context.js';
 import { createRoutes } from './router.js';
@@ -92,6 +93,9 @@ export class AppRoot extends LitElement {
         this.store.dispatch(checkSession()),
         this.store.dispatch(loadSystem())
       ]);
+
+      // Check masquerade status after session is confirmed
+      await this.store.dispatch(checkMasqueradeStatus());
     } catch (error) {
       // Session check failed, user is not logged in
       console.log('No active session');

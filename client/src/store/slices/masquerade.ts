@@ -1,4 +1,5 @@
 import type { AnyAction } from 'redux';
+import type { AppThunk } from '../index.js';
 
 export interface MasqueradeState {
   isMasquerading: boolean;
@@ -25,6 +26,25 @@ export const setMasquerade = (payload: { originalUserEmail: string; masqueradeUs
 export const clearMasquerade = () => ({
   type: CLEAR_MASQUERADE
 });
+
+// Thunk to check masquerade status
+export const checkMasqueradeStatus = (): AppThunk => async (dispatch, _getState, { apiClient }) => {
+  try {
+    const response = await apiClient.getMasqueradeStatus();
+
+    if (response.success && response.data?.isMasquerading && response.data?.masqueradeInfo) {
+      dispatch(setMasquerade({
+        originalUserEmail: response.data.masqueradeInfo.originalUserEmail,
+        masqueradeUserEmail: response.data.masqueradeInfo.masqueradeUserEmail
+      }));
+    } else {
+      dispatch(clearMasquerade());
+    }
+  } catch (error) {
+    // Silently fail - not critical
+    console.error('Failed to check masquerade status:', error);
+  }
+};
 
 // Reducer
 export default function masqueradeReducer(
