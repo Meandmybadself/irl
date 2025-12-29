@@ -5,13 +5,15 @@ import { entitiesReducer } from './slices/entities.js';
 import { authReducer } from './slices/auth.js';
 import { uiReducer } from './slices/ui.js';
 import { systemReducer } from './slices/system.js';
+import masqueradeReducer from './slices/masquerade.js';
 
 // Root reducer
 const rootReducer = combineReducers({
   entities: entitiesReducer,
   auth: authReducer,
   ui: uiReducer,
-  system: systemReducer
+  system: systemReducer,
+  masquerade: masqueradeReducer
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

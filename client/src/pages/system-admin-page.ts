@@ -5,6 +5,7 @@ import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
+import { setMasquerade } from '../store/slices/masquerade.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/contact-info-form.js';
 import type { AppStore } from '../store/index.js';
@@ -54,6 +55,12 @@ export class SystemAdminPage extends LitElement {
 
   @state()
   private isImporting = false;
+
+  @state()
+  private masqueradeEmail = '';
+
+  @state()
+  private isMasquerading = false;
 
   async connectedCallback() {
     super.connectedCallback();
@@ -248,6 +255,52 @@ export class SystemAdminPage extends LitElement {
     }
   }
 
+  private async handleMasquerade(e: Event) {
+    e.preventDefault();
+
+    if (!this.masqueradeEmail.trim()) {
+      this.store.dispatch(addNotification('Please enter an email address', 'error'));
+      return;
+    }
+
+    this.isMasquerading = true;
+
+    try {
+      const response = await this.api.startMasquerade(this.masqueradeEmail.trim());
+
+      if (response.success && response.data) {
+        const currentUser = selectCurrentUser(this.store.getState());
+        this.store.dispatch(
+          setMasquerade({
+            originalUserEmail: currentUser?.email || '',
+            masqueradeUserEmail: response.data.email
+          })
+        );
+
+        this.store.dispatch(
+          addNotification(
+            `Now masquerading as ${response.data.email}`,
+            'success'
+          )
+        );
+
+        // Reload the page to refresh with new user context
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    } catch (error) {
+      this.store.dispatch(
+        addNotification(
+          error instanceof Error ? error.message : 'Failed to start masquerade',
+          'error'
+        )
+      );
+    } finally {
+      this.isMasquerading = false;
+    }
+  }
+
   render() {
     if (this.isLoading) {
       return html`
@@ -425,6 +478,45 @@ export class SystemAdminPage extends LitElement {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <div class="border-t ${backgroundColors.border} pt-6">
+                  <h3 class="text-lg font-semibold ${textColors.primary} mb-4">
+                    Masquerade as User
+                  </h3>
+                  <form @submit=${this.handleMasquerade} class="space-y-4">
+                    <div>
+                      <label for="masqueradeEmail" class="block text-sm/6 font-medium ${textColors.primary}">
+                        User Email Address
+                      </label>
+                      <div class="mt-2">
+                        <input
+                          id="masqueradeEmail"
+                          name="masqueradeEmail"
+                          type="email"
+                          .value=${this.masqueradeEmail}
+                          @input=${(e: Event) => {
+                            this.masqueradeEmail = (e.target as HTMLInputElement).value;
+                          }}
+                          placeholder="user@example.com"
+                          class="block w-full rounded-md ${backgroundColors.content} px-3 py-1.5 text-base ${textColors.primary} outline-1 -outline-offset-1 ${backgroundColors.border} placeholder:${textColors.muted} focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                        />
+                      </div>
+                      <p class="mt-2 text-sm ${textColors.tertiary}">
+                        Enter the email address of the user you want to masquerade as. A banner will appear indicating you are in masquerade mode.
+                      </p>
+                    </div>
+                    <button
+                      type="submit"
+                      ?disabled=${this.isMasquerading}
+                      class="rounded-md bg-purple-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-purple-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ${this.isMasquerading
+                        ? html`<span class="inline-block w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin mr-2"></span>`
+                        : ''}
+                      Start Masquerading
+                    </button>
+                  </form>
                 </div>
               ` : ''}
 

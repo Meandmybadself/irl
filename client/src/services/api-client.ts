@@ -678,6 +678,25 @@ export class ApiClient {
     const query = queryParams.toString();
     return this.request<PaginatedResponse<AuditLog>>(`/audit-logs${query ? `?${query}` : ''}`);
   }
+
+  // Masquerade endpoints
+  async startMasquerade(email: string): Promise<ApiResponse<{ email: string; isSystemAdmin: boolean }>> {
+    return this.request('/masquerade/start', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  }
+
+  async exitMasquerade(): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request('/masquerade/exit', {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+  }
+
+  async getMasqueradeStatus(): Promise<ApiResponse<{ isMasquerading: boolean; masqueradeInfo: any }>> {
+    return this.request('/masquerade/status');
+  }
 }
 
 // Export a default instance
