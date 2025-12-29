@@ -14,6 +14,7 @@ import { updateDocumentTitle, getPageNameFromPath } from './utilities/title.js';
 import { selectSystemName, selectIsAuthenticated } from './store/selectors.js';
 import './components/ui/notification.js';
 import './components/layout/navigation.js';
+import './components/layout/masquerade-banner.js';
 
 @customElement('app-root')
 export class AppRoot extends LitElement {
@@ -162,6 +163,7 @@ export class AppRoot extends LitElement {
       <ui-notifications></ui-notifications>
       ${showNav ? html`<app-navigation></app-navigation>` : ''}
       ${showNav ? html`<div class="h-16"></div>` : ''}
+      <masquerade-banner></masquerade-banner>
       ${this.router.outlet()}
     `;
   }
