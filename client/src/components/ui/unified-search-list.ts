@@ -4,6 +4,7 @@ import type { Person, Group, ContactInformation } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
 import { textStyles, backgroundColors, textColors } from '../../utilities/text-colors.js';
 import { BaseList, SortableColumn } from './base-list.js';
+import { renderIcon } from '../../utilities/icons.js';
 
 // Union type for items that can be either Person or Group
 type SearchItem =
@@ -268,8 +269,8 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
             <div class="ml-4">
               <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2">
                 <span>${person.firstName} ${person.lastName}</span>
-                <span class="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
-                  Person
+                <span class="inline-flex items-center rounded-md bg-blue-100 p-1 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
+                  ${renderIcon('User', 'w-3 h-3')}
                 </span>
               </div>
             </div>
@@ -298,8 +299,8 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
             <div class="ml-4">
               <div class="font-medium ${textStyles.table.cellPrimary} flex items-center gap-2">
                 <span>${group.name}</span>
-                <span class="inline-flex items-center rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-500/20 dark:text-green-300">
-                  Group
+                <span class="inline-flex items-center rounded-md bg-green-100 p-1 text-green-800 dark:bg-green-500/20 dark:text-green-300">
+                  ${renderIcon('Users', 'w-3 h-3')}
                 </span>
               </div>
             </div>

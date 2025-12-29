@@ -5,7 +5,7 @@ import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import { addNotification } from '../store/slices/ui.js';
-import { textColors, backgroundColors } from '../utilities/text-colors.js';
+import { backgroundColors } from '../utilities/text-colors.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Person, Group, ContactInformation } from '@irl/shared';
