@@ -141,8 +141,17 @@ export class PersonList extends BaseList<Person> {
         >
           ${value}
         </a>`;
+      case ContactType.ADDRESS:
+        return html`<a
+          href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="${textColors.link} ${textColors.linkHover}"
+        >
+          ${value}
+        </a>`;
       default:
-        return html`<span class="${textStyles.table.cell}">${value}</span>`;
+        return html`${value}`;
     }
   }
 
