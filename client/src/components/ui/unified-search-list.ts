@@ -144,6 +144,21 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
     }
   }
 
+  private getContactTypeIcon(type: ContactType): string {
+    switch (type) {
+      case ContactType.EMAIL:
+        return 'Mail';
+      case ContactType.PHONE:
+        return 'Phone';
+      case ContactType.ADDRESS:
+        return 'MapPin';
+      case ContactType.URL:
+        return 'Globe';
+      default:
+        return 'Mail';
+    }
+  }
+
   private renderContactValue(item: ContactInformation) {
     const value = item.value ?? '';
 
@@ -202,9 +217,12 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
       <div class="space-y-1">
         ${contacts.slice(0, 3).map(
           contact => html`
-            <div class="flex flex-col">
-              <span class="font-medium ${textStyles.table.cellPrimary} text-xs">
-                ${contact.label || this.getContactTypeLabel(contact.type)}
+            <div class="flex items-center gap-1.5">
+              <span
+                class="inline-flex ${textStyles.table.cellPrimary}"
+                title="${contact.label || this.getContactTypeLabel(contact.type)}"
+              >
+                ${renderIcon(this.getContactTypeIcon(contact.type), 'w-3.5 h-3.5')}
               </span>
               <span class="truncate ${textStyles.table.cellSecondary} text-xs">
                 ${this.renderContactValue(contact)}

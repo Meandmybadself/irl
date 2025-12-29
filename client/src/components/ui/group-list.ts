@@ -4,6 +4,7 @@ import type { Group, ContactInformation } from '@irl/shared';
 import { ContactType, PrivacyLevel } from '@irl/shared';
 import { textStyles, backgroundColors, textColors } from '../../utilities/text-colors.js';
 import { BaseList, SortableColumn } from './base-list.js';
+import { renderIcon } from '../../utilities/icons.js';
 
 @customElement('group-list')
 export class GroupList extends BaseList<Group> {
@@ -133,6 +134,21 @@ export class GroupList extends BaseList<Group> {
     }
   }
 
+  private getContactTypeIcon(type: ContactType): string {
+    switch (type) {
+      case ContactType.EMAIL:
+        return 'Mail';
+      case ContactType.PHONE:
+        return 'Phone';
+      case ContactType.ADDRESS:
+        return 'MapPin';
+      case ContactType.URL:
+        return 'Globe';
+      default:
+        return 'Mail';
+    }
+  }
+
   private renderContactValue(item: ContactInformation) {
     const value = item.value ?? '';
 
@@ -189,9 +205,12 @@ export class GroupList extends BaseList<Group> {
       <div class="space-y-1">
         ${contacts.slice(0, 3).map(
           item => html`
-            <div class="flex flex-col">
-              <span class="font-medium ${textStyles.table.cellPrimary} text-xs">
-                ${item.label || this.getContactTypeLabel(item.type)}
+            <div class="flex items-center gap-1.5">
+              <span
+                class="inline-flex ${textStyles.table.cellPrimary}"
+                title="${item.label || this.getContactTypeLabel(item.type)}"
+              >
+                ${renderIcon(this.getContactTypeIcon(item.type), 'w-3.5 h-3.5')}
               </span>
               <span class="truncate ${textStyles.table.cellSecondary} text-xs">
                 ${this.renderContactValue(item)}
@@ -199,7 +218,7 @@ export class GroupList extends BaseList<Group> {
             </div>
           `
         )}
-        ${contacts.length > 3 
+        ${contacts.length > 3
           ? html`<span class="${textStyles.body.xs} opacity-60">+${contacts.length - 3} more</span>`
           : ''}
       </div>
