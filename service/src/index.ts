@@ -32,6 +32,7 @@ import masqueradeRoutes from './routes/masquerade.js';
 // Import middleware
 import { errorHandler } from './middleware/error-handler.js';
 import { auditLogger } from './middleware/audit-logger.js';
+import { masqueradeMiddleware } from './middleware/masquerade.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,6 +75,9 @@ server.use(session({
 
 server.use(passport.initialize());
 server.use(passport.session());
+
+// Masquerade middleware (must be after passport but before routes)
+server.use(masqueradeMiddleware);
 
 // Audit logging middleware (must be after passport but before routes)
 server.use(auditLogger);

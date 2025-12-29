@@ -40,36 +40,14 @@ passport.serializeUser((user: any, done) => {
 });
 
 // Deserialize user from session
-passport.deserializeUser(async function(this: any, id: number, done) {
+passport.deserializeUser(async (id: number, done) => {
   try {
-    // Check if we're in masquerade mode
-    const userId = this.masqueradeUserId || id;
-
     const user = await prisma.user.findFirst({
-      where: { id: userId, deleted: false }
+      where: { id, deleted: false }
     });
 
     if (!user) {
       return done(null, false);
-    }
-
-    // If masquerading, preserve the original user's admin status
-    if (this.masqueradeUserId && this.originalUserId) {
-      const originalUser = await prisma.user.findFirst({
-        where: { id: this.originalUserId, deleted: false }
-      });
-
-      // Only allow masquerade if the original user is a system admin
-      if (!originalUser?.isSystemAdmin) {
-        // Clear masquerade if original user is not admin
-        delete this.originalUserId;
-        delete this.masqueradeUserId;
-        return done(null, user);
-      }
-
-      // Attach a flag to indicate we're masquerading
-      (user as any).isMasquerading = true;
-      (user as any).originalUserId = this.originalUserId;
     }
 
     done(null, user);
