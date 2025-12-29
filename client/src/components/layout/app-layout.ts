@@ -1,7 +1,6 @@
 import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { backgroundColors, textColors } from '../../utilities/text-colors.js';
-import './masquerade-banner.js';
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
@@ -16,7 +15,6 @@ export class AppLayout extends LitElement {
   render() {
     return html`
       <div class="block min-h-screen ${backgroundColors.pageAlt}">
-        <masquerade-banner></masquerade-banner>
         <div class="max-w-7xl mx-auto px-4 py-8">
           ${this.loading
             ? html`

@@ -6,6 +6,7 @@ import { logout } from '../../store/slices/auth.js';
 import { selectCurrentPerson, selectCurrentUser, selectIsAuthenticated, selectIsSystemAdmin } from '../../store/selectors.js';
 import type { AppStore } from '../../store/index.js';
 import { ROUTES } from '../../constants.js';
+import './masquerade-banner.js';
 
 @customElement('app-navigation')
 export class AppNavigation extends LitElement {
@@ -329,6 +330,7 @@ export class AppNavigation extends LitElement {
             `
           : ''}
       </nav>
+      <masquerade-banner></masquerade-banner>
     `;
   }
 }
