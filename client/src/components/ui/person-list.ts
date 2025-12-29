@@ -122,6 +122,7 @@ export class PersonList extends BaseList<Person> {
         return html`<a
           href="mailto:${value}"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -129,6 +130,7 @@ export class PersonList extends BaseList<Person> {
         return html`<a
           href="tel:${value}"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -138,6 +140,7 @@ export class PersonList extends BaseList<Person> {
           target="_blank"
           rel="noopener noreferrer"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -147,6 +150,7 @@ export class PersonList extends BaseList<Person> {
           target="_blank"
           rel="noopener noreferrer"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;

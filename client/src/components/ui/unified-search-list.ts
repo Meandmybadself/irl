@@ -151,6 +151,7 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
         return html`<a
           href="mailto:${value}"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -158,6 +159,7 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
         return html`<a
           href="tel:${value}"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -167,6 +169,7 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
           target="_blank"
           rel="noopener noreferrer"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -176,6 +179,7 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
           target="_blank"
           rel="noopener noreferrer"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;

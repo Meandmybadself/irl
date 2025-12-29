@@ -141,6 +141,7 @@ export class GroupList extends BaseList<Group> {
         return html`<a
           href="mailto:${value}"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -148,6 +149,7 @@ export class GroupList extends BaseList<Group> {
         return html`<a
           href="tel:${value}"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -157,6 +159,7 @@ export class GroupList extends BaseList<Group> {
           target="_blank"
           rel="noopener noreferrer"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
@@ -166,6 +169,7 @@ export class GroupList extends BaseList<Group> {
           target="_blank"
           rel="noopener noreferrer"
           class="${textColors.link} ${textColors.linkHover}"
+          @click=${(e: Event) => e.stopPropagation()}
         >
           ${value}
         </a>`;
