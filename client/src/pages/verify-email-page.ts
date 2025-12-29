@@ -130,11 +130,10 @@ export class VerifyEmailPage extends LitElement {
           <div class="flex flex-col gap-4 mt-8">
             <ui-button
               variant="outline"
+              label="Resend Verification Email"
               ?loading=${this.isResending}
               @click=${this.handleResend}
-            >
-              Resend Verification Email
-            </ui-button>
+            ></ui-button>
           </div>
 
           <div class="mt-6 text-sm text-gray-600">

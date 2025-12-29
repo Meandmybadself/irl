@@ -41,6 +41,8 @@ export class UIButton extends LitElement {
     return `${baseClasses} ${variantClasses[this.variant]}`;
   }
 
+  @property({ type: String }) label = '';
+
   render() {
     return html`
       <button
@@ -50,7 +52,7 @@ export class UIButton extends LitElement {
         @click=${this.handleClick}
       >
         ${this.loading ? html`<span class="inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin mr-2"></span>` : ''}
-        <slot></slot>
+        ${this.label}
       </button>
     `;
   }
