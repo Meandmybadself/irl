@@ -91,7 +91,7 @@ router.post('/login', validateBody(loginSchema), (req, res, next) => {
         success: true,
         data: {
           user: excludeSensitiveFields(user),
-          person: person ? excludePersonSensitiveFields(person) : undefined
+          person: person || undefined
         },
         message: 'Login successful'
       };
@@ -167,7 +167,7 @@ router.get('/session', asyncHandler(async (req, res) => {
     success: true,
     data: {
       user: excludeSensitiveFields(user),
-      person: person ? excludePersonSensitiveFields(person) : undefined
+      person: person || undefined
     }
   };
 
