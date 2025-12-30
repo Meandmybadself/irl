@@ -61,6 +61,9 @@ export const login = (email: string, password: string): AppThunk => {
       } else {
         dispatch(authSuccess(response.data.user.id, null));
       }
+
+      // Load all user persons for the person switcher
+      await dispatch(loadUserPersons());
     } catch (error) {
       dispatch(authFailure(error instanceof Error ? error.message : 'Login failed'));
       throw error;
@@ -93,12 +96,15 @@ export const checkSession = (): AppThunk => {
       const normalized = normalize(response.data, authResponseSchema);
 
       dispatch(mergeEntities(normalized.entities));
-      
+
       if (response.data.person) {
         dispatch(authSuccess(response.data.user.id, response.data.person.id));
       } else {
         dispatch(authSuccess(response.data.user.id, null));
       }
+
+      // Load all user persons for the person switcher
+      await dispatch(loadUserPersons());
     } catch (error) {
       // Session check failure is expected when not logged in
       dispatch({ type: 'auth/sessionCheckComplete' });
@@ -150,6 +156,28 @@ export const switchPerson = (personId: number): AppThunk => {
       window.location.reload();
     } catch (error) {
       throw error;
+    }
+  };
+};
+
+export const loadUserPersons = (): AppThunk => {
+  return async (dispatch, _getState, { apiClient }) => {
+    try {
+      const response = await apiClient.getUserPersons();
+      if (!response.data) return;
+
+      // Normalize and merge persons into entities
+      const entities = {
+        persons: response.data.reduce((acc: any, person: any) => {
+          acc[person.id] = person;
+          return acc;
+        }, {})
+      };
+
+      dispatch(mergeEntities(entities));
+    } catch (error) {
+      // Silently fail if user is not authenticated
+      console.error('Failed to load user persons:', error);
     }
   };
 };
