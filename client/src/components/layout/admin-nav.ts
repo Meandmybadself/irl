@@ -29,26 +29,12 @@ export class AdminNav extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
-  private handleBackClick(e: Event) {
-    e.preventDefault();
-    window.history.pushState({}, '', '/home');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
   render() {
     return html`
       <div class="mb-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary}">
-            Administration
-          </h2>
-          <button
-            @click=${this.handleBackClick}
-            class="text-sm font-semibold ${textColors.link} ${textColors.linkHover}"
-          >
-            ← Back to Home
-          </button>
-        </div>
+        <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary} mb-4">
+          Administration
+        </h2>
 
         <nav class="flex border-b ${backgroundColors.border}">
           ${this.navItems.map(
