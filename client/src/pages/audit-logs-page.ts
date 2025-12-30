@@ -6,6 +6,7 @@ import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
+import '../components/layout/admin-nav.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { AuditLog } from '@irl/shared';
@@ -99,11 +100,6 @@ export class AuditLogsPage extends LitElement {
     await this.loadLogs();
   }
 
-  private handleBack() {
-    window.history.pushState({}, '', '/admin');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
   private formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleString();
@@ -148,17 +144,7 @@ export class AuditLogsPage extends LitElement {
     return html`
       <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-7xl">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary}">
-              Audit Logs
-            </h2>
-            <button
-              @click=${this.handleBack}
-              class="text-sm font-semibold ${textColors.link} ${textColors.linkHover}"
-            >
-              ← Back to System Admin
-            </button>
-          </div>
+          <admin-nav currentPath="/admin/logs"></admin-nav>
 
           <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg">
             <!-- Filters -->

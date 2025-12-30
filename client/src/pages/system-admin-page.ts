@@ -8,6 +8,7 @@ import { selectCurrentUser } from '../store/selectors.js';
 import { setMasquerade } from '../store/slices/masquerade.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
 import '../components/ui/contact-info-form.js';
+import '../components/layout/admin-nav.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { System, ContactInformation } from '@irl/shared';
@@ -191,11 +192,6 @@ export class SystemAdminPage extends LitElement {
     }
   }
 
-  private handleBack() {
-    window.history.pushState({}, '', '/home');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
   private async handleExport() {
     this.isExporting = true;
     try {
@@ -313,17 +309,7 @@ export class SystemAdminPage extends LitElement {
     return html`
       <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-2xl">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary}">
-              System Administration
-            </h2>
-            <button
-              @click=${this.handleBack}
-              class="text-sm font-semibold ${textColors.link} ${textColors.linkHover}"
-            >
-              ← Back to Home
-            </button>
-          </div>
+          <admin-nav currentPath="/admin/system"></admin-nav>
 
           <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
             <form @submit=${this.handleSubmit} class="space-y-6">

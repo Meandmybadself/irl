@@ -6,6 +6,7 @@ import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
 import { selectCurrentUser } from '../store/selectors.js';
 import { textColors, backgroundColors } from '../utilities/text-colors.js';
+import '../components/layout/admin-nav.js';
 import type { AppStore } from '../store/index.js';
 import type { ApiClient } from '../services/api-client.js';
 import type { Interest } from '@irl/shared';
@@ -314,11 +315,6 @@ export class CategoryAdminPage extends LitElement {
     }
   }
 
-  private handleBack() {
-    window.history.pushState({}, '', '/admin');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  }
-
   private formatCategoryName(category: string): string {
     return category
       .replace(/_/g, ' ')
@@ -443,17 +439,7 @@ export class CategoryAdminPage extends LitElement {
     return html`
       <div class="flex min-h-full flex-col py-6 sm:px-6 lg:px-8 pt-16">
         <div class="sm:mx-auto sm:w-full sm:max-w-5xl">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary}">
-              Interest Management
-            </h2>
-            <button
-              @click=${this.handleBack}
-              class="text-sm font-semibold ${textColors.link} ${textColors.linkHover}"
-            >
-              ← Back to System Admin
-            </button>
-          </div>
+          <admin-nav currentPath="/admin/categories"></admin-nav>
 
           <div class="${backgroundColors.content} px-6 py-8 shadow-sm sm:rounded-lg sm:px-12">
             <div class="flex items-center justify-between mb-6">
