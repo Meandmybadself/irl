@@ -5,6 +5,7 @@ import type {
   CreateSystemRequest,
   UpdateSystemRequest,
   User,
+  UserWithMetadata,
   CreateUserRequest,
   UpdateUserRequest,
   Person,
@@ -109,13 +110,13 @@ export class ApiClient {
   }
 
   // User endpoints
-  async getUsers(params?: PaginationParams): Promise<PaginatedResponse<User>> {
+  async getUsers(params?: PaginationParams): Promise<PaginatedResponse<UserWithMetadata>> {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', params.page.toString());
     if (params?.limit) query.set('limit', params.limit.toString());
     const queryString = query.toString() ? `?${query.toString()}` : '';
 
-    return this.request<PaginatedResponse<User>>(`/users${queryString}`);
+    return this.request<PaginatedResponse<UserWithMetadata>>(`/users${queryString}`);
   }
 
   async getUser(id: number): Promise<ApiResponse<User>> {

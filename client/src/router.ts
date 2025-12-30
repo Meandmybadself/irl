@@ -13,6 +13,7 @@ import './pages/home-page.js';
 import './pages/system-admin-page.js';
 import './pages/category-admin-page.js';
 import './pages/audit-logs-page.js';
+import './pages/admin-users-page.js';
 import './pages/person-form-page.js';
 import './pages/person-detail-page.js';
 import './pages/persons-page.js';
@@ -140,6 +141,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
           return html`<login-page></login-page>`;
         }
         return html`<audit-logs-page></audit-logs-page>`;
+      }
+    },
+    {
+      path: '/admin/users',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/admin/users'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<admin-users-page></admin-users-page>`;
       }
     },
     {

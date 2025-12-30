@@ -15,6 +15,7 @@ export const ROUTES = {
   GROUPS: '/groups',
   GROUPS_CREATE: '/groups/create',
   ADMIN_SYSTEM: '/admin/system',
+  ADMIN_USERS: '/admin/users',
 } as const;
 
 // Error messages

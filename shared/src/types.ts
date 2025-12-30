@@ -52,6 +52,12 @@ export interface User {
   updatedAt: string;
 }
 
+// Extended User type for admin views with computed fields
+export interface UserWithMetadata extends User {
+  isEmailVerified: boolean;
+  personCount: number;
+}
+
 export interface Person {
   id: number;
   firstName: string;

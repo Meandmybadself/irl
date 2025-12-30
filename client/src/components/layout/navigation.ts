@@ -179,7 +179,7 @@ export class AppNavigation extends LitElement {
                                   ? 'bg-gray-900 text-white'
                                   : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                               >
-                                System Admin
+                                Admin
                               </a>
                             `
                           : ''}
@@ -316,7 +316,7 @@ export class AppNavigation extends LitElement {
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white'} no-underline"
                         >
-                          System Admin
+                          Admin
                         </a>
                       `
                     : ''}

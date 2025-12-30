@@ -357,14 +357,29 @@ router.get('/', requireSystemAdmin, asyncHandler(async (req, res) => {
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { people: true }
+        }
+      }
     }),
     prisma.user.count({ where })
   ]);
 
-  const response: PaginatedResponse<User> = {
+  // Map items to include verification status and person count
+  const usersWithMetadata = items.map(user => {
+    const baseUser = excludeSensitiveFields(user);
+    return {
+      ...baseUser,
+      isEmailVerified: user.verificationToken === null,
+      personCount: user._count.people
+    };
+  });
+
+  const response: PaginatedResponse<any> = {
     success: true,
-    data: items.map(excludeSensitiveFields),
+    data: usersWithMetadata,
     pagination: {
       total,
       page,

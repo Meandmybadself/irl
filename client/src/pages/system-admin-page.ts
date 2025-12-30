@@ -418,6 +418,22 @@ export class SystemAdminPage extends LitElement {
                     </div>
                     <div>
                       <a
+                        href="/admin/users"
+                        @click=${(e: Event) => {
+                          e.preventDefault();
+                          window.history.pushState({}, '', '/admin/users');
+                          window.dispatchEvent(new PopStateEvent('popstate'));
+                        }}
+                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      >
+                        Manage Users
+                      </a>
+                      <p class="mt-2 text-sm ${textColors.tertiary}">
+                        Create, edit, and delete user accounts and manage permissions.
+                      </p>
+                    </div>
+                    <div>
+                      <a
                         href="/admin/logs"
                         @click=${(e: Event) => {
                           e.preventDefault();
