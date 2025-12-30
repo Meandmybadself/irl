@@ -48,6 +48,14 @@ export const selectCurrentPerson = createSelector(
   (entities, personId) => (personId ? entities.persons[personId] : null)
 );
 
+export const selectAllUserPersons = createSelector(
+  [selectEntities, selectCurrentUserId],
+  (entities, userId) => {
+    if (!userId) return [];
+    return Object.values(entities.persons).filter(person => person.userId === userId);
+  }
+);
+
 // Combined selectors
 export const selectIsSystemAdmin = createSelector(
   [selectCurrentUser],

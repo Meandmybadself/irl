@@ -172,8 +172,8 @@ export const canViewPersonPrivateContacts = async (req: Request, _res: Response,
  *
  * Authorization rules:
  * 1. System admins can modify any group
- * 2. Only users whose Person is marked as a group admin (isAdmin: true in PersonGroup) can modify the group
- * 3. When a user has multiple Persons, any Person associated with the group as an admin grants permission
+ * 2. Only the current Person (from session) can modify the group if they are a group admin (isAdmin: true in PersonGroup)
+ * 3. Permissions are scoped to the currently selected Person
  *
  */
 export const canModifyGroup = async (req: Request, _res: Response, next: NextFunction) => {
@@ -190,12 +190,18 @@ export const canModifyGroup = async (req: Request, _res: Response, next: NextFun
     return;
   }
 
+  // Get current person from session
+  const currentPersonId = req.session.currentPersonId;
+  if (!currentPersonId) {
+    throw createError(403, 'Forbidden: No active person selected');
+  }
+
   const group = await prisma.group.findFirst({
     where: { displayId, deleted: false },
     include: {
       people: {
         where: {
-          person: { userId, deleted: false },
+          personId: currentPersonId,
           isAdmin: true
         }
       }
@@ -206,7 +212,7 @@ export const canModifyGroup = async (req: Request, _res: Response, next: NextFun
     throw createError(404, 'Group not found');
   }
 
-  // Check if user has any Person that is a group admin
+  // Check if current Person is a group admin
   if (group.people.length === 0) {
     throw createError(403, 'Forbidden: You do not have permission to modify this group');
   }
@@ -230,12 +236,20 @@ export const canViewGroupPrivateContacts = async (req: Request, _res: Response, 
     return;
   }
 
+  // Get current person from session
+  const currentPersonId = req.session.currentPersonId;
+  if (!currentPersonId) {
+    (req as any).canViewPrivate = false;
+    next();
+    return;
+  }
+
   const group = await prisma.group.findFirst({
     where: { displayId, deleted: false },
     include: {
       people: {
         where: {
-          person: { userId, deleted: false }
+          personId: currentPersonId
         }
       }
     }
@@ -245,7 +259,7 @@ export const canViewGroupPrivateContacts = async (req: Request, _res: Response, 
     throw createError(404, 'Group not found');
   }
 
-  // User can view private contacts if they are a member or admin of the group
+  // User can view private contacts if current Person is a member or admin of the group
   (req as any).canViewPrivate = group.people.length > 0;
 
   next();
@@ -292,6 +306,12 @@ export const canCreateGroup = async (req: Request, _res: Response, next: NextFun
     return;
   }
 
+  // Get current person from session
+  const currentPersonId = req.session.currentPersonId;
+  if (!currentPersonId) {
+    throw createError(403, 'Forbidden: No active person selected');
+  }
+
   // If creating a subgroup, check parent group permissions
   if (req.body.parentGroupId) {
     const parentGroup = await prisma.group.findFirst({
@@ -299,7 +319,7 @@ export const canCreateGroup = async (req: Request, _res: Response, next: NextFun
       include: {
         people: {
           where: {
-            person: { userId, deleted: false }
+            personId: currentPersonId
           }
         }
       }
@@ -309,7 +329,7 @@ export const canCreateGroup = async (req: Request, _res: Response, next: NextFun
       throw createError(400, 'Referenced parent group does not exist');
     }
 
-    // Check if user is admin of parent group OR if parent allows any user to create subgroups
+    // Check if current Person is admin of parent group OR if parent allows any user to create subgroups
     const isParentAdmin = parentGroup.people.some(pg => pg.isAdmin);
 
     if (!isParentAdmin && !parentGroup.allowsAnyUserToCreateSubgroup) {
@@ -369,13 +389,19 @@ export const canModifyPersonGroup = async (req: Request, _res: Response, next: N
       groupId = personGroup.groupId;
     }
 
-    // Check if user has any Person that is an admin of this group
+    // Get current person from session
+    const currentPersonId = req.session.currentPersonId;
+    if (!currentPersonId) {
+      throw createError(403, 'Forbidden: No active person selected');
+    }
+
+    // Check if current Person is an admin of this group
     const group = await prisma.group.findFirst({
       where: { id: groupId, deleted: false },
       include: {
         people: {
           where: {
-            person: { userId, deleted: false },
+            personId: currentPersonId,
             isAdmin: true
           }
         }

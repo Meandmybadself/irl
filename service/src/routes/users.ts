@@ -282,6 +282,68 @@ router.get('/verify-email-change', requireAuth, asyncHandler(async (req, res) =>
   res.json(response);
 }));
 
+// GET /api/users/me/persons - Get all persons for current user
+router.get('/me/persons', requireAuth, asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw createError(401, 'Authentication required');
+  }
+
+  const persons = await prisma.person.findMany({
+    where: {
+      userId: req.user.id,
+      deleted: false
+    },
+    orderBy: { createdAt: 'asc' }
+  });
+
+  const response: ApiResponse<any[]> = {
+    success: true,
+    data: persons.map(person => ({
+      ...person,
+      createdAt: person.createdAt.toISOString(),
+      updatedAt: person.updatedAt.toISOString()
+    }))
+  };
+
+  res.json(response);
+}));
+
+// POST /api/users/me/current-person - Set current person in session
+router.post('/me/current-person', requireAuth, asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw createError(401, 'Authentication required');
+  }
+
+  const { personId } = req.body;
+
+  if (!personId || typeof personId !== 'number') {
+    throw createError(400, 'Person ID is required');
+  }
+
+  // Verify the person belongs to the current user
+  const person = await prisma.person.findFirst({
+    where: {
+      id: personId,
+      userId: req.user.id,
+      deleted: false
+    }
+  });
+
+  if (!person) {
+    throw createError(404, 'Person not found or does not belong to current user');
+  }
+
+  // Set the current person in the session
+  req.session.currentPersonId = personId;
+
+  const response: ApiResponse<null> = {
+    success: true,
+    message: 'Current person set successfully'
+  };
+
+  res.json(response);
+}));
+
 // GET /api/users - List all users (admin only)
 router.get('/', requireSystemAdmin, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;

@@ -566,6 +566,18 @@ export class ApiClient {
     return this.request<ApiResponse<User>>(`/users/verify-email-change?token=${token}`);
   }
 
+  // Current user person endpoints
+  async getUserPersons(): Promise<ApiResponse<Person[]>> {
+    return this.request<ApiResponse<Person[]>>('/users/me/persons');
+  }
+
+  async setCurrentPerson(personId: number): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/users/me/current-person', {
+      method: 'POST',
+      body: JSON.stringify({ personId })
+    });
+  }
+
   // System export/import endpoints
   async exportSystem(): Promise<void> {
     const url = `${this.baseURL}/system/export`;

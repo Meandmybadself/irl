@@ -2,8 +2,8 @@ import { LitElement, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../../contexts/store-context.js';
-import { logout } from '../../store/slices/auth.js';
-import { selectCurrentPerson, selectCurrentUser, selectIsAuthenticated, selectIsSystemAdmin } from '../../store/selectors.js';
+import { logout, switchPerson } from '../../store/slices/auth.js';
+import { selectCurrentPerson, selectCurrentUser, selectIsAuthenticated, selectIsSystemAdmin, selectAllUserPersons } from '../../store/selectors.js';
 import type { AppStore } from '../../store/index.js';
 import { ROUTES } from '../../constants.js';
 
@@ -29,6 +29,9 @@ export class AppNavigation extends LitElement {
 
   @state()
   private isSystemAdmin = false;
+
+  @state()
+  private userPersons: any[] = [];
 
   @state()
   private mobileMenuOpen = false;
@@ -65,11 +68,16 @@ export class AppNavigation extends LitElement {
     this.currentPerson = selectCurrentPerson(state);
     this.currentUser = selectCurrentUser(state);
     this.isSystemAdmin = selectIsSystemAdmin(state);
+    this.userPersons = selectAllUserPersons(state);
   }
 
   private async handleLogout() {
     await this.store.dispatch(logout());
     window.location.href = ROUTES.LOGIN;
+  }
+
+  private async handleSwitchPerson(personId: number) {
+    await this.store.dispatch(switchPerson(personId));
   }
 
   private toggleMobileMenu() {
@@ -204,6 +212,26 @@ export class AppNavigation extends LitElement {
                               <div
                                 class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5"
                               >
+                                ${this.userPersons.length > 1
+                                  ? html`
+                                      <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        Switch Person
+                                      </div>
+                                      ${this.userPersons.map(
+                                        person => html`
+                                          <button
+                                            @click=${() => this.handleSwitchPerson(person.id)}
+                                            class="block w-full text-left px-4 py-2 text-sm ${person.id === this.currentPerson?.id
+                                              ? 'bg-gray-100 text-gray-900 font-medium'
+                                              : 'text-gray-700 hover:bg-gray-100'} bg-transparent border-none cursor-pointer"
+                                          >
+                                            ${person.firstName} ${person.lastName}
+                                          </button>
+                                        `
+                                      )}
+                                      <div class="border-t border-gray-200 my-1"></div>
+                                    `
+                                  : ''}
                                 <a
                                   href=${ROUTES.PROFILE}
                                   @click=${this.createClickHandler()}
@@ -310,6 +338,26 @@ export class AppNavigation extends LitElement {
                       : ''}
                   </div>
                   <div class="mt-3 space-y-1 px-2">
+                    ${this.userPersons.length > 1
+                      ? html`
+                          <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Switch Person
+                          </div>
+                          ${this.userPersons.map(
+                            person => html`
+                              <button
+                                @click=${() => this.handleSwitchPerson(person.id)}
+                                class="block w-full text-left rounded-md px-3 py-2 text-base font-medium ${person.id === this.currentPerson?.id
+                                  ? 'bg-gray-700 text-white'
+                                  : 'text-gray-400 hover:bg-white/5 hover:text-white'} bg-transparent border-none cursor-pointer"
+                              >
+                                ${person.firstName} ${person.lastName}
+                              </button>
+                            `
+                          )}
+                          <div class="border-t border-gray-700 my-2"></div>
+                        `
+                      : ''}
                     <a
                       href=${ROUTES.PROFILE}
                       @click=${this.createClickHandler()}

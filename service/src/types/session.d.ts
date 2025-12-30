@@ -4,5 +4,6 @@ declare module 'express-session' {
   interface SessionData {
     originalUserId?: number;
     masqueradeUserId?: number;
+    currentPersonId?: number;
   }
 }

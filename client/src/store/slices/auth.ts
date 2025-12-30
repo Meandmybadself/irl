@@ -142,6 +142,18 @@ export const verifyEmail = (token: string): AppThunk => {
   };
 };
 
+export const switchPerson = (personId: number): AppThunk => {
+  return async (_dispatch, _getState, { apiClient }) => {
+    try {
+      await apiClient.setCurrentPerson(personId);
+      // Reload the page to ensure clean state with new person context
+      window.location.reload();
+    } catch (error) {
+      throw error;
+    }
+  };
+};
+
 // Reducer
 export const authReducer = (
   state = initialState,

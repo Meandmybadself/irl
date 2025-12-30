@@ -44,8 +44,6 @@ router.post('/login', validateBody(loginSchema), (req, res, next) => {
       });
     }
 
-    let person: Person | null = null;
-
     // Check if user email is verified
     if (user.verificationToken) {
       return res.status(403).json({
@@ -59,6 +57,35 @@ router.post('/login', validateBody(loginSchema), (req, res, next) => {
         return next(loginErr);
       }
 
+      // Get person from session if available, otherwise get first person
+      let person: Person | null = null;
+      let rawPerson;
+
+      if (req.session.currentPersonId) {
+        rawPerson = await prisma.person.findFirst({
+          where: {
+            id: req.session.currentPersonId,
+            userId: user.id,
+            deleted: false
+          }
+        });
+        if (rawPerson) {
+          person = excludePersonSensitiveFields(rawPerson);
+        }
+      }
+
+      // If no person found from session, get first person and set in session
+      if (!person) {
+        rawPerson = await prisma.person.findFirst({
+          where: { userId: user.id, deleted: false },
+          orderBy: { createdAt: 'asc' }
+        });
+
+        if (rawPerson) {
+          req.session.currentPersonId = rawPerson.id;
+          person = excludePersonSensitiveFields(rawPerson);
+        }
+      }
 
       const response: ApiResponse<{ user: User; person?: Person }> = {
         success: true,
@@ -106,10 +133,35 @@ router.get('/session', asyncHandler(async (req, res) => {
 
   const user = req.user as any;
 
-  // Get associated person
-  const person = await prisma.person.findFirst({
-    where: { userId: user.id, deleted: false }
-  });
+  // Get person from session if available, otherwise get first person
+  let person: Person | null = null;
+  let rawPerson;
+
+  if (req.session.currentPersonId) {
+    rawPerson = await prisma.person.findFirst({
+      where: {
+        id: req.session.currentPersonId,
+        userId: user.id,
+        deleted: false
+      }
+    });
+    if (rawPerson) {
+      person = excludePersonSensitiveFields(rawPerson);
+    }
+  }
+
+  // If no person found from session or person was deleted, get first person and update session
+  if (!person) {
+    rawPerson = await prisma.person.findFirst({
+      where: { userId: user.id, deleted: false },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    if (rawPerson) {
+      req.session.currentPersonId = rawPerson.id;
+      person = excludePersonSensitiveFields(rawPerson);
+    }
+  }
 
   const response: ApiResponse<{ user: User; person?: Person }> = {
     success: true,
