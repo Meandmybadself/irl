@@ -32,10 +32,6 @@ export class AdminNav extends LitElement {
   render() {
     return html`
       <div class="mb-6">
-        <h2 class="text-2xl/9 font-bold tracking-tight ${textColors.primary} mb-4">
-          Administration
-        </h2>
-
         <nav class="flex border-b ${backgroundColors.border}">
           ${this.navItems.map(
             item => html`
