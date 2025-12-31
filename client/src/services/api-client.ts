@@ -680,6 +680,15 @@ export class ApiClient {
     });
   }
 
+  async getRecommendations(displayId: string, limit?: number): Promise<ApiResponse<Array<Person & { similarity?: number }>>> {
+    const queryParams = new URLSearchParams();
+    if (limit) queryParams.append('limit', limit.toString());
+    const query = queryParams.toString();
+    return this.request<ApiResponse<Array<Person & { similarity?: number }>>>(
+      `/persons/${displayId}/recommendations${query ? `?${query}` : ''}`
+    );
+  }
+
   // Audit Logs endpoints
   async getAuditLogs(params?: PaginationParams & { userId?: number; method?: string; path?: string }): Promise<PaginatedResponse<AuditLog>> {
     const queryParams = new URLSearchParams();

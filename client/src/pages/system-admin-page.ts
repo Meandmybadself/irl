@@ -383,62 +383,6 @@ export class SystemAdminPage extends LitElement {
 
                 <div class="border-t ${backgroundColors.border} pt-6">
                   <h3 class="text-lg font-semibold ${textColors.primary} mb-4">
-                    Admin Settings
-                  </h3>
-                  <div class="space-y-4">
-                    <div>
-                      <a
-                        href="/admin/categories"
-                        @click=${(e: Event) => {
-                          e.preventDefault();
-                          window.history.pushState({}, '', '/admin/categories');
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                      >
-                        Manage Interest Categories
-                      </a>
-                      <p class="mt-2 text-sm ${textColors.tertiary}">
-                        Create, rename, and delete interest categories.
-                      </p>
-                    </div>
-                    <div>
-                      <a
-                        href="/admin/users"
-                        @click=${(e: Event) => {
-                          e.preventDefault();
-                          window.history.pushState({}, '', '/admin/users');
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                      >
-                        Manage Users
-                      </a>
-                      <p class="mt-2 text-sm ${textColors.tertiary}">
-                        Create, edit, and delete user accounts and manage permissions.
-                      </p>
-                    </div>
-                    <div>
-                      <a
-                        href="/admin/logs"
-                        @click=${(e: Event) => {
-                          e.preventDefault();
-                          window.history.pushState({}, '', '/admin/logs');
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                      >
-                        View Audit Logs
-                      </a>
-                      <p class="mt-2 text-sm ${textColors.tertiary}">
-                        View all API actions taken by users in the system.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="border-t ${backgroundColors.border} pt-6">
-                  <h3 class="text-lg font-semibold ${textColors.primary} mb-4">
                     Data Management
                   </h3>
                   <div class="space-y-4">

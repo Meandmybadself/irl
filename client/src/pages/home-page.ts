@@ -3,7 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
-import { selectCurrentUser } from '../store/selectors.js';
+import { selectCurrentUser, selectCurrentPerson } from '../store/selectors.js';
 import { addNotification } from '../store/slices/ui.js';
 import { backgroundColors } from '../utilities/text-colors.js';
 import type { AppStore } from '../store/index.js';
@@ -11,6 +11,7 @@ import type { ApiClient } from '../services/api-client.js';
 import type { Person, Group, ContactInformation } from '@irl/shared';
 import '../components/layout/app-layout.js';
 import '../components/ui/unified-search-list.js';
+import '../components/ui/similar-persons-card.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
@@ -42,8 +43,12 @@ export class HomePage extends LitElement {
   @state()
   private isLoading = false;
 
+  @state()
+  private currentPerson: Person | null = null;
+
   async connectedCallback() {
     super.connectedCallback();
+    this.currentPerson = selectCurrentPerson(this.store.getState());
     await this.loadData();
   }
 
@@ -132,6 +137,9 @@ export class HomePage extends LitElement {
               `}
         </div>
 
+        ${this.currentPerson && !this.isLoading
+          ? html`<similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>`
+          : ''}
 
       </app-layout>
     `;
