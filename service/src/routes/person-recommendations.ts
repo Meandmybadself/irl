@@ -34,12 +34,12 @@ router.get('/:displayId/recommendations', requireAuth, validateDisplayIdParam, c
   }
 
   // Check if person has interests (non-null interest_vector)
-  const personWithVector = await prisma.$queryRawUnsafe<Array<{ interest_vector: string | null }>>(
-    `SELECT interest_vector::text FROM people WHERE id = $1`,
+  const personWithVector = await prisma.$queryRawUnsafe<Array<{ has_vector: boolean }>>(
+    `SELECT (interest_vector IS NOT NULL) as has_vector FROM people WHERE id = $1`,
     person.id
   );
 
-  if (!personWithVector[0] || !personWithVector[0].interest_vector) {
+  if (!personWithVector[0] || !personWithVector[0].has_vector) {
     throw createError(400, 'Person has no interests defined');
   }
 
