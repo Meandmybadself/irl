@@ -77,7 +77,7 @@ export class SimilarPersonsCard extends LitElement {
   }
 
   private handleAddInterests() {
-    window.history.pushState({}, '', '/profile');
+    window.history.pushState({}, '', '/persons/me');
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 

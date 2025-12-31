@@ -4,7 +4,7 @@ import { consume } from '@lit-labs/context';
 import { storeContext } from '../contexts/store-context.js';
 import { apiContext } from '../contexts/api-context.js';
 import { addNotification } from '../store/slices/ui.js';
-import { selectCurrentUser } from '../store/selectors.js';
+import { selectCurrentUser, selectCurrentPerson } from '../store/selectors.js';
 import '../components/ui/contact-info-display.js';
 import '../components/ui/group-list.js';
 import { backgroundColors, textColors } from '../utilities/text-colors.js';
@@ -75,7 +75,24 @@ export class PersonDetailPage extends LitElement {
     // Get person displayId from URL
     const pathParts = window.location.pathname.split('/');
     if (pathParts[1] === 'persons' && pathParts[2]) {
-      const displayId = pathParts[2];
+      let displayId = pathParts[2];
+
+      // Handle /persons/me route
+      if (displayId === 'me') {
+        const currentPerson = selectCurrentPerson(this.store.getState());
+        if (!currentPerson) {
+          this.store.dispatch(
+            addNotification('No person associated with your account', 'error')
+          );
+          window.history.pushState({}, '', '/persons');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+          return;
+        }
+        displayId = currentPerson.displayId;
+        // Replace URL without triggering navigation
+        window.history.replaceState({}, '', `/persons/${displayId}`);
+      }
+
       await this.loadPerson(displayId);
     }
   }

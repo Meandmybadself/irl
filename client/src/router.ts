@@ -170,6 +170,19 @@ export const createRoutes = (store: AppStore): RouteConfig[] => {
       }
     },
     {
+      path: '/persons/me',
+      render: () => {
+        const state = store.getState();
+        const isAuthenticated = selectIsAuthenticated(state);
+
+        if (!isAuthenticated) {
+          store.dispatch(setAttemptedPath('/persons/me'));
+          return html`<login-page></login-page>`;
+        }
+        return html`<person-detail-page></person-detail-page>`;
+      }
+    },
+    {
       path: '/persons/create',
       render: () => {
         const state = store.getState();
