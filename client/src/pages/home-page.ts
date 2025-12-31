@@ -119,7 +119,15 @@ export class HomePage extends LitElement {
 
     return html`
       <app-layout>
-        <div class="${backgroundColors.content} rounded-lg shadow-sm p-6 mb-6">
+        ${this.currentPerson && !this.isLoading
+          ? html`
+              <div class="mb-6">
+                <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
+              </div>
+            `
+          : ''}
+
+        <div class="${backgroundColors.content} rounded-lg shadow-sm p-6">
           ${this.isLoading
             ? html`
                 <div class="flex items-center justify-center py-12">
@@ -136,11 +144,6 @@ export class HomePage extends LitElement {
                 ></unified-search-list>
               `}
         </div>
-
-        ${this.currentPerson && !this.isLoading
-          ? html`<similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>`
-          : ''}
-
       </app-layout>
     `;
   }

@@ -35,7 +35,7 @@ router.get('/:displayId/recommendations', requireAuth, validateDisplayIdParam, c
 
   // Check if person has interests (non-null interest_vector)
   const personWithVector = await prisma.$queryRawUnsafe<Array<{ interest_vector: string | null }>>(
-    `SELECT interest_vector FROM people WHERE id = $1`,
+    `SELECT interest_vector::text FROM people WHERE id = $1`,
     person.id
   );
 
