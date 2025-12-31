@@ -96,7 +96,7 @@ router.put('/:displayId/interests', requireAuth, validateDisplayIdParam, canModi
     }
   }
 
-  // Use transaction to update interests and vector
+  // Use transaction to update interests
   const result = await prisma.$transaction(async (tx) => {
     // Delete all existing interests for this person
     await tx.personInterest.deleteMany({
@@ -113,9 +113,6 @@ router.put('/:displayId/interests', requireAuth, validateDisplayIdParam, canModi
         }))
       });
     }
-
-    // Update interest vector
-    await updatePersonInterestVector(person.id);
 
     // Return updated person with interests
     return tx.person.findUnique({
@@ -134,6 +131,10 @@ router.put('/:displayId/interests', requireAuth, validateDisplayIdParam, canModi
       }
     });
   });
+
+  // Update interest vector after transaction completes
+  // This must happen after the PersonInterest records are committed
+  await updatePersonInterestVector(person.id);
 
   const response: ApiResponse<(PersonInterest & { interest?: Interest })[]> = {
     success: true,
