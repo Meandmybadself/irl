@@ -17,6 +17,8 @@ interface CategoryGroup {
   isExpanded: boolean;
 }
 
+const CATEGORY_EXPANSION_STORAGE_KEY = 'category-admin-page-expanded-categories';
+
 @customElement('category-admin-page')
 export class CategoryAdminPage extends LitElement {
   createRenderRoot() {
@@ -36,6 +38,9 @@ export class CategoryAdminPage extends LitElement {
 
   @state()
   private isLoading = false;
+
+  @state()
+  private expandedCategories: Set<string> = new Set();
 
   @state()
   private isSaving = false;
@@ -70,6 +75,18 @@ export class CategoryAdminPage extends LitElement {
   async connectedCallback() {
     super.connectedCallback();
 
+    // Load saved expansion state from localStorage
+    const savedState = localStorage.getItem(CATEGORY_EXPANSION_STORAGE_KEY);
+    if (savedState) {
+      try {
+        const expandedArray = JSON.parse(savedState);
+        this.expandedCategories = new Set(expandedArray);
+      } catch (e) {
+        // Invalid JSON, ignore
+        this.expandedCategories = new Set();
+      }
+    }
+
     // Check if user is system admin
     const currentUser = selectCurrentUser(this.store.getState());
     if (!currentUser?.isSystemAdmin) {
@@ -101,7 +118,7 @@ export class CategoryAdminPage extends LitElement {
           .map(([category, interests]) => ({
             category,
             interests: interests.sort((a, b) => a.name.localeCompare(b.name)),
-            isExpanded: false
+            isExpanded: this.expandedCategories.has(category)
           }))
           .sort((a, b) => a.category.localeCompare(b.category));
       }
@@ -118,6 +135,20 @@ export class CategoryAdminPage extends LitElement {
   }
 
   private toggleCategory(category: string) {
+    // Update expansion state
+    if (this.expandedCategories.has(category)) {
+      this.expandedCategories.delete(category);
+    } else {
+      this.expandedCategories.add(category);
+    }
+
+    // Save to localStorage
+    localStorage.setItem(
+      CATEGORY_EXPANSION_STORAGE_KEY,
+      JSON.stringify(Array.from(this.expandedCategories))
+    );
+
+    // Update category groups
     this.categoryGroups = this.categoryGroups.map((group) =>
       group.category === category
         ? { ...group, isExpanded: !group.isExpanded }
