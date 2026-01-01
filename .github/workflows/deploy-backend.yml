@@ -1,0 +1,99 @@
+name: Deploy Backend to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'service/**'
+      - 'shared/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @irl/shared build
+
+      - name: Build service
+        run: pnpm --filter @irl/service build
+
+      - name: Create deployment archive
+        run: |
+          mkdir -p deploy-temp
+          cp -r service/dist deploy-temp/service-dist
+          cp service/package.json deploy-temp/
+          cp -r service/prisma deploy-temp/prisma
+          cp -r shared/dist deploy-temp/shared-dist
+          cp shared/package.json deploy-temp/shared-package.json
+          cp pnpm-lock.yaml deploy-temp/
+          cp pnpm-workspace.yaml deploy-temp/
+
+      - name: Deploy to DigitalOcean
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          source: "deploy-temp/*"
+          target: "/var/www/irl-deploy"
+          strip_components: 1
+
+      - name: Setup and restart service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          script: |
+            # Create directory structure
+            mkdir -p /var/www/irl/service/dist
+            mkdir -p /var/www/irl/service/prisma
+            mkdir -p /var/www/irl/shared/dist
+
+            # Move files to correct locations
+            cp -r /var/www/irl-deploy/service-dist/* /var/www/irl/service/dist/
+            cp /var/www/irl-deploy/package.json /var/www/irl/service/
+            cp -r /var/www/irl-deploy/prisma/* /var/www/irl/service/prisma/
+            cp -r /var/www/irl-deploy/shared-dist/* /var/www/irl/shared/dist/
+            cp /var/www/irl-deploy/shared-package.json /var/www/irl/shared/package.json
+            cp /var/www/irl-deploy/pnpm-lock.yaml /var/www/irl/
+            cp /var/www/irl-deploy/pnpm-workspace.yaml /var/www/irl/
+
+            # Cleanup deploy temp
+            rm -rf /var/www/irl-deploy
+
+            # Navigate to project directory
+            cd /var/www/irl
+
+            # Install pnpm if not already installed
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm
+
+            # Install production dependencies
+            pnpm install --prod --frozen-lockfile
+
+            # Run database migrations
+            cd service
+            pnpm prisma migrate deploy
+
+            # Restart the service using PM2
+            pm2 restart irl-service || pm2 start dist/index.js --name irl-service --node-args="--no-deprecation"
+            pm2 save
