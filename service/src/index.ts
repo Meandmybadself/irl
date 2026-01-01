@@ -103,6 +103,15 @@ server.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Hello World from IRL Service!' });
 });
 
+// Health check endpoint for monitoring and load balancers
+server.get('/api/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Global error handler (must be last)
 server.use(errorHandler);
 

@@ -1,4 +1,13 @@
+# Environment files with actual secrets
 .env
+.env.local
+service/.env
+
+# Allow env templates and examples
+!client/.env.production
+!client/.env.development
+!service/.env.production
+
 node_modules
 dist
 tsconfig.tsbuildinfo

@@ -722,4 +722,7 @@ export class ApiClient {
 }
 
 // Export a default instance
-export const apiClient = new ApiClient();
+// In production, use the API_BASE_URL from environment variable
+// In development, use '/api' which is proxied by Vite to localhost:3001
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+export const apiClient = new ApiClient(baseURL);

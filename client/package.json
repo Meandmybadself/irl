@@ -4,7 +4,8 @@
   "description": "IRL client UI using Lit web components",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && vite build",
+    "build:prod": "tsc && vite build --mode production",
     "dev": "vite",
     "preview": "vite preview",
     "test": "vitest --run --passWithNoTests",
