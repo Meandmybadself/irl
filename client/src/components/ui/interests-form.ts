@@ -223,7 +223,6 @@ export class InterestsForm extends LitElement {
                   <div class="flex items-center justify-between py-2 border-b ${backgroundColors.border} last:border-b-0">
                     <div class="flex-1">
                       <div class="text-sm font-medium ${textColors.primary}">${interest.name}</div>
-                      <div class="text-xs ${textColors.tertiary}">${interest.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
                     </div>
                     <div class="flex items-center gap-3 ml-4">
                       <input
