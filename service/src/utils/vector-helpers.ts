@@ -13,8 +13,15 @@ export const getAllInterestsOrdered = async () => {
 };
 
 /**
+ * Maximum vector dimension - set high enough to accommodate future growth
+ * This should match the vector dimension in the database schema
+ */
+export const MAX_VECTOR_DIMENSION = 1000;
+
+/**
  * Gets the interest vector for a person
  * Returns array of levels corresponding to ordered interests (0 if not set)
+ * Pads with zeros to MAX_VECTOR_DIMENSION to support future interest additions
  */
 export const getPersonInterestVector = async (personId: number): Promise<number[]> => {
   const interests = await getAllInterestsOrdered();
@@ -27,7 +34,14 @@ export const getPersonInterestVector = async (personId: number): Promise<number[
     personInterests.map((pi: any) => [pi.interestId, Number(pi.level)])
   );
 
-  return interests.map((interest: any) => interestMap.get(interest.id) || 0);
+  const vector = interests.map((interest: any) => interestMap.get(interest.id) || 0);
+
+  // Pad with zeros to max dimension to support future interest additions
+  while (vector.length < MAX_VECTOR_DIMENSION) {
+    vector.push(0);
+  }
+
+  return vector;
 };
 
 /**
