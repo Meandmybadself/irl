@@ -228,7 +228,7 @@ export class SimilarPersonsCard extends LitElement {
     return html`
       <div class="${backgroundColors.content} rounded-lg shadow-sm p-6">
         <h2 class="${textStyles.heading.h3} mb-4">
-          People You Might Know
+          Nearby People & Groups
         </h2>
 
         ${this.isLoading
