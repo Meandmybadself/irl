@@ -69,7 +69,7 @@ server.use(session({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 60 * 24 * 60 * 60 * 1000, // 60 days
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 
