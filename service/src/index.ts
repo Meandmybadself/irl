@@ -28,6 +28,7 @@ import personInterestsRoutes from './routes/person-interests.js';
 import personRecommendationsRoutes from './routes/person-recommendations.js';
 import auditLogsRoutes from './routes/audit-logs.js';
 import masqueradeRoutes from './routes/masquerade.js';
+import nearbyRoutes from './routes/nearby.js';
 
 // Import middleware
 import { errorHandler } from './middleware/error-handler.js';
@@ -102,6 +103,7 @@ server.use('/api/persons', personInterestsRoutes);
 server.use('/api/persons', personRecommendationsRoutes);
 server.use('/api/audit-logs', auditLogsRoutes);
 server.use('/api/masquerade', masqueradeRoutes);
+server.use('/api/nearby', nearbyRoutes);
 
 server.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Hello World from IRL Service!' });

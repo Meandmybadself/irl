@@ -38,7 +38,8 @@ import type {
   UpdateInterestRequest,
   PersonInterest,
   SetPersonInterestsRequest,
-  AuditLog
+  AuditLog,
+  NearbyResponse
 } from '@irl/shared';
 
 export interface PaginationParams {
@@ -718,6 +719,11 @@ export class ApiClient {
 
   async getMasqueradeStatus(): Promise<ApiResponse<{ isMasquerading: boolean; masqueradeInfo: any }>> {
     return this.request('/masquerade/status');
+  }
+
+  // Nearby endpoints
+  async getNearby(radius: number = 1): Promise<ApiResponse<NearbyResponse>> {
+    return this.request<ApiResponse<NearbyResponse>>(`/nearby?radius=${radius}`);
   }
 }
 

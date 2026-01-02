@@ -379,3 +379,18 @@ export interface SystemExportData {
   groupContactInformations: GroupContactInformation[];
   personGroups: PersonGroup[];
 }
+
+// Nearby/proximity types
+export interface PersonWithDistance extends Person {
+  distance: number; // Distance in miles
+}
+
+export interface GroupWithDistance extends Group {
+  distance: number; // Distance in miles
+}
+
+export interface NearbyResponse {
+  persons: PersonWithDistance[];
+  groups: GroupWithDistance[];
+  referencePointsCount: number; // Number of locations used as reference
+}

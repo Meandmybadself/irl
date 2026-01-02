@@ -12,6 +12,7 @@ import type { Person, Group, ContactInformation } from '@irl/shared';
 import '../components/layout/app-layout.js';
 import '../components/ui/unified-search-list.js';
 import '../components/ui/similar-persons-card.js';
+import '../components/ui/nearby-persons-and-groups.js';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
@@ -123,6 +124,10 @@ export class HomePage extends LitElement {
           ? html`
               <div class="mb-6">
                 <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
+              </div>
+
+              <div class="mb-6">
+                <nearby-persons-and-groups .currentPerson=${this.currentPerson}></nearby-persons-and-groups>
               </div>
             `
           : ''}
