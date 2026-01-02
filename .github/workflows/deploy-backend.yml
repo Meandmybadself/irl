@@ -93,8 +93,13 @@ jobs:
             # Install production dependencies
             pnpm install --prod --frozen-lockfile
 
-            # Run database migrations
+            # Navigate to service directory
             cd service
+
+            # Generate Prisma client
+            pnpm prisma generate
+
+            # Run database migrations
             pnpm prisma migrate deploy
 
             # Restart the service using PM2
