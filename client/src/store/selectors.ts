@@ -81,6 +81,11 @@ export const selectSystemDescription = createSelector(
   system => system?.description || null
 );
 
+export const selectRegistrationOpen = createSelector(
+  [selectSystem],
+  system => system?.registrationOpen ?? false
+);
+
 // UI selectors
 export const selectNotifications = createSelector(
   [selectUI],
