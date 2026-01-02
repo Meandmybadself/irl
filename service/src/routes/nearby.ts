@@ -211,6 +211,11 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
         AND ci.longitude IS NOT NULL
         AND ci.deleted = false
         AND (ci.privacy = 'PUBLIC' OR ${isSystemAdmin} = true)
+        AND NOT EXISTS (
+          SELECT 1 FROM person_groups pg
+          WHERE pg."groupId" = g.id
+          AND pg."personId" = ${currentPersonId}
+        )
       GROUP BY g.id, g."displayId", g.name, g.description, g."parentGroupId", g."allowsAnyUserToCreateSubgroup", g."publiclyVisible", g."createdAt", g."updatedAt", g.deleted
       HAVING MIN(
         2 * 3959 * ASIN(SQRT(
