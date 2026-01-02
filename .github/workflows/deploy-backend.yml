@@ -90,8 +90,8 @@ jobs:
             # Install pnpm if not already installed
             command -v pnpm >/dev/null 2>&1 || npm install -g pnpm
 
-            # Install production dependencies
-            pnpm install --prod --frozen-lockfile
+            # Install all dependencies (including devDependencies for Prisma)
+            CI=true pnpm install --frozen-lockfile
 
             # Navigate to service directory
             cd service
