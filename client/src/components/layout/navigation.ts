@@ -146,7 +146,7 @@ export class AppNavigation extends LitElement {
           <div class="flex h-16 items-center justify-between">
             <div class="flex items-center">
               <div class="shrink-0">
-                <a href="/" class="text-xl font-bold text-white no-underline">IRL</a>
+                <a href="/" class="text-xl font-bold text-white no-underline">eye arr ell</a>
               </div>
               ${this.isAuthenticated
                 ? html`
