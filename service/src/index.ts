@@ -39,6 +39,10 @@ const __dirname = path.dirname(__filename);
 
 const server: Application = express();
 
+// Trust proxy - required for secure cookies behind nginx reverse proxy
+// This tells Express to trust X-Forwarded-* headers from the first proxy
+server.set('trust proxy', 1);
+
 // Keep pg pool for session store
 const db = new Pool({
   connectionString: process.env.DATABASE_URL
