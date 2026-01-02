@@ -87,16 +87,24 @@ router.post('/login', validateBody(loginSchema), (req, res, next) => {
         }
       }
 
-      const response: ApiResponse<{ user: User; person?: Person }> = {
-        success: true,
-        data: {
-          user: excludeSensitiveFields(user),
-          person: person || undefined
-        },
-        message: 'Login successful'
-      };
+      // Explicitly save session before sending response
+      // This ensures the Set-Cookie header is sent with the response
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          return next(saveErr);
+        }
 
-      return res.json(response);
+        const response: ApiResponse<{ user: User; person?: Person }> = {
+          success: true,
+          data: {
+            user: excludeSensitiveFields(user),
+            person: person || undefined
+          },
+          message: 'Login successful'
+        };
+
+        return res.json(response);
+      });
     });
   })(req, res, next);
 });
@@ -160,6 +168,14 @@ router.get('/session', asyncHandler(async (req, res) => {
     if (rawPerson) {
       req.session.currentPersonId = rawPerson.id;
       person = excludePersonSensitiveFields(rawPerson);
+
+      // Save session if we updated currentPersonId
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
     }
   }
 
