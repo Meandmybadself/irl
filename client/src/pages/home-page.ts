@@ -122,12 +122,13 @@ export class HomePage extends LitElement {
       <app-layout>
         ${this.currentPerson && !this.isLoading
           ? html`
-              <div class="mb-6">
-                <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
-              </div>
-
-              <div class="mb-6">
-                <nearby-persons-and-groups .currentPerson=${this.currentPerson}></nearby-persons-and-groups>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <similar-persons-card .currentPerson=${this.currentPerson} .limit=${5}></similar-persons-card>
+                </div>
+                <div>
+                  <nearby-persons-and-groups .currentPerson=${this.currentPerson}></nearby-persons-and-groups>
+                </div>
               </div>
             `
           : ''}
