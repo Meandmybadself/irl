@@ -28,17 +28,27 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
   @property({ type: Boolean })
   showPrivateContacts = false;
 
+  @property({ type: Boolean })
+  showPersons = true;
+
+  @property({ type: Boolean })
+  showGroups = true;
+
   // Combine persons and groups into unified items array
   get items(): SearchItem[] {
-    const personItems: SearchItem[] = this.persons.map(person => ({
-      type: 'person',
-      data: person
-    }));
+    const personItems: SearchItem[] = this.showPersons
+      ? this.persons.map(person => ({
+          type: 'person',
+          data: person
+        }))
+      : [];
 
-    const groupItems: SearchItem[] = this.groups.map(group => ({
-      type: 'group',
-      data: group
-    }));
+    const groupItems: SearchItem[] = this.showGroups
+      ? this.groups.map(group => ({
+          type: 'group',
+          data: group
+        }))
+      : [];
 
     return [...personItems, ...groupItems];
   }
@@ -251,6 +261,46 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
     }
   }
 
+  private togglePersonsFilter() {
+    this.showPersons = !this.showPersons;
+  }
+
+  private toggleGroupsFilter() {
+    this.showGroups = !this.showGroups;
+  }
+
+  private renderTypeFilters(): TemplateResult {
+    const buttonBaseClasses = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-colors';
+    const activeClasses = 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500';
+    const inactiveClasses = 'border-gray-300 bg-white text-gray-700 opacity-40 hover:opacity-60 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600';
+
+    return html`
+      <div class="flex items-center gap-2 mb-4">
+        <span class="${textStyles.body.small} text-gray-500 dark:text-gray-400">Show:</span>
+        <button
+          type="button"
+          class="${buttonBaseClasses} ${this.showPersons ? activeClasses : inactiveClasses}"
+          @click=${this.togglePersonsFilter}
+        >
+          <span class="inline-flex items-center rounded-md bg-blue-100 p-1 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
+            ${renderIcon('User', 'w-3 h-3')}
+          </span>
+          <span>People</span>
+        </button>
+        <button
+          type="button"
+          class="${buttonBaseClasses} ${this.showGroups ? activeClasses : inactiveClasses}"
+          @click=${this.toggleGroupsFilter}
+        >
+          <span class="inline-flex items-center rounded-md bg-green-100 p-1 text-green-800 dark:bg-green-500/20 dark:text-green-300">
+            ${renderIcon('Users', 'w-3 h-3')}
+          </span>
+          <span>Groups</span>
+        </button>
+      </div>
+    `;
+  }
+
   protected renderRow(item: SearchItem): TemplateResult {
     if (item.type === 'person') {
       return this.renderPersonRow(item.data);
@@ -343,6 +393,21 @@ export class UnifiedSearchList extends BaseList<SearchItem> {
           ${this.renderSortableHeader('contact', 'Contact Information', false)}
         </tr>
       </thead>
+    `;
+  }
+
+  render(): TemplateResult {
+    return html`
+      <div>
+        ${this.renderSearchInput()}
+        ${this.renderTypeFilters()}
+        <table class="relative min-w-full divide-y ${backgroundColors.divideStrong}">
+          ${this.renderHeader()}
+          <tbody class="divide-y ${backgroundColors.divide}">
+            ${this.renderBody()}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 }
