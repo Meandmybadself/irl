@@ -1,3 +1,6 @@
+// Import URLPattern polyfill for Safari compatibility
+import 'urlpattern-polyfill';
+
 import './app.js';
 
 // Bootstrap the application
